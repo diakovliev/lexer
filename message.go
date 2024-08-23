@@ -24,4 +24,8 @@ type Message[T any] struct {
 	UserType T
 	// Value represents the value of the lexeme.
 	Value []byte
+	// Pos
+	Pos int
+	// Width
+	Width int
 }
