@@ -9,20 +9,24 @@ var (
 	ErrBreak = errors.New("break")
 )
 
-type Context[T any] struct {
-	parentTx *ReaderTransaction
-	tx       *ReaderTransaction
-	messages []Message[T]
-	yeild    func(messages []Message[T])
-	Current  *Acceptor[T]
-	Error    error
-}
+type (
+	ContextReceiver[T any] func(messages []Message[T])
 
-func NewContext[T any](tx *ReaderTransaction, yeild func(messages []Message[T])) *Context[T] {
+	Context[T any] struct {
+		parentTx *ReaderTransaction
+		tx       *ReaderTransaction
+		messages []Message[T]
+		receiver ContextReceiver[T]
+		Current  *Acceptor[T]
+		Error    error
+	}
+)
+
+func NewContext[T any](tx *ReaderTransaction, yeild ContextReceiver[T]) *Context[T] {
 	return &Context[T]{
 		parentTx: tx,
 		messages: make([]Message[T], 0, 10),
-		yeild:    yeild,
+		receiver: yeild,
 	}
 }
 
@@ -85,15 +89,16 @@ func (c *Context[T]) OptionallyAcceptContext(ctxFn func(*Context[T])) *Acceptor[
 	return c.Current
 }
 
-func (c *Context[T]) Complete() bool {
+func (c *Context[T]) complete() bool {
 	if c.Error != nil && !errors.Is(c.Error, ErrBreak) {
 		return true
 	}
 	if err := c.commit(); err != nil {
-		c.Error = err
+		c.SetError(err)
 		return true
 	}
 	if errors.Is(c.Error, ErrBreak) {
+		c.SetError(nil)
 		return true
 	}
 	if c.tx == nil {
@@ -102,7 +107,15 @@ func (c *Context[T]) Complete() bool {
 	return false
 }
 
-func (c *Context[T]) checkEOF() (err error) {
+func (c *Context[T]) Break() {
+	c.SetError(ErrBreak)
+}
+
+func (c *Context[T]) SetError(err error) {
+	c.Error = err
+}
+
+func (c *Context[T]) isEOF() (err error) {
 	tx := c.parentTx.Begin()
 	// try to read next byte
 	if _, _, err = NextByteFrom(tx); err == nil {
@@ -130,14 +143,14 @@ func (c *Context[T]) commit() (err error) {
 		c.Error = err
 		return
 	}
-	c.yeild(c.messages)
+	c.receiver(c.messages)
 	c.tx = nil
 	c.messages = make([]Message[T], 0, 10)
 	// if not EOF then begin new transaction
 	if errors.Is(c.Error, ErrBreak) {
 		return
 	}
-	if err = c.checkEOF(); err != nil {
+	if err = c.isEOF(); err != nil {
 		c.Error = err
 		return
 	}
@@ -146,7 +159,7 @@ func (c *Context[T]) commit() (err error) {
 }
 
 func (c *Context[T]) Run(loopFn func(*Context[T])) *Context[T] {
-	for !c.Complete() {
+	for !c.complete() {
 		loopFn(c)
 	}
 	return c

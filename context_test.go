@@ -2,82 +2,12 @@ package lexer_test
 
 import (
 	"bytes"
-	"errors"
 	"io"
 	"testing"
-	"unicode"
 
 	"github.com/diakovliev/lexer"
 	"github.com/stretchr/testify/assert"
 )
-
-var errUnexpectedState = errors.New("unexpected state")
-
-func skipSpaces(ctx *lexer.Context[testMessageType]) bool {
-	return ctx.AcceptWhile(unicode.IsSpace).Skip().Done()
-}
-func number(ctx *lexer.Context[testMessageType]) bool {
-	return ctx.Accept(unicode.IsDigit).
-		OptionallyAcceptWhile(unicode.IsDigit).
-		Emit(lexer.User, Number).
-		Done()
-}
-func negativeNumber(ctx *lexer.Context[testMessageType]) bool {
-	return ctx.Accept(lexer.Rune('-')).
-		Accept(unicode.IsDigit).
-		OptionallyAcceptWhile(unicode.IsDigit).
-		Emit(lexer.User, Number).
-		Done()
-}
-func minus(ctx *lexer.Context[testMessageType]) bool {
-	return ctx.Accept(lexer.Rune('-')).
-		Emit(lexer.User, Minus).
-		Done()
-}
-func identifier(ctx *lexer.Context[testMessageType]) bool {
-	return ctx.Accept(unicode.IsLetter).
-		OptionallyAcceptWhile(func(r rune) bool { return unicode.IsLetter(r) || unicode.IsDigit(r) }).
-		Emit(lexer.User, Identifier).
-		Done()
-}
-func stringData(ctx *lexer.Context[testMessageType]) bool {
-	return ctx.Accept(lexer.Rune('"')).
-		OptionallyAcceptWhile(lexer.Escape(lexer.Rune('\\'), func(r rune) bool { return r != '"' }).Accept).
-		Accept(lexer.Rune('"')).
-		Emit(lexer.User, String).
-		Done()
-}
-func scopeContext(ctx *lexer.Context[testMessageType]) bool {
-	return ctx.Accept(lexer.Rune('(')).AcceptContext(func(ctx *lexer.Context[testMessageType]) {
-		switch {
-		case skipSpaces(ctx):
-		case ctx.Accept(lexer.Rune(')')).Emit(lexer.User, Ket).Done():
-			ctx.Error = lexer.ErrBreak
-		case ctx.Accept(lexer.Rune(',')).Emit(lexer.User, Comma).Done():
-		case negativeNumber(ctx):
-		case minus(ctx):
-		case number(ctx):
-		case identifier(ctx):
-		case stringData(ctx):
-		case scopeContext(ctx):
-		default:
-			ctx.Error = errUnexpectedState
-		}
-	}).Emit(lexer.User, Bra).Done()
-}
-func globalScope(ctx *lexer.Context[testMessageType]) {
-	switch {
-	case skipSpaces(ctx):
-	case negativeNumber(ctx):
-	case minus(ctx):
-	case number(ctx):
-	case identifier(ctx):
-	case stringData(ctx):
-	case scopeContext(ctx):
-	default:
-		ctx.Error = errUnexpectedState
-	}
-}
 
 func TestContext(t *testing.T) {
 
@@ -168,7 +98,7 @@ func TestContext(t *testing.T) {
 			yeild := func(msgs []lexer.Message[testMessageType]) {
 				messages = append(messages, msgs...)
 			}
-			ctx := lexer.NewContext(reader.Begin(), yeild).Run(globalScope)
+			ctx := lexer.NewContext(reader.Begin(), yeild).Run(testInitialState)
 			if tc.wantError != nil {
 				assert.ErrorIs(t, ctx.Error, tc.wantError)
 			} else {
