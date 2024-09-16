@@ -1,4 +1,4 @@
-package lexer
+package common
 
 // MessageType represents the type of a lexeme. The types are: Error, Drop, EOF, NL, User.
 type MessageType int
@@ -6,8 +6,6 @@ type MessageType int
 const (
 	// Error represents an error
 	Error MessageType = iota
-	// EOF represents an end of file
-	EOF
 	// NL represents a new line
 	NL
 	// User represents a user message
@@ -21,7 +19,7 @@ type Message[T any] struct {
 	// UserType is only used when the message's type is User. It contains the user-defined type of the lexeme.
 	UserType T
 	// Value represents the value of the lexeme.
-	Value []byte
+	Value any
 	// Pos
 	Pos int
 	// Width

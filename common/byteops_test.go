@@ -1,11 +1,10 @@
-package lexer_test
+package common
 
 import (
 	"bytes"
 	"io"
 	"testing"
 
-	"github.com/diakovliev/lexer"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -38,7 +37,7 @@ func TestNextByteFrom(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ret, w, err := lexer.NextByteFrom(tc.reader)
+			ret, w, err := NextByteFrom(tc.reader)
 			assert.Equal(t, tc.ret, ret)
 			assert.Equal(t, tc.w, w)
 			if tc.err != nil {
