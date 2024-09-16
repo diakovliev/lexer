@@ -36,10 +36,10 @@ func TestAcceptor(t *testing.T) {
 			wantDone: true,
 			wantEmit: true,
 			accept: func(ctx *lexer.Acceptor[testMessageType]) {
-				ctx.Accept(lexer.Rune('a')).
-					Accept(lexer.Rune('+')).
-					Accept(lexer.Rune('-')).
-					Accept(lexer.Rune('b')).
+				ctx.Fn(lexer.Rune('a')).
+					Fn(lexer.Rune('+')).
+					Fn(lexer.Rune('-')).
+					Fn(lexer.Rune('b')).
 					Emit(lexer.User, Identifier)
 			},
 			assert: func(t *testing.T, tx *lexer.ReaderTransaction, ctx *lexer.Acceptor[testMessageType]) {
@@ -51,10 +51,10 @@ func TestAcceptor(t *testing.T) {
 			input:    "a+-b",
 			wantDone: true,
 			accept: func(ctx *lexer.Acceptor[testMessageType]) {
-				ctx.Accept(lexer.Rune('a')).
-					Accept(lexer.Rune('+')).
-					Accept(lexer.Rune('-')).
-					Accept(lexer.Rune('b')).
+				ctx.Fn(lexer.Rune('a')).
+					Fn(lexer.Rune('+')).
+					Fn(lexer.Rune('-')).
+					Fn(lexer.Rune('b')).
 					Skip()
 			},
 			assert: func(t *testing.T, tx *lexer.ReaderTransaction, ctx *lexer.Acceptor[testMessageType]) {
@@ -66,10 +66,10 @@ func TestAcceptor(t *testing.T) {
 			input:     "a+-",
 			wantError: io.EOF,
 			accept: func(ctx *lexer.Acceptor[testMessageType]) {
-				ctx.Accept(lexer.Rune('a')).
-					Accept(lexer.Rune('+')).
-					Accept(lexer.Rune('-')).
-					Accept(lexer.Rune('b')).
+				ctx.Fn(lexer.Rune('a')).
+					Fn(lexer.Rune('+')).
+					Fn(lexer.Rune('-')).
+					Fn(lexer.Rune('b')).
 					Emit(lexer.User, Identifier)
 			},
 			assert: func(t *testing.T, tx *lexer.ReaderTransaction, ctx *lexer.Acceptor[testMessageType]) {
@@ -80,10 +80,10 @@ func TestAcceptor(t *testing.T) {
 			name:  "!Accept",
 			input: "a+-b",
 			accept: func(ctx *lexer.Acceptor[testMessageType]) {
-				ctx.Accept(lexer.Rune('a')).
-					Accept(lexer.Rune('+')).
-					Accept(lexer.Rune('*')).
-					Accept(lexer.Rune('b')).
+				ctx.Fn(lexer.Rune('a')).
+					Fn(lexer.Rune('+')).
+					Fn(lexer.Rune('*')).
+					Fn(lexer.Rune('b')).
 					Emit(lexer.User, Identifier)
 			},
 			assert: func(t *testing.T, tx *lexer.ReaderTransaction, ctx *lexer.Acceptor[testMessageType]) {
@@ -103,7 +103,7 @@ func TestAcceptor(t *testing.T) {
 			wantDone: true,
 			wantEmit: true,
 			accept: func(ctx *lexer.Acceptor[testMessageType]) {
-				ctx.AcceptWhile(unicode.IsLetter).Emit(lexer.User, Identifier)
+				ctx.While(unicode.IsLetter).Emit(lexer.User, Identifier)
 			},
 			assert: func(t *testing.T, tx *lexer.ReaderTransaction, ctx *lexer.Acceptor[testMessageType]) {
 				assert.True(t, tx.Pos() == 4)
@@ -122,7 +122,7 @@ func TestAcceptor(t *testing.T) {
 			wantDone: true,
 			wantEmit: true,
 			accept: func(ctx *lexer.Acceptor[testMessageType]) {
-				ctx.AcceptUntil(unicode.IsSpace).Emit(lexer.User, Identifier)
+				ctx.Until(unicode.IsSpace).Emit(lexer.User, Identifier)
 			},
 			assert: func(t *testing.T, tx *lexer.ReaderTransaction, ctx *lexer.Acceptor[testMessageType]) {
 				assert.True(t, tx.Pos() == 4)
@@ -141,7 +141,7 @@ func TestAcceptor(t *testing.T) {
 			wantDone: true,
 			wantEmit: true,
 			accept: func(ctx *lexer.Acceptor[testMessageType]) {
-				ctx.AcceptCount(4).Emit(lexer.User, Identifier)
+				ctx.Count(4).Emit(lexer.User, Identifier)
 			},
 			assert: func(t *testing.T, tx *lexer.ReaderTransaction, ctx *lexer.Acceptor[testMessageType]) {
 				assert.True(t, tx.Pos() == 4)
@@ -160,7 +160,7 @@ func TestAcceptor(t *testing.T) {
 			wantDone: true,
 			wantEmit: true,
 			accept: func(ctx *lexer.Acceptor[testMessageType]) {
-				ctx.AcceptString("this").Emit(lexer.User, Identifier)
+				ctx.String("this").Emit(lexer.User, Identifier)
 			},
 			assert: func(t *testing.T, tx *lexer.ReaderTransaction, ctx *lexer.Acceptor[testMessageType]) {
 				assert.True(t, tx.Pos() == 4)
@@ -170,7 +170,7 @@ func TestAcceptor(t *testing.T) {
 			name:  "AcceptString no match",
 			input: "this is a test",
 			accept: func(ctx *lexer.Acceptor[testMessageType]) {
-				ctx.AcceptString("this1").Emit(lexer.User, Identifier)
+				ctx.String("this1").Emit(lexer.User, Identifier)
 			},
 			assert: func(t *testing.T, tx *lexer.ReaderTransaction, ctx *lexer.Acceptor[testMessageType]) {
 				assert.True(t, tx.Pos() == 0)
@@ -189,7 +189,7 @@ func TestAcceptor(t *testing.T) {
 			wantDone: true,
 			wantEmit: true,
 			accept: func(ctx *lexer.Acceptor[testMessageType]) {
-				ctx.AcceptAnyStringFrom(
+				ctx.AnyString(
 					"test",
 					"is",
 					"a",
@@ -204,7 +204,7 @@ func TestAcceptor(t *testing.T) {
 			name:  "AcceptAnyStringFrom no matches",
 			input: "this is a test",
 			accept: func(ctx *lexer.Acceptor[testMessageType]) {
-				ctx.AcceptAnyStringFrom(
+				ctx.AnyString(
 					"test1",
 					"is2",
 					"a3",
@@ -228,7 +228,7 @@ func TestAcceptor(t *testing.T) {
 			wantDone: true,
 			wantEmit: true,
 			accept: func(ctx *lexer.Acceptor[testMessageType]) {
-				ctx.AcceptAnyFrom(
+				ctx.AnyFn(
 					lexer.Rune('a'),
 					lexer.Rune('b'),
 					lexer.Rune('c'),
@@ -243,7 +243,7 @@ func TestAcceptor(t *testing.T) {
 			name:  "AcceptAnyFrom no matches",
 			input: "this is a test",
 			accept: func(ctx *lexer.Acceptor[testMessageType]) {
-				ctx.AcceptAnyFrom(
+				ctx.AnyFn(
 					lexer.Rune('a'),
 					lexer.Rune('b'),
 					lexer.Rune('c'),

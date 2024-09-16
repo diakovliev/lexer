@@ -34,58 +34,58 @@ func (c *Context[T]) addMessage(message Message[T]) {
 	c.messages = append(c.messages, message)
 }
 
-func (c *Context[T]) Accept(acceptFn func(rune) bool) *Acceptor[T] {
-	c.Current = NewAcceptor(c.tx, c.addMessage).Accept(acceptFn)
+func (c *Context[T]) Fn(acceptFn func(rune) bool) *Acceptor[T] {
+	c.Current = NewAcceptor(c.tx, c.addMessage).Fn(acceptFn)
 	return c.Current
 }
 
-func (c *Context[T]) AcceptUntil(acceptFn func(rune) bool) *Acceptor[T] {
-	c.Current = NewAcceptor(c.tx, c.addMessage).AcceptUntil(acceptFn)
+func (c *Context[T]) Until(acceptFn func(rune) bool) *Acceptor[T] {
+	c.Current = NewAcceptor(c.tx, c.addMessage).Until(acceptFn)
 	return c.Current
 }
 
-func (c *Context[T]) AcceptWhile(acceptFn func(rune) bool) *Acceptor[T] {
-	c.Current = NewAcceptor(c.tx, c.addMessage).AcceptWhile(acceptFn)
+func (c *Context[T]) While(acceptFn func(rune) bool) *Acceptor[T] {
+	c.Current = NewAcceptor(c.tx, c.addMessage).While(acceptFn)
 	return c.Current
 }
 
-func (c *Context[T]) AcceptCount(count int) *Acceptor[T] {
-	c.Current = NewAcceptor(c.tx, c.addMessage).AcceptCount(count)
+func (c *Context[T]) Count(count int) *Acceptor[T] {
+	c.Current = NewAcceptor(c.tx, c.addMessage).Count(count)
 	return c.Current
 }
 
-func (c *Context[T]) AcceptString(match string) *Acceptor[T] {
-	c.Current = NewAcceptor(c.tx, c.addMessage).AcceptString(match)
+func (c *Context[T]) String(match string) *Acceptor[T] {
+	c.Current = NewAcceptor(c.tx, c.addMessage).String(match)
 	return c.Current
 }
 
-func (c *Context[T]) AcceptAnyStringFrom(matches ...string) *Acceptor[T] {
-	c.Current = NewAcceptor(c.tx, c.addMessage).AcceptAnyStringFrom(matches...)
+func (c *Context[T]) AnyString(matches ...string) *Acceptor[T] {
+	c.Current = NewAcceptor(c.tx, c.addMessage).AnyString(matches...)
 	return c.Current
 }
 
-func (c *Context[T]) AcceptAnyFrom(acceptFns ...func(rune) bool) *Acceptor[T] {
-	c.Current = NewAcceptor(c.tx, c.addMessage).AcceptAnyFrom(acceptFns...)
+func (c *Context[T]) AnyFn(acceptFns ...func(rune) bool) *Acceptor[T] {
+	c.Current = NewAcceptor(c.tx, c.addMessage).AnyFn(acceptFns...)
 	return c.Current
 }
 
-func (c *Context[T]) OptionallyAcceptWhile(acceptFn func(rune) bool) *Acceptor[T] {
-	c.Current = NewAcceptor(c.tx, c.addMessage).OptionallyAcceptWhile(acceptFn)
+func (c *Context[T]) OptionallyWhile(acceptFn func(rune) bool) *Acceptor[T] {
+	c.Current = NewAcceptor(c.tx, c.addMessage).OptionallyWhile(acceptFn)
 	return c.Current
 }
 
-func (c *Context[T]) OptionallyAcceptUntil(acceptFn func(rune) bool) *Acceptor[T] {
-	c.Current = NewAcceptor(c.tx, c.addMessage).OptionallyAcceptUntil(acceptFn)
+func (c *Context[T]) OptionallyUntil(acceptFn func(rune) bool) *Acceptor[T] {
+	c.Current = NewAcceptor(c.tx, c.addMessage).OptionallyUntil(acceptFn)
 	return c.Current
 }
 
-func (c *Context[T]) AcceptContext(ctxFn func(*Context[T])) *Acceptor[T] {
-	c.Current = NewAcceptor(c.tx, c.addMessage).AcceptContext(ctxFn)
+func (c *Context[T]) If(ctxFn func(*Context[T])) *Acceptor[T] {
+	c.Current = NewAcceptor(c.tx, c.addMessage).If(ctxFn)
 	return c.Current
 }
 
-func (c *Context[T]) OptionallyAcceptContext(ctxFn func(*Context[T])) *Acceptor[T] {
-	c.Current = NewAcceptor(c.tx, c.addMessage).OptionallyAcceptContext(ctxFn)
+func (c *Context[T]) Optionally(ctxFn func(*Context[T])) *Acceptor[T] {
+	c.Current = NewAcceptor(c.tx, c.addMessage).Optionally(ctxFn)
 	return c.Current
 }
 

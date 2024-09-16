@@ -44,16 +44,9 @@ func NewAcceptor[T any](
 // acceptor are to be ignored.
 func (ac *Acceptor[T]) ignore(Message[T]) {}
 
-func (ac Acceptor[T]) getData() (pos int, data []byte, width int) {
-	pos = int(ac.tx.Parent().Pos())
-	data = make([]byte, ac.buffer.Len())
-	width = copy(data, ac.buffer.Bytes())
-	return
-}
-
-// Has returns true if and only if internal buffer
+// has returns true if and only if internal buffer
 // is not empty.
-func (ac Acceptor[T]) Has() (ret bool) {
+func (ac Acceptor[T]) has() (ret bool) {
 	if ac.tx == nil {
 		return
 	}
@@ -132,7 +125,7 @@ func (ac *Acceptor[T]) Done() bool {
 	return ac.done
 }
 
-func (ac *Acceptor[T]) Accept(acceptFn func(rune) bool) *Acceptor[T] {
+func (ac *Acceptor[T]) Fn(acceptFn func(rune) bool) *Acceptor[T] {
 	if ac.isComplete() {
 		return ac
 	}
@@ -144,6 +137,7 @@ func (ac *Acceptor[T]) Accept(acceptFn func(rune) bool) *Acceptor[T] {
 	return ac
 }
 
+// Emit emits given message.
 func (ac *Acceptor[T]) Emit(msgType MessageType, userType ...T) *Acceptor[T] {
 	if ac.isComplete() {
 		return ac
@@ -156,7 +150,9 @@ func (ac *Acceptor[T]) Emit(msgType MessageType, userType ...T) *Acceptor[T] {
 	case len(userType) > 1:
 		panic("too many user types")
 	}
-	pos, value, width := ac.getData()
+	pos := int(ac.tx.Parent().Pos())
+	value := make([]byte, ac.buffer.Len())
+	width := copy(value, ac.buffer.Bytes())
 	ac.receiver(Message[T]{
 		Type:     msgType,
 		UserType: msgUserType,
@@ -171,9 +167,9 @@ func (ac *Acceptor[T]) Emit(msgType MessageType, userType ...T) *Acceptor[T] {
 	return ac.resolve()
 }
 
-func (ac *Acceptor[T]) Drop() *Acceptor[T] {
-	var msg T
-	return ac.Emit(Drop, msg)
+// Emit2 is a shortcut for Emit(MessageType, T)
+func (ac *Acceptor[T]) Emit2(userType T) *Acceptor[T] {
+	return ac.Emit(User, userType)
 }
 
 func (ac *Acceptor[T]) Skip() *Acceptor[T] {
@@ -218,32 +214,32 @@ func (ac *Acceptor[T]) acceptLoop(
 	return ac
 }
 
-func (ac *Acceptor[T]) AcceptWhile(acceptFn func(rune) bool) *Acceptor[T] {
+func (ac *Acceptor[T]) While(acceptFn func(rune) bool) *Acceptor[T] {
 	if ac.isComplete() {
 		return ac
 	}
 	return ac.acceptLoop(acceptFn)
 }
 
-func (ac *Acceptor[T]) AcceptUntil(acceptFn func(rune) bool) *Acceptor[T] {
+func (ac *Acceptor[T]) Until(acceptFn func(rune) bool) *Acceptor[T] {
 	if ac.isComplete() {
 		return ac
 	}
 	return ac.acceptLoop(func(r rune) bool { return !acceptFn(r) })
 }
 
-func (ac *Acceptor[T]) AcceptCount(count int) *Acceptor[T] {
+func (ac *Acceptor[T]) Count(count int) *Acceptor[T] {
 	accepted := 0
-	return ac.AcceptWhile(func(r rune) (ret bool) {
+	return ac.While(func(r rune) (ret bool) {
 		ret = accepted < count
 		accepted++
 		return
 	})
 }
 
-func (ac *Acceptor[T]) AcceptString(match string) *Acceptor[T] {
+func (ac *Acceptor[T]) String(match string) *Acceptor[T] {
 	buffer := bytes.NewBuffer([]byte(match))
-	return ac.AcceptWhile(func(r rune) (ret bool) {
+	return ac.While(func(r rune) (ret bool) {
 		if buffer.Len() == 0 {
 			return
 		}
@@ -261,12 +257,12 @@ func (ac *Acceptor[T]) AcceptString(match string) *Acceptor[T] {
 	})
 }
 
-func (ac *Acceptor[T]) AcceptAnyStringFrom(matches ...string) *Acceptor[T] {
+func (ac *Acceptor[T]) AnyString(matches ...string) *Acceptor[T] {
 	if ac.isComplete() {
 		return ac
 	}
 	for _, match := range matches {
-		if acceptor := NewAcceptor(ac.tx, ac.ignore).AcceptString(match); acceptor.Has() {
+		if acceptor := NewAcceptor(ac.tx, ac.ignore).String(match); acceptor.has() {
 			// get data from matchContext and commit child transaction
 			ac.buffer.Write(acceptor.buffer.Bytes())
 			_, ac.Error = acceptor.tx.Commit()
@@ -276,12 +272,12 @@ func (ac *Acceptor[T]) AcceptAnyStringFrom(matches ...string) *Acceptor[T] {
 	return ac.reject()
 }
 
-func (ac *Acceptor[T]) AcceptAnyFrom(acceptFns ...func(rune) bool) *Acceptor[T] {
+func (ac *Acceptor[T]) AnyFn(acceptFns ...func(rune) bool) *Acceptor[T] {
 	if ac.isComplete() {
 		return ac
 	}
 	for _, accept := range acceptFns {
-		if acceptor := NewAcceptor(ac.tx, ac.ignore).Accept(accept); acceptor.Has() {
+		if acceptor := NewAcceptor(ac.tx, ac.ignore).Fn(accept); acceptor.has() {
 			// get data from acceptContext and commit child transaction
 			ac.buffer.Write(acceptor.buffer.Bytes())
 			_, ac.Error = acceptor.tx.Commit()
@@ -291,11 +287,11 @@ func (ac *Acceptor[T]) AcceptAnyFrom(acceptFns ...func(rune) bool) *Acceptor[T] 
 	return ac.reject()
 }
 
-func (ac *Acceptor[T]) OptionallyAcceptWhile(acceptFn func(rune) bool) *Acceptor[T] {
+func (ac *Acceptor[T]) OptionallyWhile(acceptFn func(rune) bool) *Acceptor[T] {
 	if ac.isComplete() {
 		return ac
 	}
-	if acceptor := NewAcceptor(ac.tx, ac.ignore).AcceptWhile(acceptFn); acceptor.Has() {
+	if acceptor := NewAcceptor(ac.tx, ac.ignore).While(acceptFn); acceptor.has() {
 		// get data from matchContext and commit child transaction
 		ac.buffer.Write(acceptor.buffer.Bytes())
 		_, ac.Error = acceptor.tx.Commit()
@@ -303,11 +299,11 @@ func (ac *Acceptor[T]) OptionallyAcceptWhile(acceptFn func(rune) bool) *Acceptor
 	return ac
 }
 
-func (ac *Acceptor[T]) OptionallyAcceptUntil(acceptFn func(rune) bool) *Acceptor[T] {
+func (ac *Acceptor[T]) OptionallyUntil(acceptFn func(rune) bool) *Acceptor[T] {
 	if ac.isComplete() {
 		return ac
 	}
-	if acceptor := NewAcceptor(ac.tx, ac.ignore).AcceptUntil(acceptFn); acceptor.Has() {
+	if acceptor := NewAcceptor(ac.tx, ac.ignore).Until(acceptFn); acceptor.has() {
 		// get data from matchContext and commit child transaction
 		ac.buffer.Write(acceptor.buffer.Bytes())
 		_, ac.Error = acceptor.tx.Commit()
@@ -315,28 +311,28 @@ func (ac *Acceptor[T]) OptionallyAcceptUntil(acceptFn func(rune) bool) *Acceptor
 	return ac
 }
 
-func (ac *Acceptor[T]) FollowedBy(acceptFn func(rune) bool) *Acceptor[T] {
+func (ac *Acceptor[T]) FollowedByFn(acceptFn func(rune) bool) *Acceptor[T] {
 	if ac.isComplete() {
 		return ac
 	}
-	if acceptor := NewAcceptor(ac.tx, ac.ignore).Accept(acceptFn); acceptor.Has() {
+	if acceptor := NewAcceptor(ac.tx, ac.ignore).Fn(acceptFn); acceptor.has() {
 		ac.Error = acceptor.tx.Rollback()
 		return ac
 	}
 	return ac.reject()
 }
 
-func (ac *Acceptor[T]) OptionallyFollowedBy(acceptFn func(rune) bool) *Acceptor[T] {
+func (ac *Acceptor[T]) OptionallyFollowedByFn(acceptFn func(rune) bool) *Acceptor[T] {
 	if ac.isComplete() {
 		return ac
 	}
-	if acceptor := NewAcceptor(ac.tx, ac.ignore).Accept(acceptFn); acceptor.Has() {
+	if acceptor := NewAcceptor(ac.tx, ac.ignore).Fn(acceptFn); acceptor.has() {
 		ac.Error = acceptor.tx.Rollback()
 	}
 	return ac
 }
 
-func (ac *Acceptor[T]) AcceptContext(ctxFn func(*Context[T])) *Acceptor[T] {
+func (ac *Acceptor[T]) If(ctxFn func(*Context[T])) *Acceptor[T] {
 	if ac.isComplete() {
 		return ac
 	}
@@ -352,7 +348,7 @@ func (ac *Acceptor[T]) AcceptContext(ctxFn func(*Context[T])) *Acceptor[T] {
 	return ac
 }
 
-func (ac *Acceptor[T]) OptionallyAcceptContext(ctxFn func(*Context[T])) *Acceptor[T] {
+func (ac *Acceptor[T]) Optionally(ctxFn func(*Context[T])) *Acceptor[T] {
 	if ac.isComplete() {
 		return ac
 	}

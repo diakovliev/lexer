@@ -6,8 +6,6 @@ type MessageType int
 const (
 	// Error represents an error
 	Error MessageType = iota
-	// Drop represents a dropped lexeme
-	Drop
 	// EOF represents an end of file
 	EOF
 	// NL represents a new line
