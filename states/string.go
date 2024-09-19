@@ -22,13 +22,15 @@ func newString[T any](input string, logger common.Logger) *String {
 }
 
 // Update implements State interface.
-func (s *String) Update(tx common.ReadUnreadData) (err error) {
-	data := make([]byte, len(s.input))
-	n, err := io.Copy(bytes.NewBuffer(data), tx)
+func (s String) Update(tx common.ReadUnreadData) (err error) {
+	size := len(s.input)
+	buffer := bytes.NewBuffer(nil)
+	buffer.Grow(size)
+	n, err := io.CopyN(buffer, tx, int64(size))
 	if err != nil && !errors.Is(err, io.EOF) {
 		return
 	}
-	if int(n) != len(s.input) || !bytes.Equal(data, []byte(s.input)) {
+	if int(n) != len(s.input) || buffer.String() != s.input {
 		err = ErrRollback
 		return
 	}

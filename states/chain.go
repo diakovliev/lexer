@@ -78,7 +78,7 @@ func (c *Chain[T]) commitMessages() (err error) {
 // Update implements State interface
 func (c *Chain[T]) Update(tx common.ReadUnreadData) (err error) {
 	c.logger.Trace("=>> enter Update()")
-	defer c.logger.Trace("<<= leave Update() = err=%s", err)
+	defer func() { c.logger.Trace("<<= leave Update() = err=%s", err) }()
 	currentNode := c
 	for currentNode != nil {
 		c.logger.Trace("%s.Update()", currentNode.name)

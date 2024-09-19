@@ -133,8 +133,6 @@ func (t *Transaction) Rollback() (err error) {
 
 // Read reads data from the transaction reader into a byte slice.
 func (t *Transaction) Read(out []byte) (n int, err error) {
-	t.logger.Trace("=>> enter %p.Read(%v)", t, out)
-	defer func() { t.logger.Trace("=>> leave %p.Read(%v) = n=%d, err=%s", t, out, n, err) }()
 	if t.pos == -1 {
 		err = ErrTransactionAlreadyCompleted
 		t.logger.Error("%p: transaction already complete", t)
@@ -147,11 +145,9 @@ func (t *Transaction) Read(out []byte) (n int, err error) {
 	}
 	if errors.Is(err, io.EOF) {
 		t.eof = true
-		t.logger.Trace("eof=true")
 	}
 	t.lastN = n
 	t.pos += int64(t.lastN)
-	t.logger.Trace("%p: lastN=%d, pos=%d", t, t.lastN, t.pos)
 	return
 }
 
