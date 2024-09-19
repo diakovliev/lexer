@@ -25,6 +25,7 @@ const (
 	msgBra
 	msgKet
 	msgComma
+	msgTerm
 )
 
 func buildScopeState(b states.Builder[testMessageType]) []states.State[testMessageType] {
@@ -34,6 +35,8 @@ func buildScopeState(b states.Builder[testMessageType]) []states.State[testMessa
 		b.Rune(',').Emit(common.User, msgComma),
 		b.Rune(')').Emit(common.User, msgKet).Break(),
 		b.While(unicode.IsDigit).Emit(common.User, msgNumber),
+		b.String("foo").Emit(common.User, msgTerm),
+		b.String("bar").Emit(common.User, msgTerm),
 		b.Rest().Error(errUnhandledData),
 	)
 }
@@ -43,6 +46,8 @@ func buildInitialState(b states.Builder[testMessageType]) []states.State[testMes
 		b.While(unicode.IsSpace).Omit(),
 		b.Rune('(').Emit(common.User, msgBra).StateProvider(b, buildScopeState),
 		b.While(unicode.IsDigit).Emit(common.User, msgNumber),
+		b.String("foo").Emit(common.User, msgTerm),
+		b.String("bar").Emit(common.User, msgTerm),
 		b.Rest().Error(errUnhandledData),
 	)
 }
@@ -166,7 +171,7 @@ func TestLexer(t *testing.T) {
 		},
 		{
 			name:   "inner substates",
-			input:  "123 (123, 333, (1, 3, 4), 345) 555",
+			input:  "123 (123, 333, (1, 3, 4), 345) 555 foo bar",
 			states: buildInitialState,
 			wantMessages: []common.Message[testMessageType]{
 				{Type: common.User, UserType: msgNumber, Value: []byte("123"), Pos: 0, Width: 3},
@@ -186,6 +191,8 @@ func TestLexer(t *testing.T) {
 				{Type: common.User, UserType: msgNumber, Value: []byte("345"), Pos: 26, Width: 3},
 				{Type: common.User, UserType: msgKet, Value: []byte(")"), Pos: 29, Width: 1},
 				{Type: common.User, UserType: msgNumber, Value: []byte("555"), Pos: 31, Width: 3},
+				{Type: common.User, UserType: msgTerm, Value: []byte("foo"), Pos: 35, Width: 3},
+				{Type: common.User, UserType: msgTerm, Value: []byte("bar"), Pos: 39, Width: 3},
 			},
 			wantError: io.EOF,
 		},
