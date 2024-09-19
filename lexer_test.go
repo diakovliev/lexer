@@ -1,163 +1,209 @@
-package lexer
+package lexer_test
 
 import (
+	"bytes"
+	"context"
 	"errors"
-	"regexp"
+	"io"
+	"os"
 	"testing"
 	"unicode"
-	"unicode/utf8"
 
+	"github.com/diakovliev/lexer"
+	"github.com/diakovliev/lexer/common"
+	"github.com/diakovliev/lexer/logger"
+	"github.com/diakovliev/lexer/states"
 	"github.com/stretchr/testify/assert"
 )
 
-type (
-	testMessageType int
-	testStateError  struct{}
-	testStateEOF    struct{}
-	runer           struct {
-		s []byte
-	}
-)
+type testMessageType int
+
+var errUnhandledData = errors.New("unhandled data")
 
 const (
-	NonUser testMessageType = iota
-	Identifier
+	msgNumber testMessageType = iota
+	msgBra
+	msgKet
+	msgComma
 )
 
-func (r runer) Get(i int) (ret rune) {
-	idx := 0
-	width := 0
-	for {
-		dRet, w := utf8.DecodeRune(r.s[width:])
-		if dRet == utf8.RuneError {
-			panic("rune error")
-		}
-		ret = dRet
-		width += w
-		idx++
-		if idx > i {
-			break
-		}
+func buildScopeState(b states.Builder[testMessageType]) []states.State[testMessageType] {
+	return lexer.AsSlice[states.State[testMessageType]](
+		b.While(unicode.IsSpace).Omit(),
+		b.Rune('(').Emit(common.User, msgBra).StateProvider(b, buildScopeState),
+		b.Rune(',').Emit(common.User, msgComma),
+		b.Rune(')').Emit(common.User, msgKet).Break(),
+		b.While(unicode.IsDigit).Emit(common.User, msgNumber),
+		b.Rest().Error(errUnhandledData),
+	)
+}
+
+func buildInitialState(b states.Builder[testMessageType]) []states.State[testMessageType] {
+	return lexer.AsSlice[states.State[testMessageType]](
+		b.While(unicode.IsSpace).Omit(),
+		b.Rune('(').Emit(common.User, msgBra).StateProvider(b, buildScopeState),
+		b.While(unicode.IsDigit).Emit(common.User, msgNumber),
+		b.Rest().Error(errUnhandledData),
+	)
+}
+
+func TestLexer(t *testing.T) {
+	logger := logger.New(
+		logger.WithLevel(logger.Trace),
+		logger.WithWriter(os.Stdout),
+	)
+
+	type testCase struct {
+		name         string
+		input        string
+		states       lexer.StatesProvider[testMessageType]
+		wantMessages []common.Message[testMessageType]
+		wantError    error
 	}
-	return
-}
 
-func (tse *testStateError) State(lex *Lexer[testMessageType]) StateFn[testMessageType] {
-	return lex.Break("test error")
-}
-
-func (tseof *testStateEOF) State(lex *Lexer[testMessageType]) StateFn[testMessageType] {
-	for !lex.IsEOF() {
-		switch {
-		case lex.Skip(unicode.IsSpace):
-			continue
-		case lex.AcceptString("hello") || lex.AcceptString("world"):
-			_ = lex.Emit(Identifier)
-			continue
-		}
+	tests := []testCase{
+		{
+			name:  "simple accept-fn",
+			input: "123",
+			states: func(b states.Builder[testMessageType]) []states.State[testMessageType] {
+				return lexer.AsSlice[states.State[testMessageType]](
+					b.Fn(unicode.IsDigit).Fn(unicode.IsDigit).Fn(unicode.IsDigit).Emit(common.User, msgNumber),
+					b.Rest().Error(errUnhandledData),
+				)
+			},
+			wantMessages: []common.Message[testMessageType]{
+				{Type: common.User, UserType: msgNumber, Value: []byte("123"), Pos: 0, Width: 3},
+			},
+			wantError: io.EOF,
+		},
+		{
+			name:  "simple accept-fn 1",
+			input: "123 345",
+			states: func(b states.Builder[testMessageType]) []states.State[testMessageType] {
+				return lexer.AsSlice[states.State[testMessageType]](
+					b.While(unicode.IsDigit).Emit(common.User, msgNumber).
+						While(unicode.IsSpace).Omit().
+						While(unicode.IsDigit).Emit(common.User, msgNumber),
+					b.Rest().Error(errUnhandledData),
+				)
+			},
+			wantMessages: []common.Message[testMessageType]{
+				{Type: common.User, UserType: msgNumber, Value: []byte("123"), Pos: 0, Width: 3},
+				{Type: common.User, UserType: msgNumber, Value: []byte("345"), Pos: 4, Width: 3},
+			},
+			wantError: io.EOF,
+		},
+		{
+			name:  "simple accept-fn with spaces",
+			input: "  123  ",
+			states: func(b states.Builder[testMessageType]) []states.State[testMessageType] {
+				return lexer.AsSlice[states.State[testMessageType]](
+					b.While(unicode.IsSpace).Omit(),
+					b.While(unicode.IsDigit).Emit(common.User, msgNumber),
+					b.Rest().Error(errUnhandledData),
+				)
+			},
+			wantMessages: []common.Message[testMessageType]{
+				{Type: common.User, UserType: msgNumber, Value: []byte("123"), Pos: 2, Width: 3},
+			},
+			wantError: io.EOF,
+		},
+		{
+			name:  "simple accept-fn with spaces",
+			input: "  1  ",
+			states: func(b states.Builder[testMessageType]) []states.State[testMessageType] {
+				return lexer.AsSlice[states.State[testMessageType]](
+					b.While(unicode.IsSpace).Omit(),
+					b.While(unicode.IsDigit).Emit(common.User, msgNumber),
+					b.Rest().Error(errUnhandledData),
+				)
+			},
+			wantMessages: []common.Message[testMessageType]{
+				{Type: common.User, UserType: msgNumber, Value: []byte("1"), Pos: 2, Width: 1},
+			},
+			wantError: io.EOF,
+		},
+		{
+			name:  "unhandled data",
+			input: "123",
+			states: func(b states.Builder[testMessageType]) []states.State[testMessageType] {
+				return lexer.AsSlice[states.State[testMessageType]](
+					b.Rest().Error(errUnhandledData),
+				)
+			},
+			wantMessages: []common.Message[testMessageType]{
+				{Type: common.Error, Value: &states.ErrorValue{Err: errUnhandledData, Value: []byte("123")}, Pos: 0, Width: 3},
+			},
+			wantError: io.EOF,
+		},
+		{
+			name:   "substate",
+			input:  "123 (123, 333) 555",
+			states: buildInitialState,
+			wantMessages: []common.Message[testMessageType]{
+				{Type: common.User, UserType: msgNumber, Value: []byte("123"), Pos: 0, Width: 3},
+				{Type: common.User, UserType: msgBra, Value: []byte("("), Pos: 4, Width: 1},
+				{Type: common.User, UserType: msgNumber, Value: []byte("123"), Pos: 5, Width: 3},
+				{Type: common.User, UserType: msgComma, Value: []byte(","), Pos: 8, Width: 1},
+				{Type: common.User, UserType: msgNumber, Value: []byte("333"), Pos: 10, Width: 3},
+				{Type: common.User, UserType: msgKet, Value: []byte(")"), Pos: 13, Width: 1},
+				{Type: common.User, UserType: msgNumber, Value: []byte("555"), Pos: 15, Width: 3},
+			},
+			wantError: io.EOF,
+		},
+		{
+			name:   "substate incomplete",
+			input:  "123 (123, 333 ",
+			states: buildInitialState,
+			wantMessages: []common.Message[testMessageType]{
+				{Type: common.User, UserType: msgNumber, Value: []byte("123"), Pos: 0, Width: 3},
+				{Type: common.User, UserType: msgBra, Value: []byte("("), Pos: 4, Width: 1},
+				{Type: common.User, UserType: msgNumber, Value: []byte("123"), Pos: 5, Width: 3},
+				{Type: common.User, UserType: msgComma, Value: []byte(","), Pos: 8, Width: 1},
+				{Type: common.User, UserType: msgNumber, Value: []byte("333"), Pos: 10, Width: 3},
+			},
+			wantError: states.ErrIncompleteSubState,
+		},
+		{
+			name:   "inner substates",
+			input:  "123 (123, 333, (1, 3, 4), 345) 555",
+			states: buildInitialState,
+			wantMessages: []common.Message[testMessageType]{
+				{Type: common.User, UserType: msgNumber, Value: []byte("123"), Pos: 0, Width: 3},
+				{Type: common.User, UserType: msgBra, Value: []byte("("), Pos: 4, Width: 1},
+				{Type: common.User, UserType: msgNumber, Value: []byte("123"), Pos: 5, Width: 3},
+				{Type: common.User, UserType: msgComma, Value: []byte(","), Pos: 8, Width: 1},
+				{Type: common.User, UserType: msgNumber, Value: []byte("333"), Pos: 10, Width: 3},
+				{Type: common.User, UserType: msgComma, Value: []byte(","), Pos: 13, Width: 1},
+				{Type: common.User, UserType: msgBra, Value: []byte("("), Pos: 15, Width: 1},
+				{Type: common.User, UserType: msgNumber, Value: []byte("1"), Pos: 16, Width: 1},
+				{Type: common.User, UserType: msgComma, Value: []byte(","), Pos: 17, Width: 1},
+				{Type: common.User, UserType: msgNumber, Value: []byte("3"), Pos: 19, Width: 1},
+				{Type: common.User, UserType: msgComma, Value: []byte(","), Pos: 20, Width: 1},
+				{Type: common.User, UserType: msgNumber, Value: []byte("4"), Pos: 22, Width: 1},
+				{Type: common.User, UserType: msgKet, Value: []byte(")"), Pos: 23, Width: 1},
+				{Type: common.User, UserType: msgComma, Value: []byte(","), Pos: 24, Width: 1},
+				{Type: common.User, UserType: msgNumber, Value: []byte("345"), Pos: 26, Width: 3},
+				{Type: common.User, UserType: msgKet, Value: []byte(")"), Pos: 29, Width: 1},
+				{Type: common.User, UserType: msgNumber, Value: []byte("555"), Pos: 31, Width: 3},
+			},
+			wantError: io.EOF,
+		},
 	}
-	_ = lex.EOF()
-	return nil
-}
 
-func TestError(t *testing.T) {
-	lex := New([]byte("hello world"), &testStateError{})
-	assert.NotNil(t, lex)
-	assert.False(t, lex.IsEOF())
-	lex.Do()
-	assert.Error(t, lex.Error)
-	assert.True(t, errors.Is(lex.Error, ErrLexerError))
-	assert.Nil(t, lex.Last())
-}
-
-func TestEOF(t *testing.T) {
-	lex := New([]byte("hello world"), &testStateEOF{})
-	assert.NotNil(t, lex)
-	assert.False(t, lex.IsEOF())
-	lex.Do()
-	assert.NoError(t, lex.Error)
-	assert.True(t, lex.IsEOF())
-	assert.Nil(t, lex.Last())
-}
-
-func TestNext(t *testing.T) {
-	input := []byte("hello world")
-	runer := &runer{s: input}
-	lex := New(input, &testStateEOF{})
-	assert.NotNil(t, lex)
-	assert.False(t, lex.IsEOF())
-	for i := 0; i < len(input); i++ {
-		expectedRune := runer.Get(i)
-		r, undo, err := lex.Next()
-		assert.NoError(t, err)
-		assert.Equal(t, expectedRune, r)
-		undo()
-		r, _, err = lex.Next()
-		assert.NoError(t, err)
-		assert.Equal(t, expectedRune, r)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			l := lexer.New[testMessageType](
+				logger,
+				bytes.NewBufferString(tc.input),
+			).With(tc.states)
+			err := l.Run(context.Background())
+			if tc.wantError != nil {
+				assert.ErrorIs(t, err, tc.wantError)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tc.wantMessages, l.Messages())
+		})
 	}
-	assert.True(t, lex.IsEOF())
-	_, _, err := lex.Next()
-	assert.Error(t, err)
-	assert.True(t, errors.Is(err, errEOF))
-	assert.True(t, lex.IsEOF())
-}
-
-func TestNextInvalidRune(t *testing.T) {
-	input := []byte("\xf0\x28\x8c\x28")
-	lex := New(input, &testStateEOF{})
-	assert.NotNil(t, lex)
-	assert.False(t, lex.IsEOF())
-	_, _, err := lex.Next()
-	assert.Error(t, err)
-	assert.True(t, errors.Is(err, ErrLexerError))
-	assert.True(t, lex.IsEOF())
-}
-
-func TestRegexp(t *testing.T) {
-
-	input := []byte("hello world")
-
-	lex := New(input, &testStateEOF{})
-	assert.NotNil(t, lex)
-	assert.False(t, lex.IsEOF())
-
-	assert.False(t, lex.PeekRegexp(regexp.MustCompile(`garbage0`)))
-	assert.False(t, lex.AcceptRegexp(regexp.MustCompile(`garbage1`)))
-	assert.False(t, lex.SkipRegexp(regexp.MustCompile(`garbage2`)))
-
-	assert.True(t, lex.PeekRegexp(regexp.MustCompile(`hello`)))
-	assert.True(t, lex.AcceptRegexp(regexp.MustCompile(`hello`)))
-	assert.Equal(t, "hello", lex.String())
-	assert.NoError(t, lex.Emit(Identifier))
-
-	assert.True(t, lex.PeekRegexp(regexp.MustCompile(`\s`)))
-	assert.True(t, lex.SkipRegexp(regexp.MustCompile(`\s`)))
-
-	assert.True(t, lex.PeekRegexp(regexp.MustCompile(`world`)))
-	assert.True(t, lex.AcceptRegexp(regexp.MustCompile(`world`)))
-	assert.Equal(t, "world", lex.String())
-	assert.NoError(t, lex.Emit(Identifier))
-}
-
-func TestSkip(t *testing.T) {
-
-	input := []byte("   hello \tworld")
-
-	lex := New(input, &testStateEOF{})
-	assert.NotNil(t, lex)
-	assert.False(t, lex.IsEOF())
-
-	assert.True(t, lex.SkipWhile(unicode.IsSpace))
-	assert.True(t, lex.AcceptString("hello"))
-	assert.Equal(t, "hello", lex.String())
-	assert.NoError(t, lex.Emit(Identifier))
-	assert.False(t, lex.AcceptString("world"))
-	assert.True(t, lex.SkipAnyFrom(" \t\n\r"))
-	assert.True(t, lex.Skip(Rune('\t')))
-	assert.True(t, lex.AcceptString("world"))
-	assert.Equal(t, "world", lex.String())
-	assert.NoError(t, lex.Emit(Identifier))
-
-	assert.True(t, lex.IsEOF())
 }
