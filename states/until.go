@@ -46,7 +46,7 @@ func (u Until[T]) Update(tx common.ReadUnreadData) (err error) {
 	} else {
 		err = errChainNext
 	}
-	return err
+	return
 }
 
 // Until creates a state that reads until the given function returns true.

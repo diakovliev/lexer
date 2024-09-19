@@ -14,7 +14,6 @@ func newBreak[T any](logger common.Logger) *Break[T] {
 
 func (b Break[T]) Update(_ common.ReadUnreadData) (err error) {
 	err = errBreak
-	// b.logger.Fatal("BREAK")
 	return
 }
 
