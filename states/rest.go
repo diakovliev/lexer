@@ -1,14 +1,24 @@
 package states
 
 import (
-	"errors"
 	"io"
 
 	"github.com/diakovliev/lexer/common"
 )
 
-type Rest[T any] struct {
-	logger common.Logger
+type (
+	Rest[T any] struct {
+		logger common.Logger
+	}
+	restDiscard struct{}
+)
+
+var (
+	restBufferSize = 10
+)
+
+func (restDiscard) Write(p []byte) (int, error) {
+	return len(p), nil
 }
 
 func newRest[T any](logger common.Logger) *Rest[T] {
@@ -18,13 +28,9 @@ func newRest[T any](logger common.Logger) *Rest[T] {
 }
 
 func (r *Rest[T]) Update(tx common.ReadUnreadData) (err error) {
-	data := make([]byte, 25)
-	for {
-		_, err = tx.Read(data)
-		if errors.Is(err, io.EOF) {
-			break
-		}
-	}
+	// just advance the reader and do nothing else
+	//_, _ = io.CopyBuffer(io.Discard, tx, make([]byte, restBufferSize))
+	_, _ = io.CopyBuffer(restDiscard{}, tx, make([]byte, restBufferSize))
 	err = errChainNext
 	return
 }

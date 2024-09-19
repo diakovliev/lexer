@@ -52,11 +52,10 @@ func (t *Transaction) Begin() (ret *Transaction) {
 	return
 }
 
-// // Parent returns the parent transaction of the current transaction.
-// // If the transaction is the root transaction, the function returns nil.
-// func (t *Transaction) Parent() *Transaction {
-// 	return t.parent
-// }
+func (t *Transaction) update(pos int64, eof bool) {
+	t.pos = pos
+	t.eof = eof
+}
 
 // Commit commits the transaction and returns the number of bytes read during the transaction.
 // Commit will fail if any of the child transactions are not committed or rolled back.
@@ -80,20 +79,17 @@ func (t *Transaction) Commit() (n int, err error) {
 		// update parent transaction position
 		n = int(t.pos - t.parent.pos)
 		t.logger.Trace("%p: update parent transaction %p pos=%d->%d, eof=%v->%v", t, t.parent, t.parent.pos, t.pos, t.parent.eof, t.eof)
-		t.parent.pos = t.pos
-		t.parent.eof = t.eof
+		t.parent.update(t.pos, t.eof)
 	} else {
 		// update reader position directly if no parent transaction exists
 		n = int(t.pos - t.reader.pos)
 		t.logger.Trace("%p: update reader %p pos=%d->%d, eof=%v->%v", t, t.reader, t.reader.pos, t.pos, t.reader.eof, t.eof)
-		t.reader.pos = t.pos
-		t.reader.eof = t.eof
+		t.reader.update(t.pos, t.eof)
 		if err = t.reader.truncate(t.pos); err != nil {
 			t.logger.Fatal("%p: failed to truncate reader %p at pos=%d, err=%s", t, t.reader, t.pos, err)
 			return
 		}
-		// reset active transaction pointer in reader
-		t.reader.activeTx = nil
+		t.reader.resetTx()
 	}
 	// mark transaction as completed to prevent further use
 	t.logger.Trace("%p: mark transaction as complete", t)
@@ -124,8 +120,7 @@ func (t *Transaction) Rollback() (err error) {
 		}
 	}
 	if t.parent == nil {
-		// reset active transaction pointer in reader
-		t.reader.activeTx = nil
+		t.reader.resetTx()
 	}
 	// mark transaction as completed to prevent further use
 	t.logger.Trace("%p: mark transaction as complete", t)
@@ -179,16 +174,6 @@ func (t *Transaction) Unread() (n int, err error) {
 	t.lastN = 0
 	return
 }
-
-// // Pos returns the current position of the transaction.
-// func (t Transaction) Pos() int64 {
-// 	return t.pos
-// }
-
-// // EOF returns true if the transaction reader has reached the end of file.
-// func (t Transaction) EOF() bool {
-// 	return t.eof
-// }
 
 // Data returns transaction data (reader data from lastDataPos to pos) and
 // returns data position.

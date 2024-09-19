@@ -46,7 +46,7 @@ func (w While[T]) Update(tx common.ReadUnreadData) (err error) {
 	} else {
 		err = errChainNext
 	}
-	return err
+	return
 }
 
 // While creates a state that reads runes while fn returns true.

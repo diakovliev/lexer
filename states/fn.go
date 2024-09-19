@@ -49,3 +49,10 @@ func (b Builder[T]) Rune(ir rune) (head *Chain[T]) {
 	head = b.createNode(defaultName, func() any { return newFn[T](b.logger, func(r rune) bool { return r == ir }) })
 	return
 }
+
+// AnyRune is a state that matches any rune.
+func (b Builder[T]) AnyRune() (head *Chain[T]) {
+	defaultName := "AnyRune"
+	head = b.createNode(defaultName, func() any { return newFn[T](b.logger, func(r rune) bool { return true }) })
+	return
+}
