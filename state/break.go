@@ -1,4 +1,4 @@
-package states
+package state
 
 import (
 	"github.com/diakovliev/lexer/common"
@@ -16,7 +16,7 @@ func newBreak[T any](logger common.Logger) *Break[T] {
 }
 
 func (b Break[T]) Update(_ xio.State) (err error) {
-	err = errBreak
+	err = ErrBreak
 	return
 }
 

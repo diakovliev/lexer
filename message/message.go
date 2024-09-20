@@ -1,4 +1,4 @@
-package common
+package message
 
 // MessageType represents the type of a lexeme. The types are: Error, Drop, EOF, NL, User.
 type MessageType int

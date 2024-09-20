@@ -1,4 +1,4 @@
-package states
+package state
 
 import (
 	"bytes"
@@ -35,7 +35,7 @@ func (s String) Update(tx xio.State) (err error) {
 		err = ErrRollback
 		return
 	}
-	err = errNext
+	err = ErrNext
 	return
 }
 

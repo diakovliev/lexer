@@ -1,16 +1,19 @@
-package states
+package state
 
-import "github.com/diakovliev/lexer/common"
+import (
+	"github.com/diakovliev/lexer/common"
+	"github.com/diakovliev/lexer/message"
+)
 
 // Builder is a builder for the chains of states.
 type Builder[T any] struct {
 	logger   common.Logger
 	next     *Chain[T]
-	receiver common.Receiver[T]
+	receiver message.Receiver[T]
 }
 
 // Make creates a new builder for the chains of states.
-func Make[T any](logger common.Logger, receiver common.Receiver[T]) Builder[T] {
+func Make[T any](logger common.Logger, receiver message.Receiver[T]) Builder[T] {
 	return Builder[T]{
 		logger:   logger,
 		receiver: receiver,

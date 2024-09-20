@@ -1,20 +1,21 @@
-package states
+package state
 
 import (
 	"github.com/diakovliev/lexer/common"
+	"github.com/diakovliev/lexer/message"
 	"github.com/diakovliev/lexer/xio"
 )
 
 type Emit[T any] struct {
 	logger      common.Logger
-	messageType common.MessageType
+	messageType message.MessageType
 	userType    T
-	receiver    common.Receiver[T]
+	receiver    message.Receiver[T]
 }
 
 func newEmit[T any](
 	logger common.Logger,
-	messageType common.MessageType,
+	messageType message.MessageType,
 	userType T,
 ) *Emit[T] {
 	return &Emit[T]{
@@ -24,7 +25,7 @@ func newEmit[T any](
 	}
 }
 
-func (e *Emit[T]) SetReceiver(receiver common.Receiver[T]) {
+func (e *Emit[T]) SetReceiver(receiver message.Receiver[T]) {
 	e.receiver = receiver
 }
 
@@ -42,7 +43,7 @@ func (e Emit[T]) Update(tx xio.State) (err error) {
 		e.logger.Fatal("nothing to emit")
 		return
 	}
-	err = e.receiver(common.Message[T]{
+	err = e.receiver(message.Message[T]{
 		Type:     e.messageType,
 		UserType: e.userType,
 		Value:    data,
@@ -57,7 +58,7 @@ func (e Emit[T]) Update(tx xio.State) (err error) {
 	return
 }
 
-func (b Builder[T]) Emit(messageType common.MessageType, userType T) (head *Chain[T]) {
+func (b Builder[T]) Emit(messageType message.MessageType, userType T) (head *Chain[T]) {
 	defaultName := "Emit"
 	newNode := newEmit(b.logger, messageType, userType)
 	head = b.createNode(defaultName, func() any { return newNode })

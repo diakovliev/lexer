@@ -1,4 +1,4 @@
-package states
+package state
 
 import (
 	"errors"
@@ -45,7 +45,7 @@ func (u Until[T]) Update(tx xio.State) (err error) {
 		// if no runes were read, then rollback the state.
 		err = ErrRollback
 	} else {
-		err = errNext
+		err = ErrNext
 	}
 	return
 }

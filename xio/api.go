@@ -76,20 +76,13 @@ type (
 		Has
 		Begin
 	}
-
-	// Transaction is the interface that groups the methods for transaction manipulation.
-	Transaction interface {
-		Begin
-		Commit
-		Rollback
-	}
 )
 
-// AsTransaction converts the given State to a Transaction if it possible.
-// If the given State is not a Transaction it panics.
-func AsTransaction(state State) (tx Transaction) {
+// AsSource converts the given State to a Source if it possible.
+// If the given State is not a Source it panics.
+func AsSource(state State) (source Source) {
 	var i any = state
-	tx, ok := i.(Transaction)
+	source, ok := i.(Source)
 	if !ok {
 		panic("not a Transaction")
 	}
