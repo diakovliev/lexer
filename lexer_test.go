@@ -200,9 +200,11 @@ func TestLexer(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			l := lexer.New[testMessageType](
+			receiver := message.Slice[testMessageType]()
+			l := lexer.New(
 				logger,
 				bytes.NewBufferString(tc.input),
+				receiver,
 			).With(tc.state)
 			err := l.Run(context.Background())
 			if tc.wantError != nil {
@@ -210,7 +212,7 @@ func TestLexer(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
-			assert.Equal(t, tc.wantMessages, l.Messages())
+			assert.Equal(t, tc.wantMessages, receiver.Slice)
 		})
 	}
 }

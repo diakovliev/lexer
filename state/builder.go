@@ -7,16 +7,16 @@ import (
 
 // Builder is a builder for the chains of states.
 type Builder[T any] struct {
+	Receiver message.Receiver[T]
 	logger   common.Logger
 	next     *Chain[T]
-	receiver message.Receiver[T]
 }
 
 // Make creates a new builder for the chains of states.
 func Make[T any](logger common.Logger, receiver message.Receiver[T]) Builder[T] {
 	return Builder[T]{
 		logger:   logger,
-		receiver: receiver,
+		Receiver: receiver,
 	}
 }
 

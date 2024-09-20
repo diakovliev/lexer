@@ -25,7 +25,7 @@ func TestNode(t *testing.T) {
 		logger.WithWriter(os.Stdout),
 	)
 
-	factory := Make(logger, message.Dispose[testMessageType])
+	factory := Make(logger, message.Dispose[testMessageType]())
 
 	chain1 := factory.Fn(unicode.IsDigit).Fn(unicode.IsDigit).Fn(unicode.IsDigit).Emit(message.User, messageType1)
 	assert.NotNil(t, chain1)

@@ -17,29 +17,19 @@ type (
 		source   xio.Source
 		builder  state.Builder[T]
 		provider state.Provider[T]
-		messages []message.Message[T]
+		receiver message.Receiver[T]
 	}
 )
 
 // New creates a new lexer instance with the given reader and logger.
-func New[T any](logger common.Logger, reader io.Reader) (ret *Lexer[T]) {
+func New[T any](logger common.Logger, reader io.Reader, receiver message.Receiver[T]) (ret *Lexer[T]) {
 	ret = &Lexer[T]{
-		logger: logger,
-		source: xio.New(logger, reader),
+		logger:   logger,
+		source:   xio.New(logger, reader),
+		receiver: receiver,
 	}
 	ret.builder = state.Make(ret.logger, ret.receiver)
 	return ret
-}
-
-// receiver is a function that receives messages from the lexer.
-func (l *Lexer[T]) receiver(m message.Message[T]) (err error) {
-	l.messages = append(l.messages, m)
-	return nil
-}
-
-// Messages returns all messages produced by the lexer.
-func (l Lexer[T]) Messages() []message.Message[T] {
-	return l.messages
 }
 
 // With adds a new states produced by given provider to the lexer.
