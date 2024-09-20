@@ -45,7 +45,6 @@ func (t *Tx) Begin() (ret *Tx) {
 		offset: t.offset,
 	}
 	t.tx = ret
-	t.logger.Trace("%p: begin child transaction %p, pos: %d", t, ret, ret.offset)
 	return
 }
 

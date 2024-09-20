@@ -59,54 +59,33 @@ func (c *Chain[T]) Append(node *Chain[T]) *Chain[T] {
 	return c
 }
 
-// commitMessages sends all messages in the chain head messages slice to the Builder receiver.
-func (c *Chain[T]) commitMessages() (err error) {
-	if err = c.head.Receiver.EmitTo(c.head.Builder.Receiver); err != nil {
-		c.logger.Fatal("emit to error: %s", err)
-	}
-	return
-}
-
 // Update implements State interface
 func (c *Chain[T]) Update(tx xio.State) (err error) {
-	c.logger.Trace("=>> enter Update()")
-	defer func() { c.logger.Trace("<<= leave Update() = err=%s", err) }()
-	currentNode := c
-	for currentNode != nil {
-		c.logger.Trace("%s.Update()", currentNode.name)
-		if err = currentNode.state.Update(tx); err == nil {
-			c.logger.Fatal("%s.Update() = nil", currentNode.name)
+	current := c
+	for current != nil {
+		if err = current.state.Update(tx); err == nil {
+			c.logger.Fatal("%s.Update() = nil", current.name)
 		}
-		c.logger.Trace("%s.Update() = err=%s", currentNode.name, err)
+		next := current.Next()
 		switch {
-		case errors.Is(err, ErrNext) || (errors.Is(err, ErrCommit) && currentNode.Next() != nil):
-			if errors.Is(err, ErrCommit) {
-				c.logger.Trace("commit messages")
-				if commitMessagesErr := c.commitMessages(); commitMessagesErr != nil {
-					c.logger.Error("commit messages error: %s", commitMessagesErr)
-					err = commitMessagesErr
-					return
-				}
-			}
-			c.logger.Trace("continue chain")
-			currentNode = currentNode.Next()
+		case errors.Is(err, ErrNext):
+			// nothing to do, just move on to the next state
 		case errors.Is(err, ErrCommit):
-			c.logger.Trace("commit messages")
-			if commitMessagesErr := c.commitMessages(); commitMessagesErr != nil {
-				c.logger.Error("commit messages error: %s", commitMessagesErr)
-				err = commitMessagesErr
+			if emitToErr := c.head.Receiver.EmitTo(c.head.Builder.Receiver); emitToErr != nil {
+				c.logger.Fatal("emit to error: %s", emitToErr)
 			}
-			return
+			if next == nil {
+				return
+			}
 		case errors.Is(err, ErrRollback):
-			c.logger.Trace("rollback")
 			return
 		case errors.Is(err, ErrBreak):
-			c.logger.Trace("break")
 			return
 		default:
 			c.logger.Error("unexpected error: %v", err)
 			return
 		}
+		current = next
 	}
 	return
 }
