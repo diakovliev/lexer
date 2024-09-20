@@ -77,7 +77,7 @@ func (c *Chain[T]) commitMessages() (err error) {
 }
 
 // Update implements State interface
-func (c *Chain[T]) Update(tx xio.ReadUnreadData) (err error) {
+func (c *Chain[T]) Update(tx xio.State) (err error) {
 	c.logger.Trace("=>> enter Update()")
 	defer func() { c.logger.Trace("<<= leave Update() = err=%s", err) }()
 	currentNode := c

@@ -23,7 +23,7 @@ func newString[T any](input string, logger common.Logger) *String {
 }
 
 // Update implements State interface.
-func (s String) Update(tx xio.ReadUnreadData) (err error) {
+func (s String) Update(tx xio.State) (err error) {
 	size := len(s.input)
 	buffer := bytes.NewBuffer(nil)
 	buffer.Grow(size)

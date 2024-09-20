@@ -8,12 +8,6 @@ import (
 )
 
 type (
-	Tx interface {
-		xio.Begin
-		xio.Commit
-		xio.Rollback
-	}
-
 	StateProvider[T any] func(b Builder[T]) []State[T]
 
 	SubState[T any] struct {
@@ -65,7 +59,7 @@ func (ss *SubState[T]) reset() {
 }
 
 // update updates the current state of the lexer with the given transaction.
-func (ss *SubState[T]) update(tx xio.ReadUnreadData) (err error) {
+func (ss *SubState[T]) update(tx xio.State) (err error) {
 	state := ss.currentState()
 	if state == nil {
 		// no more states to process, we're done
@@ -76,25 +70,14 @@ func (ss *SubState[T]) update(tx xio.ReadUnreadData) (err error) {
 	return
 }
 
-// we don't want to expose common.Tx to the states implementations,
-// so we'll use this helper go get the tx from the ReadUnreadData interface here in Update.
-func (ss SubState[T]) asTx(rud xio.ReadUnreadData) (tx Tx) {
-	var i any = rud
-	tx, ok := i.(Tx)
-	if !ok {
-		ss.logger.Fatal("not a common.Tx")
-	}
-	return
-}
-
 // Update implements State interface. It updates the current state of the lexer with the given transaction.
-func (ss *SubState[T]) Update(parentTx xio.ReadUnreadData) (err error) {
+func (ss *SubState[T]) Update(parentTx xio.State) (err error) {
 	ss.logger.Trace("=>> enter SubState.Update()")
 	defer func() { ss.logger.Trace("<<= leave SubState.Update() = err=%s", err) }()
 
 loop:
 	for {
-		tx := ss.asTx(parentTx).Begin()
+		tx := xio.AsTransaction(parentTx).Begin()
 		if err = ss.update(tx); err == nil {
 			ss.logger.Fatal("unexpected nil")
 		}

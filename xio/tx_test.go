@@ -17,7 +17,7 @@ func TestTx(t *testing.T) {
 		logger.WithWriter(os.Stdout),
 	)
 
-	r := NewReadAt(logger, bytes.NewBufferString("this is test string"))
+	r := New(logger, bytes.NewBufferString("this is test string"))
 
 	// read first 4 bytes and rollback the transaction
 	out := make([]byte, 4)
@@ -57,7 +57,7 @@ func TestTx2(t *testing.T) {
 
 	out := make([]byte, 4)
 
-	r := NewReadAt(logger, bytes.NewBufferString(""))
+	r := New(logger, bytes.NewBufferString(""))
 
 	tx0 := r.Begin()
 

@@ -87,7 +87,7 @@ func newQuantified[T any](logger common.Logger, fn func(rune) bool, q Quantifier
 	}
 }
 
-func (qq Quantified[T]) Update(tx xio.ReadUnreadData) (err error) {
+func (qq Quantified[T]) Update(tx xio.State) (err error) {
 	if qq.q.isZero() {
 		err = errNext
 		return

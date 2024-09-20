@@ -9,9 +9,9 @@ import (
 )
 
 type (
-	// ReadAt is a buffered reader that allows to read from the buffer and rollback reads.
-	// Not thread-safe.
-	ReadAt struct {
+	// Xio is a buffered reader that allows to read from the buffer and rollback reads.
+	// It implements Source interface.
+	Xio struct {
 		logger common.Logger
 		reader io.Reader
 		buffer *buffer
@@ -21,10 +21,10 @@ type (
 	}
 )
 
-// NewReadAt creates a new transaction reader from the given io.Reader.
+// New creates new Xoi instance.
 // The returned reader is buffered and can be used to rollback reads.
-func NewReadAt(logger common.Logger, r io.Reader) *ReadAt {
-	return &ReadAt{
+func New(logger common.Logger, r io.Reader) *Xio {
+	return &Xio{
 		logger: logger,
 		reader: r,
 		buffer: newBuffer([]byte{}),
@@ -34,7 +34,7 @@ func NewReadAt(logger common.Logger, r io.Reader) *ReadAt {
 }
 
 // Begin starts a new transaction for reading from the buffered reader.
-func (r *ReadAt) Begin() (ret *Tx) {
+func (r *Xio) Begin() (ret *Tx) {
 	if r.tx != nil {
 		r.logger.Fatal("too many transactions, Reader supports only one active transaction")
 	}
@@ -44,16 +44,16 @@ func (r *ReadAt) Begin() (ret *Tx) {
 	return
 }
 
-func (r *ReadAt) resetTx() {
+func (r *Xio) resetTx() {
 	r.tx = nil
 }
 
-func (r ReadAt) len() (ret int) {
+func (r Xio) len() (ret int) {
 	ret = int(r.pos) + r.buffer.Len()
 	return
 }
 
-func (r ReadAt) copyTo(pos int64, out []byte) (n int, err error) {
+func (r Xio) copyTo(pos int64, out []byte) (n int, err error) {
 	start := int(pos)
 	end := r.len()
 	if int(pos)+len(out) < end {
@@ -70,13 +70,13 @@ func (r ReadAt) copyTo(pos int64, out []byte) (n int, err error) {
 }
 
 // Has returns true if the reader has more data to read.
-func (r ReadAt) Has() (ret bool) {
+func (r Xio) Has() (ret bool) {
 	n, _ := r.Fetch(1)
 	ret = n == 1
 	return
 }
 
-func (r ReadAt) Data(from, to int) (out []byte, err error) {
+func (r Xio) Data(from, to int) (out []byte, err error) {
 	start := from - int(r.pos)
 	// check bounds
 	if start < 0 || start > r.buffer.Len() {
@@ -95,12 +95,12 @@ func (r ReadAt) Data(from, to int) (out []byte, err error) {
 	return
 }
 
-func (r *ReadAt) Update(offset int64) {
+func (r *Xio) Update(offset int64) {
 	r.offset = offset
 }
 
 // Truncate truncates the buffer from left up to the given position.
-func (r *ReadAt) Truncate(pos int64) (err error) {
+func (r *Xio) Truncate(pos int64) (err error) {
 	if pos <= r.pos {
 		return
 	}
@@ -121,7 +121,7 @@ func (r *ReadAt) Truncate(pos int64) (err error) {
 	return
 }
 
-func (r ReadAt) Fetch(size int64) (n int64, err error) {
+func (r Xio) Fetch(size int64) (n int64, err error) {
 	if size <= 0 {
 		return
 	}
@@ -131,7 +131,7 @@ func (r ReadAt) Fetch(size int64) (n int64, err error) {
 }
 
 // ReadAt reads from the buffered reader from given position and returns the number of bytes read.
-func (r ReadAt) ReadAt(pos int64, out []byte) (n int, err error) {
+func (r Xio) ReadAt(pos int64, out []byte) (n int, err error) {
 	if pos < r.pos || pos < r.offset {
 		r.logger.Fatal("out of bounds")
 	}

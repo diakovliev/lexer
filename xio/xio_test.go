@@ -22,7 +22,7 @@ func TestReader(t *testing.T) {
 	startPos := 1
 	bufferSize := 3
 
-	r := NewReadAt(logger, bytes.NewBufferString(testString))
+	r := New(logger, bytes.NewBufferString(testString))
 
 	for pos := startPos; pos < len(testString); pos += 1 {
 		t.Run(
@@ -69,7 +69,7 @@ func TestReader_Truncate(t *testing.T) {
 	txCount := 4
 	bufferSize := 3
 
-	r := NewReadAt(logger, bytes.NewBufferString(testString))
+	r := New(logger, bytes.NewBufferString(testString))
 
 	for i := 0; i < txCount; i++ {
 		pos := i * bufferSize

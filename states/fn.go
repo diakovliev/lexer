@@ -20,7 +20,7 @@ func newFn[T any](logger common.Logger, fn func(rune) bool) *Fn[T] {
 	}
 }
 
-func (f Fn[T]) Update(tx xio.ReadUnreadData) (err error) {
+func (f Fn[T]) Update(tx xio.State) (err error) {
 	r, w, err := tx.NextRune()
 	if err != nil && !errors.Is(err, io.EOF) {
 		return
