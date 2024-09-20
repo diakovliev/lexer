@@ -1,6 +1,7 @@
 package state
 
 import (
+	"context"
 	"errors"
 
 	"github.com/diakovliev/lexer/common"
@@ -55,22 +56,22 @@ func (r *Run[T]) reset() {
 }
 
 // update updates the current state of the lexer with the given transaction.
-func (r *Run[T]) update(tx xio.State) (err error) {
+func (r *Run[T]) update(ctx context.Context, tx xio.State) (err error) {
 	state := r.currentState()
 	if state == nil {
 		// no more states to process, we're done
 		err = ErrNoMoreStates
 		return
 	}
-	err = state.Update(tx)
+	err = state.Update(ctx, tx)
 	return
 }
 
-func (r *Run[T]) Run(source xio.Source) (err error) {
+func (r *Run[T]) Run(ctx context.Context, source xio.Source) (err error) {
 loop:
-	for {
+	for ctx.Err() == nil {
 		tx := source.Begin()
-		if err = r.update(tx); err == nil {
+		if err = r.update(ctx, tx); err == nil {
 			r.logger.Fatal("unexpected nil")
 		}
 		switch {
@@ -90,7 +91,6 @@ loop:
 			}
 			if source.Has() {
 				err = ErrHasMoreData
-				r.logger.Error(ErrHasMoreData.Error())
 			} else {
 				err = r.incompleteStateErr
 			}

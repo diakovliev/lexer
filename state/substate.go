@@ -1,6 +1,8 @@
 package state
 
 import (
+	"context"
+
 	"github.com/diakovliev/lexer/common"
 	"github.com/diakovliev/lexer/xio"
 )
@@ -24,8 +26,8 @@ func newSubState[T any](logger common.Logger, builder Builder[T], provider Provi
 }
 
 // Update implements State interface. It updates the current state of the lexer with the given transaction.
-func (ss SubState[T]) Update(tx xio.State) (err error) {
-	err = NewRun(ss.logger, ss.builder, ss.provider, ErrIncompleteState).Run(xio.AsSource(tx))
+func (ss SubState[T]) Update(ctx context.Context, tx xio.State) (err error) {
+	err = NewRun(ss.logger, ss.builder, ss.provider, ErrIncompleteState).Run(ctx, xio.AsSource(tx))
 	return
 }
 

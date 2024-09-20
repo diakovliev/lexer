@@ -1,6 +1,8 @@
 package state
 
 import (
+	"context"
+
 	"github.com/diakovliev/lexer/common"
 	"github.com/diakovliev/lexer/message"
 	"github.com/diakovliev/lexer/xio"
@@ -30,7 +32,7 @@ func (e *Error[T]) setReceiver(receiver message.Receiver[T]) {
 	e.receiver = receiver
 }
 
-func (e Error[T]) Update(tx xio.State) (err error) {
+func (e Error[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	if e.receiver == nil {
 		e.logger.Fatal("receiver is not set")
 		return

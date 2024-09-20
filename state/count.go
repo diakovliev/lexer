@@ -1,6 +1,7 @@
 package state
 
 import (
+	"context"
 	"errors"
 	"io"
 	"math"
@@ -87,7 +88,7 @@ func newQuantified[T any](logger common.Logger, fn func(rune) bool, q Quantifier
 	}
 }
 
-func (qq Quantified[T]) Update(tx xio.State) (err error) {
+func (qq Quantified[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	if qq.q.isZero() {
 		err = ErrNext
 		return

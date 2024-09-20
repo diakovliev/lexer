@@ -1,6 +1,7 @@
 package state
 
 import (
+	"context"
 	"errors"
 	"io"
 
@@ -22,7 +23,7 @@ func newWhile[T any](logger common.Logger, fn func(rune) bool) *While[T] {
 }
 
 // Update implements State interface. It reads runes while fn returns true and updates the state.
-func (w While[T]) Update(tx xio.State) (err error) {
+func (w While[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	count := 0
 	for {
 		r, rw, nextErr := tx.NextRune()

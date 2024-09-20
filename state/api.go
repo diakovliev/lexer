@@ -1,7 +1,11 @@
 package state
 
-import "github.com/diakovliev/lexer/xio"
+import (
+	"context"
+
+	"github.com/diakovliev/lexer/xio"
+)
 
 type State[T any] interface {
-	Update(tx xio.State) (err error)
+	Update(ctx context.Context, tx xio.State) (err error)
 }

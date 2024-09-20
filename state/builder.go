@@ -26,7 +26,7 @@ func (b Builder[T]) createNode(name string, newState func() any) (head *Chain[T]
 	var state State[T]
 	var ok bool
 	if state, ok = created.(State[T]); !ok {
-		b.logger.Fatal("state must implement State[T] interface")
+		b.logger.Fatal("state must implement State[T] interface: name: %s", name)
 	}
 	node := newChain(b, name, state)
 	if node.Builder.next != nil {

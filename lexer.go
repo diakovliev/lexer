@@ -39,7 +39,7 @@ func (l *Lexer[T]) With(fn state.Provider[T]) *Lexer[T] {
 }
 
 // Run runs the lexer until it is done or an error occurs.
-func (l *Lexer[T]) Run(_ context.Context) (err error) {
-	err = state.NewRun(l.logger, l.builder, l.provider, io.EOF).Run(l.source)
+func (l *Lexer[T]) Run(ctx context.Context) (err error) {
+	err = state.NewRun(l.logger, l.builder, l.provider, io.EOF).Run(ctx, l.source)
 	return
 }
