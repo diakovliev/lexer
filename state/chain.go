@@ -81,6 +81,10 @@ func (c *Chain[T]) Update(ctx context.Context, tx xio.State) (err error) {
 		case errors.Is(err, ErrRollback):
 			return
 		case errors.Is(err, ErrBreak):
+			if next != nil {
+				// if there is a next node, it's an error
+				c.logger.Fatal("break must be last in state")
+			}
 			return
 		default:
 			return
