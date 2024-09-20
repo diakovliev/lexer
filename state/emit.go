@@ -25,7 +25,7 @@ func newEmit[T any](
 	}
 }
 
-func (e *Emit[T]) SetReceiver(receiver message.Receiver[T]) {
+func (e *Emit[T]) setReceiver(receiver message.Receiver[T]) {
 	e.receiver = receiver
 }
 
@@ -36,12 +36,11 @@ func (e Emit[T]) Update(tx xio.State) (err error) {
 	}
 	data, pos, err := tx.Data()
 	if err != nil {
-		e.logger.Error("tx.Data() = data=%v, err=%s", data, err)
-		return
+		e.logger.Fatal("data error: %s", err)
 	}
+	// FIXME: do we need this check?
 	if len(data) == 0 {
 		e.logger.Fatal("nothing to emit")
-		return
 	}
 	err = e.receiver.Receive(message.Message[T]{
 		Type:     e.messageType,
@@ -51,8 +50,7 @@ func (e Emit[T]) Update(tx xio.State) (err error) {
 		Width:    len(data),
 	})
 	if err != nil {
-		e.logger.Error("e.receiver() = err=%s", err)
-		return
+		e.logger.Fatal("receiver error: %s", err)
 	}
 	err = ErrCommit
 	return
@@ -62,7 +60,7 @@ func (b Builder[T]) Emit(messageType message.MessageType, userType T) (head *Cha
 	defaultName := "Emit"
 	newNode := newEmit(b.logger, messageType, userType)
 	head = b.createNode(defaultName, func() any { return newNode })
-	// sent all messages to the receiver of the first node
-	newNode.SetReceiver(head.Receiver)
+	// sent all messages to the the first node receiver
+	newNode.setReceiver(head.Receiver)
 	return
 }

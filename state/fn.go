@@ -25,11 +25,7 @@ func (f Fn[T]) Update(tx xio.State) (err error) {
 	if err != nil && !errors.Is(err, io.EOF) {
 		return
 	}
-	if errors.Is(err, io.EOF) && w == 0 {
-		err = ErrRollback
-		return
-	}
-	if !f.fn(r) {
+	if (errors.Is(err, io.EOF) && w == 0) || !f.fn(r) {
 		err = ErrRollback
 		return
 	}

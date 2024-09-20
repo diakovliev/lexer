@@ -35,7 +35,7 @@ func (u Until[T]) Update(tx xio.State) (err error) {
 		}
 		if u.fn(r) {
 			if _, unreadErr := tx.Unread(); unreadErr != nil {
-				u.logger.Error("unread error: %s", unreadErr)
+				u.logger.Fatal("unread error: %s", unreadErr)
 			}
 			break
 		}
