@@ -1,4 +1,4 @@
-package common
+package message
 
 type (
 	Receiver[T any] func(Message[T]) error

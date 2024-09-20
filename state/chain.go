@@ -1,9 +1,10 @@
-package states
+package state
 
 import (
 	"errors"
 
 	"github.com/diakovliev/lexer/common"
+	"github.com/diakovliev/lexer/message"
 	"github.com/diakovliev/lexer/xio"
 )
 
@@ -13,7 +14,7 @@ type (
 		logger   common.Logger
 		state    State[T]
 		name     string
-		messages []common.Message[T]
+		messages []message.Message[T]
 		head     *Chain[T]
 		next     *Chain[T]
 	}
@@ -31,7 +32,7 @@ func newChain[T any](factory Builder[T], name string, state State[T]) *Chain[T] 
 }
 
 // receiver receives a message and stores it in messages slice.
-func (c *Chain[T]) receiver(m common.Message[T]) (err error) {
+func (c *Chain[T]) receiver(m message.Message[T]) (err error) {
 	c.messages = append(c.messages, m)
 	return
 }
@@ -88,7 +89,7 @@ func (c *Chain[T]) Update(tx xio.State) (err error) {
 		}
 		c.logger.Trace("%s.Update() = err=%s", currentNode.name, err)
 		switch {
-		case errors.Is(err, errNext) || (errors.Is(err, ErrCommit) && currentNode.Next() != nil):
+		case errors.Is(err, ErrNext) || (errors.Is(err, ErrCommit) && currentNode.Next() != nil):
 			if errors.Is(err, ErrCommit) {
 				c.logger.Trace("commit messages")
 				if commitMessagesErr := c.commitMessages(); commitMessagesErr != nil {
@@ -109,7 +110,7 @@ func (c *Chain[T]) Update(tx xio.State) (err error) {
 		case errors.Is(err, ErrRollback):
 			c.logger.Trace("rollback")
 			return
-		case errors.Is(err, errBreak):
+		case errors.Is(err, ErrBreak):
 			c.logger.Trace("break")
 			return
 		default:

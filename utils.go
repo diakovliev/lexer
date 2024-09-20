@@ -1,9 +1,5 @@
 package lexer
 
-import (
-	"github.com/diakovliev/lexer/states"
-)
-
 // Rune returns a function that checks if a given rune is equal to the input rune.
 //
 // It takes a parameter `ir` of type `rune`.
@@ -62,18 +58,6 @@ func (e *EscapeCondition) Accept(r rune) (ret bool) {
 		// escape symbol followed by escape symbol
 		e.escaped = false
 		ret = true
-	}
-	return
-}
-
-func AsSlice[T any](v ...T) (ret []T) {
-	ret = append(ret, v...)
-	return
-}
-
-func AsStates[T any](v ...*states.Chain[T]) (ret []states.State[T]) {
-	for _, chain := range v {
-		ret = append(ret, chain)
 	}
 	return
 }

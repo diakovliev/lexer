@@ -1,4 +1,4 @@
-package states
+package state
 
 import "errors"
 
@@ -8,6 +8,6 @@ var (
 	ErrHasMoreData     = errors.New("has more data")
 	ErrCommit          = errors.New("commit")
 	ErrRollback        = errors.New("rollback")
-	errNext            = errors.New("next")
-	errBreak           = errors.New("break")
+	ErrNext            = errors.New("next")
+	ErrBreak           = errors.New("break")
 )

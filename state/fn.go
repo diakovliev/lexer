@@ -1,4 +1,4 @@
-package states
+package state
 
 import (
 	"errors"
@@ -33,7 +33,7 @@ func (f Fn[T]) Update(tx xio.State) (err error) {
 		err = ErrRollback
 		return
 	}
-	err = errNext
+	err = ErrNext
 	return
 }
 

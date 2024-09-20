@@ -1,7 +1,8 @@
-package states
+package state
 
 import (
 	"github.com/diakovliev/lexer/common"
+	"github.com/diakovliev/lexer/message"
 	"github.com/diakovliev/lexer/xio"
 )
 
@@ -14,7 +15,7 @@ type (
 	Error[T any] struct {
 		logger   common.Logger
 		err      error
-		receiver common.Receiver[T]
+		receiver message.Receiver[T]
 	}
 )
 
@@ -25,7 +26,7 @@ func newError[T any](logger common.Logger, err error) *Error[T] {
 	}
 }
 
-func (e *Error[T]) SetReceiver(receiver common.Receiver[T]) {
+func (e *Error[T]) SetReceiver(receiver message.Receiver[T]) {
 	e.receiver = receiver
 }
 
@@ -43,8 +44,8 @@ func (e Error[T]) Update(tx xio.State) (err error) {
 		err = ErrRollback
 		return
 	}
-	err = e.receiver(common.Message[T]{
-		Type: common.Error,
+	err = e.receiver(message.Message[T]{
+		Type: message.Error,
 		Value: &ErrorValue{
 			Err:   e.err,
 			Value: data,

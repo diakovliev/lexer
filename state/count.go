@@ -1,4 +1,4 @@
-package states
+package state
 
 import (
 	"errors"
@@ -46,25 +46,25 @@ func (q Quantifier) getResult(count int) (err error) {
 		if count != q.min {
 			err = ErrRollback
 		} else {
-			err = errNext
+			err = ErrNext
 		}
 	case q.min < q.max:
 		if count < q.min || count > q.max {
 			err = ErrRollback
 		} else {
-			err = errNext
+			err = ErrNext
 		}
 	case q.min == 0:
 		if count < 0 || count > q.max {
 			err = ErrRollback
 		} else {
-			err = errNext
+			err = ErrNext
 		}
 	case q.max == math.MaxInt:
 		if count < q.min {
 			err = ErrRollback
 		} else {
-			err = errNext
+			err = ErrNext
 		}
 	default:
 		panic("unreachable")
@@ -89,7 +89,7 @@ func newQuantified[T any](logger common.Logger, fn func(rune) bool, q Quantifier
 
 func (qq Quantified[T]) Update(tx xio.State) (err error) {
 	if qq.q.isZero() {
-		err = errNext
+		err = ErrNext
 		return
 	}
 	count := 0

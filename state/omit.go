@@ -1,4 +1,4 @@
-package states
+package state
 
 import (
 	"github.com/diakovliev/lexer/common"
