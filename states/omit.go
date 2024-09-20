@@ -1,6 +1,9 @@
 package states
 
-import "github.com/diakovliev/lexer/common"
+import (
+	"github.com/diakovliev/lexer/common"
+	"github.com/diakovliev/lexer/xio"
+)
 
 type Omit[T any] struct {
 	logger common.Logger
@@ -12,8 +15,8 @@ func newOmit[T any](logger common.Logger) *Omit[T] {
 	}
 }
 
-func (o Omit[T]) Update(tx common.ReadUnreadData) (err error) {
-	_, data, err := tx.Data()
+func (o Omit[T]) Update(tx xio.ReadUnreadData) (err error) {
+	data, _, err := tx.Data()
 	if err != nil {
 		o.logger.Error("tx.Data() = data=%v, err=%s", data, err)
 		return

@@ -1,9 +1,7 @@
 package states
 
-import (
-	"github.com/diakovliev/lexer/common"
-)
+import "github.com/diakovliev/lexer/xio"
 
 type State[T any] interface {
-	Update(tx common.ReadUnreadData) (err error)
+	Update(tx xio.ReadUnreadData) (err error)
 }

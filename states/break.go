@@ -1,6 +1,9 @@
 package states
 
-import "github.com/diakovliev/lexer/common"
+import (
+	"github.com/diakovliev/lexer/common"
+	"github.com/diakovliev/lexer/xio"
+)
 
 type Break[T any] struct {
 	logger common.Logger
@@ -12,7 +15,7 @@ func newBreak[T any](logger common.Logger) *Break[T] {
 	}
 }
 
-func (b Break[T]) Update(_ common.ReadUnreadData) (err error) {
+func (b Break[T]) Update(_ xio.ReadUnreadData) (err error) {
 	err = errBreak
 	return
 }
