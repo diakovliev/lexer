@@ -29,7 +29,7 @@ func (e *Error[T]) SetReceiver(receiver common.Receiver[T]) {
 	e.receiver = receiver
 }
 
-func (e Error[T]) Update(tx xio.ReadUnreadData) (err error) {
+func (e Error[T]) Update(tx xio.State) (err error) {
 	if e.receiver == nil {
 		e.logger.Fatal("receiver is not set")
 		return

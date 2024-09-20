@@ -17,7 +17,7 @@ func newTap[T any](logger common.Logger, fn func() error) *Tap[T] {
 	}
 }
 
-func (t Tap[T]) Update(_ xio.ReadUnreadData) (err error) {
+func (t Tap[T]) Update(_ xio.State) (err error) {
 	if err = t.fn(); err != nil {
 		return
 	}

@@ -15,7 +15,7 @@ func newOmit[T any](logger common.Logger) *Omit[T] {
 	}
 }
 
-func (o Omit[T]) Update(tx xio.ReadUnreadData) (err error) {
+func (o Omit[T]) Update(tx xio.State) (err error) {
 	data, _, err := tx.Data()
 	if err != nil {
 		o.logger.Error("tx.Data() = data=%v, err=%s", data, err)

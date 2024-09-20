@@ -10,18 +10,19 @@ import (
 
 type (
 	// Tx is a transaction for reading from the buffered reader.
+	// Tx implements State and Transaction interfaces.
 	Tx struct {
 		logger common.Logger
-		reader *ReadAt // transaction reader
-		parent *Tx     // parent transaction
-		pos    int64   // position of the last data returned by Data()
-		offset int64   // current position
-		lastN  int     // last read bytes count
-		tx     *Tx     // child transactions
+		reader *Xio  // transaction reader
+		parent *Tx   // parent transaction
+		pos    int64 // position of the last data returned by Data()
+		offset int64 // current position
+		lastN  int   // last read bytes count
+		tx     *Tx   // child transactions
 	}
 )
 
-func newTx(logger common.Logger, reader *ReadAt, pos int64) (ret *Tx) {
+func newTx(logger common.Logger, reader *Xio, pos int64) (ret *Tx) {
 	ret = &Tx{
 		logger: logger,
 		reader: reader,

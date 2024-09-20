@@ -14,7 +14,7 @@ type (
 	// Lexer is a lexical analyzer that reads input data and produces tokens.
 	Lexer[T any] struct {
 		logger   common.Logger
-		readAt   *xio.ReadAt
+		source   xio.Source
 		states   []states.State[T]
 		messages []common.Message[T]
 		current  int
@@ -28,7 +28,7 @@ type (
 func New[T any](logger common.Logger, reader io.Reader) (ret *Lexer[T]) {
 	ret = &Lexer[T]{
 		logger:  logger,
-		readAt:  xio.NewReadAt(logger, reader),
+		source:  xio.New(logger, reader),
 		current: 0,
 	}
 	return ret
@@ -73,7 +73,7 @@ func (l *Lexer[T]) reset() {
 }
 
 // update updates the current state of the lexer with the given transaction.
-func (l *Lexer[T]) update(tx xio.ReadUnreadData) (err error) {
+func (l *Lexer[T]) update(tx xio.State) (err error) {
 	state := l.currentState()
 	if state == nil {
 		// no more states to process, we're done
@@ -90,7 +90,7 @@ func (l *Lexer[T]) Run(ctx context.Context) (err error) {
 	defer func() { l.logger.Trace("<<= leave Run() = err=%s", err) }()
 loop:
 	for ctx.Err() == nil {
-		tx := l.readAt.Begin()
+		tx := l.source.Begin()
 		if err = l.update(tx); err == nil {
 			l.logger.Fatal("unexpected nil")
 		}
@@ -118,7 +118,7 @@ loop:
 				err = rollbackErr
 				break loop
 			}
-			if l.readAt.Has() {
+			if l.source.Has() {
 				l.logger.Error("has non processed data")
 				err = states.ErrHasMoreData
 			} else {
