@@ -25,8 +25,13 @@ func TestReader(t *testing.T) {
 	r := New(logger, bytes.NewBufferString(testString))
 
 	for pos := startPos; pos < len(testString); pos += 1 {
+		end := pos + bufferSize
+		if end > len(testStringData) {
+			end = len(testStringData)
+		}
+		expected := string(testStringData[pos:end])
 		t.Run(
-			fmt.Sprintf("2nd pass: pos: %d buffer size: %d expected: %s", pos, bufferSize, string(testStringData[pos:pos+bufferSize])),
+			fmt.Sprintf("1st pass: pos: %d buffer size: %d expected: %s", pos, bufferSize, expected),
 			func(t *testing.T) {
 				buffer := make([]byte, bufferSize)
 				n, err := r.ReadAt(int64(pos), buffer)
@@ -41,8 +46,13 @@ func TestReader(t *testing.T) {
 	}
 
 	for pos := startPos; pos < len(testString); pos += 1 {
+		end := pos + bufferSize
+		if end > len(testStringData) {
+			end = len(testStringData)
+		}
+		expected := string(testStringData[pos:end])
 		t.Run(
-			fmt.Sprintf("2nd pass: pos: %d buffer size: %d expected: %s", pos, bufferSize, string(testStringData[pos:pos+bufferSize])),
+			fmt.Sprintf("2nd pass: pos: %d buffer size: %d expected: %s", pos, bufferSize, expected),
 			func(t *testing.T) {
 				buffer := make([]byte, bufferSize)
 				n, err := r.ReadAt(int64(pos), buffer)
@@ -73,8 +83,13 @@ func TestReader_Truncate(t *testing.T) {
 
 	for i := 0; i < txCount; i++ {
 		pos := i * bufferSize
+		end := pos + bufferSize
+		if end > len(testStringData) {
+			end = len(testStringData)
+		}
+		expected := string(testStringData[pos:end])
 		t.Run(
-			fmt.Sprintf("tx %d, buffer size: %d, expected: %s", i, bufferSize, string(testStringData[pos:pos+bufferSize])),
+			fmt.Sprintf("tx %d, buffer size: %d, expected: %s", i, bufferSize, expected),
 			func(t *testing.T) {
 				tx := r.Begin()
 				buffer := make([]byte, bufferSize)
