@@ -12,6 +12,8 @@ const (
 
 // Message is the lexer's output type. It contains information about the lexeme and its type.
 type Message[T any] struct {
+	// State level
+	Level int
 	// Type represents the message type. See MessageType for more details.
 	Type MessageType
 	// UserType is only used when the message's type is User. It contains the user-defined type of the lexeme.

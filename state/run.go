@@ -68,6 +68,8 @@ func (r *Run[T]) update(ctx context.Context, tx xio.State) (err error) {
 }
 
 func (r *Run[T]) Run(ctx context.Context, source xio.Source) (err error) {
+	// set state level
+	ctx = WithNextStateLevel(ctx)
 loop:
 	for ctx.Err() == nil {
 		tx := source.Begin()
@@ -76,18 +78,18 @@ loop:
 		}
 		switch {
 		case errors.Is(err, ErrCommit):
-			if commitErr := tx.Commit(); commitErr != nil {
-				r.logger.Fatal("commit error: %v", commitErr)
+			if err := tx.Commit(); err != nil {
+				r.logger.Fatal("commit error: %v", err)
 			}
 			r.reset()
 		case errors.Is(err, ErrRollback):
-			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				r.logger.Fatal("rollback error: %v", rollbackErr)
+			if err := tx.Rollback(); err != nil {
+				r.logger.Fatal("rollback error: %v", err)
 			}
 			r.next()
 		case errors.Is(err, ErrNoMoreStates):
-			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				r.logger.Fatal("rollback error: %v", rollbackErr)
+			if err := tx.Rollback(); err != nil {
+				r.logger.Fatal("rollback error: %v", err)
 			}
 			if source.Has() {
 				err = ErrHasMoreData
@@ -96,14 +98,14 @@ loop:
 			}
 			break loop
 		case errors.Is(err, ErrBreak):
-			if commitErr := tx.Commit(); commitErr != nil {
-				r.logger.Fatal("commit error: %v", commitErr)
+			if err := tx.Commit(); err != nil {
+				r.logger.Fatal("commit error: %v", err)
 			}
 			err = ErrCommit
 			break loop
 		default:
-			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				r.logger.Fatal("rollback error: %v", err, rollbackErr)
+			if err := tx.Rollback(); err != nil {
+				r.logger.Fatal("rollback error: %v", err)
 			}
 			break loop
 		}

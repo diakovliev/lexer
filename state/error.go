@@ -45,8 +45,13 @@ func (e Error[T]) Update(ctx context.Context, tx xio.State) (err error) {
 		err = ErrRollback
 		return
 	}
+	level, ok := GetStateLevel(ctx)
+	if !ok {
+		e.logger.Fatal("state level is not set")
+	}
 	err = e.receiver.Receive(message.Message[T]{
-		Type: message.Error,
+		Level: level,
+		Type:  message.Error,
 		Value: &ErrorValue{
 			Err:   e.err,
 			Value: data,

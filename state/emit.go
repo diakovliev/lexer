@@ -44,7 +44,12 @@ func (e Emit[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	if len(data) == 0 {
 		e.logger.Fatal("nothing to emit")
 	}
+	level, ok := GetStateLevel(ctx)
+	if !ok {
+		e.logger.Fatal("state level is not set")
+	}
 	err = e.receiver.Receive(message.Message[T]{
+		Level:    level,
 		Type:     e.messageType,
 		UserType: e.userType,
 		Value:    data,

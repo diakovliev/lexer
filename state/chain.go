@@ -72,8 +72,8 @@ func (c *Chain[T]) Update(ctx context.Context, tx xio.State) (err error) {
 		case errors.Is(err, ErrNext):
 			// nothing to do, just move on to the next state
 		case errors.Is(err, ErrCommit):
-			if emitToErr := c.head.Receiver.EmitTo(c.head.Builder.Receiver); emitToErr != nil {
-				c.logger.Fatal("emit to error: %s", emitToErr)
+			if err := c.head.Receiver.EmitTo(c.head.Builder.Receiver); err != nil {
+				c.logger.Fatal("emit to error: %s", err)
 			}
 			if next == nil {
 				return
