@@ -27,9 +27,9 @@ func TestNode(t *testing.T) {
 
 	factory := Make(logger, message.Dispose[testMessageType]())
 
-	chain1 := factory.Fn(unicode.IsDigit).Fn(unicode.IsDigit).Fn(unicode.IsDigit).Emit(message.User, messageType1)
+	chain1 := factory.Fn(unicode.IsDigit).Fn(unicode.IsDigit).Fn(unicode.IsDigit).Emit(messageType1)
 	assert.NotNil(t, chain1)
 
-	chain2 := factory.Fn(unicode.IsDigit).Fn(unicode.IsDigit).Fn(unicode.IsDigit).Emit(message.User, messageType1)
+	chain2 := factory.Fn(unicode.IsDigit).Fn(unicode.IsDigit).Fn(unicode.IsDigit).Emit(messageType1)
 	assert.NotNil(t, chain2)
 }
