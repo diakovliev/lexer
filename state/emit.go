@@ -9,21 +9,18 @@ import (
 )
 
 type Emit[T any] struct {
-	logger      common.Logger
-	messageType message.MessageType
-	userType    T
-	receiver    message.Receiver[T]
+	logger   common.Logger
+	token    T
+	receiver message.Receiver[T]
 }
 
 func newEmit[T any](
 	logger common.Logger,
-	messageType message.MessageType,
-	userType T,
+	token T,
 ) *Emit[T] {
 	return &Emit[T]{
-		logger:      logger,
-		messageType: messageType,
-		userType:    userType,
+		logger: logger,
+		token:  token,
 	}
 }
 
@@ -49,12 +46,12 @@ func (e Emit[T]) Update(ctx context.Context, tx xio.State) (err error) {
 		e.logger.Fatal("state level is not set")
 	}
 	err = e.receiver.Receive(message.Message[T]{
-		Level:    level,
-		Type:     e.messageType,
-		UserType: e.userType,
-		Value:    data,
-		Pos:      int(pos),
-		Width:    len(data),
+		Level: level,
+		Type:  message.Token,
+		Token: e.token,
+		Value: data,
+		Pos:   int(pos),
+		Width: len(data),
 	})
 	if err != nil {
 		e.logger.Fatal("receiver error: %s", err)
@@ -63,9 +60,9 @@ func (e Emit[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	return
 }
 
-func (b Builder[T]) Emit(messageType message.MessageType, userType T) (head *Chain[T]) {
+func (b Builder[T]) Emit(token T) (head *Chain[T]) {
 	defaultName := "Emit"
-	newNode := newEmit(b.logger, messageType, userType)
+	newNode := newEmit(b.logger, token)
 	head = b.createNode(defaultName, func() any { return newNode })
 	// sent all messages to the the first node receiver
 	newNode.setReceiver(head.Receiver)
