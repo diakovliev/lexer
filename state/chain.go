@@ -65,12 +65,14 @@ func (c *Chain[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	current := c
 	for current != nil {
 		if err = current.state.Update(ctx, tx); err == nil {
-			c.logger.Fatal("%s.Update() = nil", current.name)
+			c.logger.Fatal("unexpected nil")
 		}
 		next := current.Next()
 		switch {
 		case errors.Is(err, ErrNext):
-			// nothing to do, just move on to the next state
+			if next == nil {
+				c.logger.Fatal("invalid grammar: next can't be from last in state")
+			}
 		case errors.Is(err, ErrCommit):
 			if err := c.head.Receiver.EmitTo(c.head.Builder.Receiver); err != nil {
 				c.logger.Fatal("emit to error: %s", err)
@@ -82,8 +84,7 @@ func (c *Chain[T]) Update(ctx context.Context, tx xio.State) (err error) {
 			return
 		case errors.Is(err, ErrBreak):
 			if next != nil {
-				// if there is a next node, it's an error
-				c.logger.Fatal("break must be last in state")
+				c.logger.Fatal("invalid grammar: break must be last in state")
 			}
 			return
 		default:
