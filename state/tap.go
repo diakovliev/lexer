@@ -1,24 +1,30 @@
 package state
 
 import (
+	"context"
+
 	"github.com/diakovliev/lexer/common"
 	"github.com/diakovliev/lexer/xio"
 )
 
-type Tap[T any] struct {
-	logger common.Logger
-	fn     func() error
-}
+type (
+	Tap[T any] struct {
+		logger common.Logger
+		fn     TapFn
+	}
 
-func newTap[T any](logger common.Logger, fn func() error) *Tap[T] {
+	TapFn func(context.Context, xio.State) error
+)
+
+func newTap[T any](logger common.Logger, fn TapFn) *Tap[T] {
 	return &Tap[T]{
 		logger: logger,
 		fn:     fn,
 	}
 }
 
-func (t Tap[T]) Update(_ xio.State) (err error) {
-	if err = t.fn(); err != nil {
+func (t Tap[T]) Update(ctx context.Context, tx xio.State) (err error) {
+	if err = t.fn(ctx, tx); err != nil {
 		return
 	}
 	// return ErrCommit to be able to Tap end of the chain
@@ -26,7 +32,7 @@ func (t Tap[T]) Update(_ xio.State) (err error) {
 	return
 }
 
-func (b Builder[T]) Tap(fn func() error) (head *Chain[T]) {
+func (b Builder[T]) Tap(ctx context.Context, fn TapFn) (head *Chain[T]) {
 	defaultName := "Tap"
 	head = b.createNode(defaultName, func() any { return newTap[T](b.logger, fn) })
 	return

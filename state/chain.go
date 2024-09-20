@@ -1,6 +1,7 @@
 package state
 
 import (
+	"context"
 	"errors"
 
 	"github.com/diakovliev/lexer/common"
@@ -60,10 +61,10 @@ func (c *Chain[T]) Append(node *Chain[T]) *Chain[T] {
 }
 
 // Update implements State interface
-func (c *Chain[T]) Update(tx xio.State) (err error) {
+func (c *Chain[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	current := c
 	for current != nil {
-		if err = current.state.Update(tx); err == nil {
+		if err = current.state.Update(ctx, tx); err == nil {
 			c.logger.Fatal("%s.Update() = nil", current.name)
 		}
 		next := current.Next()

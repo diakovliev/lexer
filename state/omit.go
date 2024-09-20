@@ -1,6 +1,8 @@
 package state
 
 import (
+	"context"
+
 	"github.com/diakovliev/lexer/common"
 	"github.com/diakovliev/lexer/xio"
 )
@@ -15,7 +17,7 @@ func newOmit[T any](logger common.Logger) *Omit[T] {
 	}
 }
 
-func (o Omit[T]) Update(tx xio.State) (err error) {
+func (o Omit[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	data, _, err := tx.Data()
 	if err != nil {
 		o.logger.Fatal("data error: %s", err)

@@ -1,6 +1,7 @@
 package state
 
 import (
+	"context"
 	"errors"
 	"io"
 
@@ -22,7 +23,7 @@ func newUntil[T any](logger common.Logger, fn func(rune) bool) *Until[T] {
 }
 
 // Update implements the State interface. It reads until the given function returns true.
-func (u Until[T]) Update(tx xio.State) (err error) {
+func (u Until[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	count := 0
 	for {
 		r, rw, nextErr := tx.NextRune()
