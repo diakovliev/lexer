@@ -61,21 +61,16 @@ func (c *Chain[T]) Append(node *Chain[T]) *Chain[T] {
 
 // Update implements State interface
 func (c *Chain[T]) Update(tx xio.State) (err error) {
-	c.logger.Trace("=>> enter Update()")
-	defer func() { c.logger.Trace("<<= leave Update() = err=%s", err) }()
 	current := c
 	for current != nil {
-		c.logger.Trace("%s.Update()", current.name)
 		if err = current.state.Update(tx); err == nil {
 			c.logger.Fatal("%s.Update() = nil", current.name)
 		}
-		c.logger.Trace("%s.Update() = err=%s", current.name, err)
 		next := current.Next()
 		switch {
 		case errors.Is(err, ErrNext):
 			// nothing to do, just move on to the next state
 		case errors.Is(err, ErrCommit):
-			c.logger.Trace("commit messages")
 			if emitToErr := c.head.Receiver.EmitTo(c.head.Builder.Receiver); emitToErr != nil {
 				c.logger.Fatal("emit to error: %s", emitToErr)
 			}
@@ -83,16 +78,13 @@ func (c *Chain[T]) Update(tx xio.State) (err error) {
 				return
 			}
 		case errors.Is(err, ErrRollback):
-			c.logger.Trace("rollback")
 			return
 		case errors.Is(err, ErrBreak):
-			c.logger.Trace("break")
 			return
 		default:
 			c.logger.Error("unexpected error: %v", err)
 			return
 		}
-		c.logger.Trace("continue chain")
 		current = next
 	}
 	return

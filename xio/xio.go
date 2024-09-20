@@ -36,10 +36,9 @@ func New(logger common.Logger, r io.Reader) *Xio {
 // Begin starts a new transaction for reading from the buffered reader.
 func (r *Xio) Begin() (ret *Tx) {
 	if r.tx != nil {
-		r.logger.Fatal("too many transactions, Reader supports only one active transaction")
+		r.logger.Fatal("too many transactions, Xio supports only one active transaction")
 	}
 	r.tx = newTx(r.logger, r, r.offset)
-	r.logger.Trace("begin transaction %p, reader: %p pos: %d", r.tx, r, r.offset)
 	ret = r.tx
 	return
 }

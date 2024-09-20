@@ -67,8 +67,6 @@ func (r *Run[T]) update(tx xio.State) (err error) {
 }
 
 func (r *Run[T]) Run(source xio.Source) (err error) {
-	r.logger.Trace("=>> enter Run()")
-	defer func() { r.logger.Trace("<<= leave Run() = err=%s", err) }()
 loop:
 	for {
 		tx := source.Begin()
@@ -77,40 +75,35 @@ loop:
 		}
 		switch {
 		case errors.Is(err, ErrCommit):
-			r.logger.Trace("ErrCommit")
 			if commitErr := tx.Commit(); commitErr != nil {
-				r.logger.Error("ErrCommit -> commit error: %v", commitErr)
+				r.logger.Error("commit error: %v", commitErr)
 				err = commitErr
 				break loop
 			}
 			r.reset()
 		case errors.Is(err, ErrRollback):
-			r.logger.Trace("ErrRollback")
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				r.logger.Error("ErrRollback -> rollback error: %v", rollbackErr)
+				r.logger.Error("rollback error: %v", rollbackErr)
 				err = rollbackErr
 				break loop
 			}
 			r.next()
 		case errors.Is(err, ErrNoMoreStates):
-			r.logger.Trace("ErrNoMoreStates")
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				r.logger.Error("ErrNoMoreStates -> rollback error: %v", rollbackErr)
+				r.logger.Error("rollback error: %v", rollbackErr)
 				err = rollbackErr
 				break loop
 			}
 			if source.Has() {
-				r.logger.Error("has non processed data")
 				err = ErrHasMoreData
+				r.logger.Error(ErrHasMoreData.Error())
 			} else {
-				r.logger.Error(r.incompleteStateErr.Error())
 				err = r.incompleteStateErr
 			}
 			break loop
 		case errors.Is(err, ErrBreak):
-			r.logger.Trace("break")
 			if commitErr := tx.Commit(); commitErr != nil {
-				r.logger.Error("ErrCommit -> commit error: %v", commitErr)
+				r.logger.Error("commit error: %v", commitErr)
 				err = commitErr
 				break loop
 			}
@@ -119,7 +112,7 @@ loop:
 		default:
 			r.logger.Error("unexpected error: %v", err)
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				r.logger.Error("%s -> rollback error: %v", err, rollbackErr)
+				r.logger.Error("rollback error: %v", err, rollbackErr)
 				err = rollbackErr
 			}
 			break loop
