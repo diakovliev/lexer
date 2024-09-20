@@ -76,23 +76,17 @@ loop:
 		switch {
 		case errors.Is(err, ErrCommit):
 			if commitErr := tx.Commit(); commitErr != nil {
-				r.logger.Error("commit error: %v", commitErr)
-				err = commitErr
-				break loop
+				r.logger.Fatal("commit error: %v", commitErr)
 			}
 			r.reset()
 		case errors.Is(err, ErrRollback):
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				r.logger.Error("rollback error: %v", rollbackErr)
-				err = rollbackErr
-				break loop
+				r.logger.Fatal("rollback error: %v", rollbackErr)
 			}
 			r.next()
 		case errors.Is(err, ErrNoMoreStates):
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				r.logger.Error("rollback error: %v", rollbackErr)
-				err = rollbackErr
-				break loop
+				r.logger.Fatal("rollback error: %v", rollbackErr)
 			}
 			if source.Has() {
 				err = ErrHasMoreData
@@ -103,17 +97,14 @@ loop:
 			break loop
 		case errors.Is(err, ErrBreak):
 			if commitErr := tx.Commit(); commitErr != nil {
-				r.logger.Error("commit error: %v", commitErr)
-				err = commitErr
-				break loop
+				r.logger.Fatal("commit error: %v", commitErr)
 			}
 			err = ErrCommit
 			break loop
 		default:
 			r.logger.Error("unexpected error: %v", err)
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				r.logger.Error("rollback error: %v", err, rollbackErr)
-				err = rollbackErr
+				r.logger.Fatal("rollback error: %v", err, rollbackErr)
 			}
 			break loop
 		}

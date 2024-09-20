@@ -17,8 +17,8 @@ func newStack() *stack {
 	}
 }
 
-func (s *stack) upFrame(upframe int) (frame runtime.Frame) {
-	n := runtime.Callers(upframe, s.pc)
+func (s *stack) upFrame(upFrame int) (frame runtime.Frame) {
+	n := runtime.Callers(upFrame, s.pc)
 	frames := runtime.CallersFrames(s.pc[:n])
 	frame, _ = frames.Next()
 	return

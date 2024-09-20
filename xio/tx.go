@@ -35,7 +35,7 @@ func newTx(logger common.Logger, reader *Xio, pos int64) (ret *Tx) {
 // Begin starts a child transaction.
 func (t *Tx) Begin() (ret *Tx) {
 	if t.tx != nil {
-		t.logger.Fatal("%p: too many transactions, Transaction supports only one active child transaction", t)
+		t.logger.Fatal("too many transactions, Tx supports only one active child transaction")
 	}
 	ret = &Tx{
 		logger: t.logger,
@@ -66,11 +66,11 @@ func (t *Tx) reset() {
 // Commit will fail if any of the child transactions are not committed or rolled back.
 func (t *Tx) Commit() (err error) {
 	if t.offset == -1 {
-		t.logger.Fatal("%p: transaction already complete", t)
+		t.logger.Fatal("transaction already complete")
 	}
 	// all children must be completed before committing the parent
 	if t.tx != nil && t.tx.offset != -1 {
-		t.logger.Fatal("%p: child transaction %p is not complete", t, t.tx)
+		t.logger.Fatal("child transaction is not complete")
 	}
 	if t.parent != nil {
 		// update parent transaction position
@@ -80,7 +80,7 @@ func (t *Tx) Commit() (err error) {
 		// update reader position directly if no parent transaction exists
 		t.reader.Update(t.offset)
 		if err = t.reader.Truncate(t.offset); err != nil {
-			t.logger.Fatal("%p: failed to truncate reader %p at pos=%d, err=%s", t, t.reader, t.offset, err)
+			t.logger.Fatal("truncate error: %s", err)
 		}
 		t.reader.resetTx()
 	}
@@ -92,12 +92,12 @@ func (t *Tx) Commit() (err error) {
 // Rollback will rollback all non completed children transactions if any.
 func (t *Tx) Rollback() (err error) {
 	if t.offset == -1 {
-		t.logger.Fatal("%p: transaction already complete", t)
+		t.logger.Fatal("transaction already complete")
 		return
 	}
 	// rollback child transactions first
 	if t.tx != nil && t.tx.offset != -1 {
-		t.logger.Fatal("%p: child transaction %p is not complete", t, t.tx)
+		t.logger.Fatal("child transaction is not complete")
 	}
 	if t.parent != nil {
 		t.parent.resetTx()
@@ -111,12 +111,12 @@ func (t *Tx) Rollback() (err error) {
 // Read reads data from the transaction reader into a byte slice.
 func (t *Tx) Read(out []byte) (n int, err error) {
 	if t.offset == -1 {
-		t.logger.Fatal("%p: transaction already complete", t)
+		t.logger.Fatal("transaction already complete")
 		return
 	}
 	n, err = t.reader.ReadAt(t.offset, out)
 	if err != nil && !errors.Is(err, io.EOF) {
-		t.logger.Error("%p: read error: %s", t, err)
+		t.logger.Error("read error: %s", err)
 		return
 	}
 	t.lastN = n
@@ -129,7 +129,7 @@ func (t *Tx) Read(out []byte) (n int, err error) {
 // rolled back, this function has no effect.
 func (t *Tx) Unread() (n int, err error) {
 	if t.offset == -1 {
-		t.logger.Fatal("%p: transaction already complete", t)
+		t.logger.Fatal("transaction already complete")
 	}
 	oldPos := t.offset
 	newPos := oldPos - int64(t.lastN)
@@ -142,7 +142,7 @@ func (t *Tx) Unread() (n int, err error) {
 // returns data position.
 func (t *Tx) Data() (data []byte, pos int64, err error) {
 	if t.offset == -1 {
-		t.logger.Fatal("%p: transaction already complete", t)
+		t.logger.Fatal("transaction already complete")
 	}
 	pos = t.pos
 	data = make([]byte, t.offset-pos)
@@ -152,7 +152,7 @@ func (t *Tx) Data() (data []byte, pos int64, err error) {
 		return
 	}
 	if n != len(data) {
-		t.logger.Fatal("%p: data len: expected: %d, got: %d", t, n, len(data))
+		t.logger.Fatal("data len error")
 	}
 	t.pos = t.offset
 	return
@@ -161,17 +161,17 @@ func (t *Tx) Data() (data []byte, pos int64, err error) {
 // Has returns true if the transaction has data at pos.
 func (t *Tx) Has() (ret bool) {
 	if t.offset == -1 {
-		t.logger.Fatal("%p: transaction already complete", t)
+		t.logger.Fatal("transaction already complete")
 	}
 	data := make([]byte, 1)
 	_, err := t.Read(data)
 	if err != nil && !errors.Is(err, io.EOF) {
-		t.logger.Fatal("%p: read error: %s", t, err)
+		t.logger.Fatal("read error: %s", err)
 	}
 	ret = !errors.Is(err, io.EOF)
 	if ret {
 		if _, err = t.Unread(); err != nil {
-			t.logger.Fatal("%p: unread error: %s", t, err)
+			t.logger.Fatal("unread error: %s", err)
 		}
 	}
 	return
@@ -179,12 +179,12 @@ func (t *Tx) Has() (ret bool) {
 
 func (t *Tx) nextBytes(size int) (data []byte, err error) {
 	if t.offset == -1 {
-		t.logger.Fatal("%p: transaction already complete", t)
+		t.logger.Fatal("transaction already complete")
 	}
 	data = make([]byte, size)
 	n, err := t.Read(data)
 	if err != nil && !errors.Is(err, io.EOF) {
-		t.logger.Fatal("%p: read error: %s", t, err)
+		t.logger.Fatal("read error: %s", err)
 	}
 	data = data[:n]
 	// lastN is set by nextBytes.
@@ -208,7 +208,7 @@ func (t *Tx) NextRune() (r rune, w int, err error) {
 		data, nextBytesErr := tx.nextBytes(i)
 		if i == 1 && errors.Is(nextBytesErr, io.EOF) {
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				t.logger.Fatal("%p: rollback error: %s", t, rollbackErr)
+				t.logger.Fatal("rollback error: %s", rollbackErr)
 			}
 			err = io.EOF
 			break
@@ -219,7 +219,7 @@ func (t *Tx) NextRune() (r rune, w int, err error) {
 		}
 		if nextBytesErr != nil || decoded != utf8.RuneError {
 			if commitErr := tx.Commit(); commitErr != nil {
-				t.logger.Fatal("%p: commit error: %s", t, commitErr)
+				t.logger.Fatal("commit error: %s", commitErr)
 			}
 			r = decoded
 			w = len(data)
@@ -229,7 +229,7 @@ func (t *Tx) NextRune() (r rune, w int, err error) {
 			break
 		}
 		if rollbackErr := tx.Rollback(); rollbackErr != nil {
-			t.logger.Fatal("%p: rollback error: %s", t, rollbackErr)
+			t.logger.Fatal("rollback error: %s", rollbackErr)
 		}
 	}
 	return

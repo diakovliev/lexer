@@ -26,7 +26,7 @@ func newError[T any](logger common.Logger, err error) *Error[T] {
 	}
 }
 
-func (e *Error[T]) SetReceiver(receiver message.Receiver[T]) {
+func (e *Error[T]) setReceiver(receiver message.Receiver[T]) {
 	e.receiver = receiver
 }
 
@@ -37,8 +37,7 @@ func (e Error[T]) Update(tx xio.State) (err error) {
 	}
 	data, pos, err := tx.Data()
 	if err != nil {
-		e.logger.Error("tx.Data() = data=%v, err=%s", data, err)
-		return
+		e.logger.Fatal("data error: %s", err)
 	}
 	if len(data) == 0 {
 		err = ErrRollback
@@ -54,8 +53,7 @@ func (e Error[T]) Update(tx xio.State) (err error) {
 		Width: len(data),
 	})
 	if err != nil {
-		e.logger.Error("e.receiver() = err=%s", err)
-		return
+		e.logger.Fatal("receiver error: %s", err)
 	}
 	err = ErrCommit
 	return
@@ -65,7 +63,7 @@ func (b Builder[T]) Error(err error) (head *Chain[T]) {
 	defaultName := "Error"
 	newNode := newError[T](b.logger, err)
 	head = b.createNode(defaultName, func() any { return newNode })
-	// sent all messages to the receiver of the first node
-	newNode.SetReceiver(head.Receiver)
+	// sent all messages to the the first node receiver
+	newNode.setReceiver(head.Receiver)
 	return
 }

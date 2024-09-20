@@ -104,7 +104,7 @@ func (qq Quantified[T]) Update(tx xio.State) (err error) {
 		}
 		if !qq.fn(r) {
 			if _, unreadErr := tx.Unread(); unreadErr != nil {
-				qq.logger.Error("unread error: %s", unreadErr)
+				qq.logger.Fatal("unread error: %s", unreadErr)
 			}
 			break
 		}

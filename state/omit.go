@@ -18,12 +18,11 @@ func newOmit[T any](logger common.Logger) *Omit[T] {
 func (o Omit[T]) Update(tx xio.State) (err error) {
 	data, _, err := tx.Data()
 	if err != nil {
-		o.logger.Error("tx.Data() = data=%v, err=%s", data, err)
-		return
+		o.logger.Fatal("data error: %s", err)
 	}
+	// FIXME: do we need this check?
 	if len(data) == 0 {
 		o.logger.Fatal("nothing to omit")
-		return
 	}
 	err = ErrCommit
 	return
