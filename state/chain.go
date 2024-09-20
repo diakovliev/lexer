@@ -82,7 +82,6 @@ func (c *Chain[T]) Update(tx xio.State) (err error) {
 		case errors.Is(err, ErrBreak):
 			return
 		default:
-			c.logger.Error("unexpected error: %v", err)
 			return
 		}
 		current = next
