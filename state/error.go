@@ -44,7 +44,7 @@ func (e Error[T]) Update(tx xio.State) (err error) {
 		err = ErrRollback
 		return
 	}
-	err = e.receiver(message.Message[T]{
+	err = e.receiver.Receive(message.Message[T]{
 		Type: message.Error,
 		Value: &ErrorValue{
 			Err:   e.err,
@@ -66,6 +66,6 @@ func (b Builder[T]) Error(err error) (head *Chain[T]) {
 	newNode := newError[T](b.logger, err)
 	head = b.createNode(defaultName, func() any { return newNode })
 	// sent all messages to the receiver of the first node
-	newNode.SetReceiver(head.receiver)
+	newNode.SetReceiver(head.Receiver)
 	return
 }

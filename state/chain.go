@@ -11,10 +11,10 @@ import (
 type (
 	Chain[T any] struct {
 		Builder[T]
+		Receiver *message.SliceReceiver[T]
 		logger   common.Logger
 		state    State[T]
 		name     string
-		messages []message.Message[T]
 		head     *Chain[T]
 		next     *Chain[T]
 	}
@@ -24,17 +24,12 @@ type (
 // The name parameter is used for logging purposes.
 func newChain[T any](factory Builder[T], name string, state State[T]) *Chain[T] {
 	return &Chain[T]{
-		Builder: factory,
-		logger:  factory.logger,
-		name:    name,
-		state:   state,
+		Builder:  factory,
+		Receiver: message.Slice[T](),
+		logger:   factory.logger,
+		name:     name,
+		state:    state,
 	}
-}
-
-// receiver receives a message and stores it in messages slice.
-func (c *Chain[T]) receiver(m message.Message[T]) (err error) {
-	c.messages = append(c.messages, m)
-	return
 }
 
 // Next returns the next state in the chain of nodes. If there is no next nodes, it returns an nil.
@@ -66,14 +61,9 @@ func (c *Chain[T]) Append(node *Chain[T]) *Chain[T] {
 
 // commitMessages sends all messages in the chain head messages slice to the Builder receiver.
 func (c *Chain[T]) commitMessages() (err error) {
-	for _, m := range c.head.messages {
-		if sendErr := c.head.Builder.receiver(m); sendErr != nil {
-			c.logger.Error("send message error: %s", m)
-			err = sendErr
-			return
-		}
+	if err = c.head.Receiver.EmitTo(c.head.Builder.Receiver); err != nil {
+		c.logger.Fatal("emit to error: %s", err)
 	}
-	c.head.messages = c.head.messages[:0]
 	return
 }
 

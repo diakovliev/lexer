@@ -43,7 +43,7 @@ func (e Emit[T]) Update(tx xio.State) (err error) {
 		e.logger.Fatal("nothing to emit")
 		return
 	}
-	err = e.receiver(message.Message[T]{
+	err = e.receiver.Receive(message.Message[T]{
 		Type:     e.messageType,
 		UserType: e.userType,
 		Value:    data,
@@ -63,6 +63,6 @@ func (b Builder[T]) Emit(messageType message.MessageType, userType T) (head *Cha
 	newNode := newEmit(b.logger, messageType, userType)
 	head = b.createNode(defaultName, func() any { return newNode })
 	// sent all messages to the receiver of the first node
-	newNode.SetReceiver(head.receiver)
+	newNode.SetReceiver(head.Receiver)
 	return
 }
