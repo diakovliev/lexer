@@ -167,7 +167,7 @@ func TestLexer(t *testing.T) {
 				{Type: common.User, UserType: msgComma, Value: []byte(","), Pos: 8, Width: 1},
 				{Type: common.User, UserType: msgNumber, Value: []byte("333"), Pos: 10, Width: 3},
 			},
-			wantError: states.ErrIncompleteSubState,
+			wantError: states.ErrIncompleteState,
 		},
 		{
 			name:   "inner substates",

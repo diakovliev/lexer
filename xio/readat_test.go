@@ -1,4 +1,4 @@
-package common
+package xio
 
 import (
 	"bytes"
@@ -22,14 +22,14 @@ func TestReader(t *testing.T) {
 	startPos := 1
 	bufferSize := 3
 
-	r := NewReader(logger, bytes.NewBufferString(testString))
+	r := NewReadAt(logger, bytes.NewBufferString(testString))
 
 	for pos := startPos; pos < len(testString); pos += 1 {
 		t.Run(
 			fmt.Sprintf("2nd pass: pos: %d buffer size: %d expected: %s", pos, bufferSize, string(testStringData[pos:pos+bufferSize])),
 			func(t *testing.T) {
 				buffer := make([]byte, bufferSize)
-				n, err := r.readAt(int64(pos), buffer)
+				n, err := r.ReadAt(int64(pos), buffer)
 				if n < bufferSize {
 					assert.ErrorIs(t, err, io.EOF)
 				} else {
@@ -45,7 +45,7 @@ func TestReader(t *testing.T) {
 			fmt.Sprintf("2nd pass: pos: %d buffer size: %d expected: %s", pos, bufferSize, string(testStringData[pos:pos+bufferSize])),
 			func(t *testing.T) {
 				buffer := make([]byte, bufferSize)
-				n, err := r.readAt(int64(pos), buffer)
+				n, err := r.ReadAt(int64(pos), buffer)
 				if n < bufferSize {
 					assert.ErrorIs(t, err, io.EOF)
 				} else {
@@ -69,7 +69,7 @@ func TestReader_Truncate(t *testing.T) {
 	txCount := 4
 	bufferSize := 3
 
-	r := NewReader(logger, bytes.NewBufferString(testString))
+	r := NewReadAt(logger, bytes.NewBufferString(testString))
 
 	for i := 0; i < txCount; i++ {
 		pos := i * bufferSize
@@ -85,7 +85,7 @@ func TestReader_Truncate(t *testing.T) {
 					assert.NoError(t, err)
 				}
 				assert.Equal(t, testStringData[pos:pos+n], buffer[:n])
-				_, err = tx.Commit()
+				err = tx.Commit()
 				assert.NoError(t, err)
 				// assert.NoError(t, r.Truncate(int64(pos)))
 			})

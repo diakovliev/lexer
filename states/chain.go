@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/diakovliev/lexer/common"
+	"github.com/diakovliev/lexer/xio"
 )
 
 type (
@@ -76,7 +77,7 @@ func (c *Chain[T]) commitMessages() (err error) {
 }
 
 // Update implements State interface
-func (c *Chain[T]) Update(tx common.ReadUnreadData) (err error) {
+func (c *Chain[T]) Update(tx xio.ReadUnreadData) (err error) {
 	c.logger.Trace("=>> enter Update()")
 	defer func() { c.logger.Trace("<<= leave Update() = err=%s", err) }()
 	currentNode := c
@@ -87,7 +88,7 @@ func (c *Chain[T]) Update(tx common.ReadUnreadData) (err error) {
 		}
 		c.logger.Trace("%s.Update() = err=%s", currentNode.name, err)
 		switch {
-		case errors.Is(err, errChainNext) || (errors.Is(err, ErrCommit) && currentNode.Next() != nil):
+		case errors.Is(err, errNext) || (errors.Is(err, ErrCommit) && currentNode.Next() != nil):
 			if errors.Is(err, ErrCommit) {
 				c.logger.Trace("commit messages")
 				if commitMessagesErr := c.commitMessages(); commitMessagesErr != nil {

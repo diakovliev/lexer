@@ -1,6 +1,9 @@
 package states
 
-import "github.com/diakovliev/lexer/common"
+import (
+	"github.com/diakovliev/lexer/common"
+	"github.com/diakovliev/lexer/xio"
+)
 
 type Tap[T any] struct {
 	logger common.Logger
@@ -14,7 +17,7 @@ func newTap[T any](logger common.Logger, fn func() error) *Tap[T] {
 	}
 }
 
-func (t Tap[T]) Update(_ common.ReadUnreadData) (err error) {
+func (t Tap[T]) Update(_ xio.ReadUnreadData) (err error) {
 	if err = t.fn(); err != nil {
 		return
 	}

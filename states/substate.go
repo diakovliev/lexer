@@ -4,17 +4,26 @@ import (
 	"errors"
 
 	"github.com/diakovliev/lexer/common"
+	"github.com/diakovliev/lexer/xio"
 )
 
-type StateProvider[T any] func(b Builder[T]) []State[T]
+type (
+	Tx interface {
+		xio.Begin
+		xio.Commit
+		xio.Rollback
+	}
 
-type SubState[T any] struct {
-	logger   common.Logger
-	builder  Builder[T]
-	provider StateProvider[T]
-	states   []State[T]
-	current  int
-}
+	StateProvider[T any] func(b Builder[T]) []State[T]
+
+	SubState[T any] struct {
+		logger   common.Logger
+		builder  Builder[T]
+		provider StateProvider[T]
+		states   []State[T]
+		current  int
+	}
+)
 
 func newSubState[T any](logger common.Logger, states ...State[T]) *SubState[T] {
 	return &SubState[T]{
@@ -56,7 +65,7 @@ func (ss *SubState[T]) reset() {
 }
 
 // update updates the current state of the lexer with the given transaction.
-func (ss *SubState[T]) update(tx common.ReadUnreadData) (err error) {
+func (ss *SubState[T]) update(tx xio.ReadUnreadData) (err error) {
 	state := ss.currentState()
 	if state == nil {
 		// no more states to process, we're done
@@ -69,9 +78,9 @@ func (ss *SubState[T]) update(tx common.ReadUnreadData) (err error) {
 
 // we don't want to expose common.Tx to the states implementations,
 // so we'll use this helper go get the tx from the ReadUnreadData interface here in Update.
-func (ss SubState[T]) asTx(rud common.ReadUnreadData) (tx common.Tx) {
+func (ss SubState[T]) asTx(rud xio.ReadUnreadData) (tx Tx) {
 	var i any = rud
-	tx, ok := i.(common.Tx)
+	tx, ok := i.(Tx)
 	if !ok {
 		ss.logger.Fatal("not a common.Tx")
 	}
@@ -79,7 +88,7 @@ func (ss SubState[T]) asTx(rud common.ReadUnreadData) (tx common.Tx) {
 }
 
 // Update implements State interface. It updates the current state of the lexer with the given transaction.
-func (ss *SubState[T]) Update(parentTx common.ReadUnreadData) (err error) {
+func (ss *SubState[T]) Update(parentTx xio.ReadUnreadData) (err error) {
 	ss.logger.Trace("=>> enter SubState.Update()")
 	defer func() { ss.logger.Trace("<<= leave SubState.Update() = err=%s", err) }()
 
@@ -92,7 +101,7 @@ loop:
 		switch {
 		case errors.Is(err, ErrCommit):
 			ss.logger.Trace("ErrCommit")
-			if _, commitErr := tx.Commit(); commitErr != nil {
+			if commitErr := tx.Commit(); commitErr != nil {
 				ss.logger.Error("ErrCommit -> commit error: %v", commitErr)
 				err = commitErr
 				break loop
@@ -113,7 +122,7 @@ loop:
 				err = ErrHasMoreData
 			} else {
 				ss.logger.Error("incomplete state")
-				err = ErrIncompleteSubState
+				err = ErrIncompleteState
 			}
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
 				ss.logger.Error("ErrNoMoreStates -> rollback error: %v", rollbackErr)
@@ -123,7 +132,7 @@ loop:
 			break loop
 		case errors.Is(err, errBreak):
 			ss.logger.Trace("break")
-			if _, commitErr := tx.Commit(); commitErr != nil {
+			if commitErr := tx.Commit(); commitErr != nil {
 				ss.logger.Error("ErrCommit -> commit error: %v", commitErr)
 				err = commitErr
 				break loop

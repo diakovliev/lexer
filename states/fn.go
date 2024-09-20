@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/diakovliev/lexer/common"
+	"github.com/diakovliev/lexer/xio"
 )
 
 type Fn[T any] struct {
@@ -19,12 +20,12 @@ func newFn[T any](logger common.Logger, fn func(rune) bool) *Fn[T] {
 	}
 }
 
-func (f Fn[T]) Update(tx common.ReadUnreadData) (err error) {
-	data, r, err := common.NextRuneFrom(tx)
+func (f Fn[T]) Update(tx xio.ReadUnreadData) (err error) {
+	r, w, err := tx.NextRune()
 	if err != nil && !errors.Is(err, io.EOF) {
 		return
 	}
-	if errors.Is(err, io.EOF) && len(data) == 0 {
+	if errors.Is(err, io.EOF) && w == 0 {
 		err = ErrRollback
 		return
 	}
@@ -32,7 +33,7 @@ func (f Fn[T]) Update(tx common.ReadUnreadData) (err error) {
 		err = ErrRollback
 		return
 	}
-	err = errChainNext
+	err = errNext
 	return
 }
 

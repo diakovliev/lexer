@@ -1,6 +1,9 @@
 package states
 
-import "github.com/diakovliev/lexer/common"
+import (
+	"github.com/diakovliev/lexer/common"
+	"github.com/diakovliev/lexer/xio"
+)
 
 type (
 	ErrorValue struct {
@@ -26,12 +29,12 @@ func (e *Error[T]) SetReceiver(receiver common.Receiver[T]) {
 	e.receiver = receiver
 }
 
-func (e Error[T]) Update(tx common.ReadUnreadData) (err error) {
+func (e Error[T]) Update(tx xio.ReadUnreadData) (err error) {
 	if e.receiver == nil {
 		e.logger.Fatal("receiver is not set")
 		return
 	}
-	pos, data, err := tx.Data()
+	data, pos, err := tx.Data()
 	if err != nil {
 		e.logger.Error("tx.Data() = data=%v, err=%s", data, err)
 		return

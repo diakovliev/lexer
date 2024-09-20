@@ -1,4 +1,4 @@
-package common
+package xio
 
 import (
 	"bytes"
@@ -10,18 +10,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTransactionReader(t *testing.T) {
+func TestTx(t *testing.T) {
 
 	logger := logger.New(
 		logger.WithLevel(logger.Trace),
 		logger.WithWriter(os.Stdout),
 	)
 
-	tr := NewReader(logger, bytes.NewBufferString("this is test string"))
+	r := NewReadAt(logger, bytes.NewBufferString("this is test string"))
 
 	// read first 4 bytes and rollback the transaction
 	out := make([]byte, 4)
-	rt := tr.Begin()
+	rt := r.Begin()
 	n, err := rt.Read(out)
 	assert.NoError(t, err)
 	assert.Equal(t, 4, n)
@@ -30,18 +30,17 @@ func TestTransactionReader(t *testing.T) {
 
 	// read first 4 bytes and commit the transaction
 	out = make([]byte, 4)
-	rt = tr.Begin()
+	rt = r.Begin()
 	n, err = rt.Read(out)
 	assert.NoError(t, err)
 	assert.Equal(t, 4, n)
 	assert.Equal(t, []byte("this"), out)
-	n, err = rt.Commit()
+	err = rt.Commit()
 	assert.NoError(t, err)
-	assert.Equal(t, 4, n)
 
 	// read next 4 bytes and rollback the transaction
 	out = make([]byte, 4)
-	rt = tr.Begin()
+	rt = r.Begin()
 	n, err = rt.Read(out)
 	assert.NoError(t, err)
 	assert.Equal(t, 4, n)
@@ -49,7 +48,7 @@ func TestTransactionReader(t *testing.T) {
 	assert.NoError(t, rt.Rollback())
 }
 
-func TestTransactionReader2(t *testing.T) {
+func TestTx2(t *testing.T) {
 
 	logger := logger.New(
 		logger.WithLevel(logger.Trace),
@@ -58,26 +57,20 @@ func TestTransactionReader2(t *testing.T) {
 
 	out := make([]byte, 4)
 
-	tr := NewReader(logger, bytes.NewBufferString(""))
-	assert.False(t, tr.eof)
+	r := NewReadAt(logger, bytes.NewBufferString(""))
 
-	ctx0 := tr.Begin()
+	tx0 := r.Begin()
 
-	cctx0 := ctx0.Begin()
+	ctx0 := tx0.Begin()
 
-	assert.False(t, cctx0.eof)
-	_, err := cctx0.Read(out)
+	_, err := ctx0.Read(out)
 	assert.ErrorIs(t, err, io.EOF)
-	assert.True(t, cctx0.eof)
-	_, err = cctx0.Commit()
+	err = ctx0.Commit()
 	assert.NoError(t, err)
 
-	assert.True(t, ctx0.eof)
-	_, err = ctx0.Read(out)
+	_, err = tx0.Read(out)
 	assert.ErrorIs(t, err, io.EOF)
-	assert.True(t, ctx0.eof)
 
-	_, err = ctx0.Commit()
+	err = tx0.Commit()
 	assert.NoError(t, err)
-	assert.True(t, tr.eof)
 }

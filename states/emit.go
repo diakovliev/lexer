@@ -2,6 +2,7 @@ package states
 
 import (
 	"github.com/diakovliev/lexer/common"
+	"github.com/diakovliev/lexer/xio"
 )
 
 type Emit[T any] struct {
@@ -27,12 +28,12 @@ func (e *Emit[T]) SetReceiver(receiver common.Receiver[T]) {
 	e.receiver = receiver
 }
 
-func (e Emit[T]) Update(tx common.ReadUnreadData) (err error) {
+func (e Emit[T]) Update(tx xio.ReadUnreadData) (err error) {
 	if e.receiver == nil {
 		e.logger.Fatal("receiver is not set")
 		return
 	}
-	pos, data, err := tx.Data()
+	data, pos, err := tx.Data()
 	if err != nil {
 		e.logger.Error("tx.Data() = data=%v, err=%s", data, err)
 		return

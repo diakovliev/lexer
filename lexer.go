@@ -7,13 +7,14 @@ import (
 
 	"github.com/diakovliev/lexer/common"
 	"github.com/diakovliev/lexer/states"
+	"github.com/diakovliev/lexer/xio"
 )
 
 type (
 	// Lexer is a lexical analyzer that reads input data and produces tokens.
 	Lexer[T any] struct {
 		logger   common.Logger
-		reader   *common.Reader
+		readAt   *xio.ReadAt
 		states   []states.State[T]
 		messages []common.Message[T]
 		current  int
@@ -27,7 +28,7 @@ type (
 func New[T any](logger common.Logger, reader io.Reader) (ret *Lexer[T]) {
 	ret = &Lexer[T]{
 		logger:  logger,
-		reader:  common.NewReader(logger, reader),
+		readAt:  xio.NewReadAt(logger, reader),
 		current: 0,
 	}
 	return ret
@@ -72,7 +73,7 @@ func (l *Lexer[T]) reset() {
 }
 
 // update updates the current state of the lexer with the given transaction.
-func (l *Lexer[T]) update(tx common.ReadUnreadData) (err error) {
+func (l *Lexer[T]) update(tx xio.ReadUnreadData) (err error) {
 	state := l.currentState()
 	if state == nil {
 		// no more states to process, we're done
@@ -89,14 +90,14 @@ func (l *Lexer[T]) Run(ctx context.Context) (err error) {
 	defer func() { l.logger.Trace("<<= leave Run() = err=%s", err) }()
 loop:
 	for ctx.Err() == nil {
-		tx := l.reader.Begin()
+		tx := l.readAt.Begin()
 		if err = l.update(tx); err == nil {
 			l.logger.Fatal("unexpected nil")
 		}
 		switch {
 		case errors.Is(err, states.ErrCommit):
 			l.logger.Trace("ErrCommit")
-			if _, commitErr := tx.Commit(); commitErr != nil {
+			if commitErr := tx.Commit(); commitErr != nil {
 				l.logger.Error("ErrCommit -> commit error: %v", commitErr)
 				err = commitErr
 				break loop
@@ -117,7 +118,7 @@ loop:
 				err = rollbackErr
 				break loop
 			}
-			if l.reader.Has() {
+			if l.readAt.Has() {
 				l.logger.Error("has non processed data")
 				err = states.ErrHasMoreData
 			} else {

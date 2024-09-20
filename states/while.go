@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/diakovliev/lexer/common"
+	"github.com/diakovliev/lexer/xio"
 )
 
 // While is a state that reads runes while fn returns true.
@@ -21,15 +22,15 @@ func newWhile[T any](logger common.Logger, fn func(rune) bool) *While[T] {
 }
 
 // Update implements State interface. It reads runes while fn returns true and updates the state.
-func (w While[T]) Update(tx common.ReadUnreadData) (err error) {
+func (w While[T]) Update(tx xio.ReadUnreadData) (err error) {
 	count := 0
 	for {
-		data, r, nextErr := common.NextRuneFrom(tx)
+		r, rw, nextErr := tx.NextRune()
 		if nextErr != nil && !errors.Is(nextErr, io.EOF) {
 			err = nextErr
 			return
 		}
-		if errors.Is(nextErr, io.EOF) && len(data) == 0 {
+		if errors.Is(nextErr, io.EOF) && rw == 0 {
 			break
 		}
 		if !w.fn(r) {
@@ -44,7 +45,7 @@ func (w While[T]) Update(tx common.ReadUnreadData) (err error) {
 		// if no runes were read, then rollback the state.
 		err = ErrRollback
 	} else {
-		err = errChainNext
+		err = errNext
 	}
 	return
 }

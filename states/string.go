@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/diakovliev/lexer/common"
+	"github.com/diakovliev/lexer/xio"
 )
 
 // String is a state that matches the given string.
@@ -22,7 +23,7 @@ func newString[T any](input string, logger common.Logger) *String {
 }
 
 // Update implements State interface.
-func (s String) Update(tx common.ReadUnreadData) (err error) {
+func (s String) Update(tx xio.ReadUnreadData) (err error) {
 	size := len(s.input)
 	buffer := bytes.NewBuffer(nil)
 	buffer.Grow(size)
@@ -34,7 +35,7 @@ func (s String) Update(tx common.ReadUnreadData) (err error) {
 		err = ErrRollback
 		return
 	}
-	err = errChainNext
+	err = errNext
 	return
 }
 

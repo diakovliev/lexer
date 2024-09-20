@@ -6,8 +6,6 @@ type MessageType int
 const (
 	// Error represents an error
 	Error MessageType = iota
-	// NL represents a new line
-	NL
 	// User represents a user message
 	User
 )

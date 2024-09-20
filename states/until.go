@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/diakovliev/lexer/common"
+	"github.com/diakovliev/lexer/xio"
 )
 
 // Until is a state that reads until the given function returns true.
@@ -21,15 +22,15 @@ func newUntil[T any](logger common.Logger, fn func(rune) bool) *Until[T] {
 }
 
 // Update implements the State interface. It reads until the given function returns true.
-func (u Until[T]) Update(tx common.ReadUnreadData) (err error) {
+func (u Until[T]) Update(tx xio.ReadUnreadData) (err error) {
 	count := 0
 	for {
-		data, r, nextErr := common.NextRuneFrom(tx)
+		r, rw, nextErr := tx.NextRune()
 		if nextErr != nil && !errors.Is(nextErr, io.EOF) {
 			err = nextErr
 			return
 		}
-		if errors.Is(nextErr, io.EOF) && len(data) == 0 {
+		if errors.Is(nextErr, io.EOF) && rw == 0 {
 			break
 		}
 		if u.fn(r) {
@@ -44,7 +45,7 @@ func (u Until[T]) Update(tx common.ReadUnreadData) (err error) {
 		// if no runes were read, then rollback the state.
 		err = ErrRollback
 	} else {
-		err = errChainNext
+		err = errNext
 	}
 	return
 }

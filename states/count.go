@@ -6,6 +6,7 @@ import (
 	"math"
 
 	"github.com/diakovliev/lexer/common"
+	"github.com/diakovliev/lexer/xio"
 )
 
 // Quantifier is a Count state quantifier.
@@ -45,25 +46,25 @@ func (q Quantifier) getResult(count int) (err error) {
 		if count != q.min {
 			err = ErrRollback
 		} else {
-			err = errChainNext
+			err = errNext
 		}
 	case q.min < q.max:
 		if count < q.min || count > q.max {
 			err = ErrRollback
 		} else {
-			err = errChainNext
+			err = errNext
 		}
 	case q.min == 0:
 		if count < 0 || count > q.max {
 			err = ErrRollback
 		} else {
-			err = errChainNext
+			err = errNext
 		}
 	case q.max == math.MaxInt:
 		if count < q.min {
 			err = ErrRollback
 		} else {
-			err = errChainNext
+			err = errNext
 		}
 	default:
 		panic("unreachable")
@@ -86,19 +87,19 @@ func newQuantified[T any](logger common.Logger, fn func(rune) bool, q Quantifier
 	}
 }
 
-func (qq Quantified[T]) Update(tx common.ReadUnreadData) (err error) {
+func (qq Quantified[T]) Update(tx xio.ReadUnreadData) (err error) {
 	if qq.q.isZero() {
-		err = errChainNext
+		err = errNext
 		return
 	}
 	count := 0
 	for !qq.q.inRange(count) {
-		data, r, nextErr := common.NextRuneFrom(tx)
+		r, w, nextErr := tx.NextRune()
 		if nextErr != nil && !errors.Is(nextErr, io.EOF) {
 			err = nextErr
 			return
 		}
-		if errors.Is(nextErr, io.EOF) && len(data) == 0 {
+		if errors.Is(nextErr, io.EOF) && w == 0 {
 			break
 		}
 		if !qq.fn(r) {
