@@ -102,7 +102,6 @@ loop:
 			err = ErrCommit
 			break loop
 		default:
-			r.logger.Error("unexpected error: %v", err)
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
 				r.logger.Fatal("rollback error: %v", err, rollbackErr)
 			}
