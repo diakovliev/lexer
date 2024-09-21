@@ -11,16 +11,19 @@ import (
 type Emit[T any] struct {
 	logger   common.Logger
 	token    T
+	factory  message.Factory[T]
 	receiver message.Receiver[T]
 }
 
 func newEmit[T any](
 	logger common.Logger,
+	factory message.Factory[T],
 	token T,
 ) *Emit[T] {
 	return &Emit[T]{
-		logger: logger,
-		token:  token,
+		logger:  logger,
+		factory: factory,
+		token:   token,
 	}
 }
 
@@ -45,14 +48,8 @@ func (e Emit[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	if !ok {
 		e.logger.Fatal("state level is not set")
 	}
-	err = e.receiver.Receive(message.Message[T]{
-		Level: level,
-		Type:  message.Token,
-		Token: e.token,
-		Value: data,
-		Pos:   int(pos),
-		Width: len(data),
-	})
+	message := e.factory.Token(level, e.token, data, int(pos), len(data))
+	err = e.receiver.Receive(message)
 	if err != nil {
 		e.logger.Fatal("receiver error: %s", err)
 	}
@@ -62,7 +59,7 @@ func (e Emit[T]) Update(ctx context.Context, tx xio.State) (err error) {
 
 func (b Builder[T]) Emit(token T) (tail *Chain[T]) {
 	defaultName := "Emit"
-	newNode := newEmit(b.logger, token)
+	newNode := newEmit(b.logger, b.factory, token)
 	tail = b.createNode(defaultName, func() any { return newNode })
 	// sent all messages to the the first node receiver
 	newNode.setReceiver(tail.Head().receiver)

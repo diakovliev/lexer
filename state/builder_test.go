@@ -32,7 +32,11 @@ func TestBuilder_NotAState(t *testing.T) {
 		logger.WithLevel(logger.Trace),
 		logger.WithWriter(os.Stdout),
 	)
-	b := Make(logger, message.Dispose[Token]())
+	b := Make(
+		logger,
+		message.DefaultFactory[Token](),
+		message.Dispose[Token](),
+	)
 	assert.Panics(t, func() { b.createNode("s0", newNotAState) })
 }
 
@@ -41,7 +45,11 @@ func TestBuilder(t *testing.T) {
 		logger.WithLevel(logger.Trace),
 		logger.WithWriter(os.Stdout),
 	)
-	b := Make(logger, message.Dispose[Token]())
+	b := Make(
+		logger,
+		message.DefaultFactory[Token](),
+		message.Dispose[Token](),
+	)
 
 	s0 := b.createNode("s0", newFakeState)
 	assert.NotNil(t, s0)

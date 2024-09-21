@@ -76,13 +76,17 @@ func TestRepeat_Builder(t *testing.T) {
 				logger.WithWriter(os.Stdout),
 			)
 			receiver := message.Slice[Token]()
-			b := Make(logger, receiver)
+			builder := Make(
+				logger,
+				message.DefaultFactory[Token](),
+				receiver,
+			)
 			if tc.wantPanic {
 				assert.Panics(t, func() {
-					tc.state(b)
+					tc.state(builder)
 				})
 			} else {
-				assert.NotNil(t, tc.state(b))
+				assert.NotNil(t, tc.state(builder))
 			}
 		})
 	}
@@ -181,9 +185,13 @@ func TestRepeat(t *testing.T) {
 				logger.WithWriter(os.Stdout),
 			)
 			receiver := message.Slice[Token]()
-			b := Make(logger, receiver)
+			builder := Make(
+				logger,
+				message.DefaultFactory[Token](),
+				receiver,
+			)
 			tx := xio.New(logger, bytes.NewBufferString(tc.input))
-			err := tc.state(b).Update(WithNextStateLevel(context.Background()), tx.Begin())
+			err := tc.state(builder).Update(WithNextStateLevel(context.Background()), tx.Begin())
 			assert.ErrorIs(t, err, tc.wantError)
 			assert.Equal(t, tc.wantMessages, receiver.Slice)
 		})

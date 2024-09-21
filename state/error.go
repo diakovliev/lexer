@@ -9,22 +9,23 @@ import (
 )
 
 type (
-	ErrorValue struct {
-		Err   error
-		Value any
-	}
-
 	Error[T any] struct {
 		logger   common.Logger
 		err      error
+		factory  message.Factory[T]
 		receiver message.Receiver[T]
 	}
 )
 
-func newError[T any](logger common.Logger, err error) *Error[T] {
+func newError[T any](
+	logger common.Logger,
+	factory message.Factory[T],
+	err error,
+) *Error[T] {
 	return &Error[T]{
-		logger: logger,
-		err:    err,
+		logger:  logger,
+		factory: factory,
+		err:     err,
 	}
 }
 
@@ -49,16 +50,8 @@ func (e Error[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	if !ok {
 		e.logger.Fatal("state level is not set")
 	}
-	err = e.receiver.Receive(message.Message[T]{
-		Level: level,
-		Type:  message.Error,
-		Value: &ErrorValue{
-			Err:   e.err,
-			Value: data,
-		},
-		Pos:   int(pos),
-		Width: len(data),
-	})
+	message := e.factory.Error(level, e.err, data, int(pos), len(data))
+	err = e.receiver.Receive(message)
 	if err != nil {
 		e.logger.Fatal("receiver error: %s", err)
 	}
@@ -68,7 +61,7 @@ func (e Error[T]) Update(ctx context.Context, tx xio.State) (err error) {
 
 func (b Builder[T]) Error(err error) (tail *Chain[T]) {
 	defaultName := "Error"
-	newNode := newError[T](b.logger, err)
+	newNode := newError[T](b.logger, b.factory, err)
 	tail = b.createNode(defaultName, func() any { return newNode })
 	// sent all messages to the the first node receiver
 	newNode.setReceiver(tail.Head().receiver)
