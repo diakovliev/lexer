@@ -65,49 +65,6 @@ func (c *Chain[T]) Append(node *Chain[T]) *Chain[T] {
 	return c
 }
 
-func (c *Chain[T]) repeat(ctx context.Context, state State[T], repeat error, tx xio.State) (err error) {
-	if state == nil {
-		c.logger.Fatal("invalid grammar: repeat without previous state")
-	}
-	q, ok := getQuantifier(repeat)
-	if !ok {
-		c.logger.Fatal("not a quantifier: %s", repeat)
-	}
-	source := xio.AsSource(tx)
-	count := 1
-loop:
-	for ; count < q.max; count++ {
-		tx := source.Begin()
-		if err = state.Update(ctx, tx); err == nil {
-			c.logger.Fatal("unexpected nil")
-		}
-		switch {
-		case errors.Is(err, ErrRollback):
-			if err := tx.Rollback(); err != nil {
-				c.logger.Fatal("rollback error: %s", err)
-			}
-			err = q.MakeResult(count)
-			break loop
-		case errors.Is(err, ErrNext), errors.Is(err, ErrCommit):
-			if err := tx.Commit(); err != nil {
-				c.logger.Fatal("commit error: %s", err)
-			}
-			nextCount := count + 1
-			if nextCount < q.max {
-				continue
-			}
-			err = q.MakeResult(nextCount)
-			break loop
-		default:
-			if err := tx.Rollback(); err != nil {
-				c.logger.Fatal("rollback error: %s", err)
-			}
-			c.logger.Fatal("unexpected error: %s", err)
-		}
-	}
-	return
-}
-
 // Update implements State interface
 func (c *Chain[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	current := c
@@ -132,7 +89,16 @@ func (c *Chain[T]) Update(ctx context.Context, tx xio.State) (err error) {
 				return
 			}
 		case errors.Is(err, ErrRollback):
-			return
+			// Repeat(CountBetween(0, N))
+			if next == nil {
+				return
+			}
+			if isRepeat[T](current.state) {
+				return
+			}
+			if isZeroRepeat[T](next.state) {
+				err = ErrNext
+			}
 		case errors.Is(err, ErrBreak):
 			if next != nil {
 				c.logger.Fatal("invalid grammar: break must be last in state")
