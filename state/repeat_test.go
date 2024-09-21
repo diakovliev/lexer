@@ -30,6 +30,10 @@ func TestRepeat_invalidQuantifier(t *testing.T) {
 	assert.Panics(t, func() {
 		b.String("foo").Repeat(CountBetween(100, 50)).Emit(messageType1)
 	})
+	// can't chain repeats
+	assert.Panics(t, func() {
+		b.String("foo").Repeat(Count(1)).Repeat(CountBetween(100, 50)).Emit(messageType1)
+	})
 }
 
 func TestRepeat(t *testing.T) {
@@ -54,7 +58,7 @@ func TestRepeat(t *testing.T) {
 			wantError: ErrCommit,
 		},
 		{
-			name:  "foofoofo 'foo'.count(3)",
+			name:  "foofoofo 'foo'.Count(3)",
 			input: "foofoofo",
 			state: func(b Builder[testMessageType]) *Chain[testMessageType] {
 				return b.String("foo").Repeat(Count(3)).Emit(messageType1)
@@ -88,6 +92,28 @@ func TestRepeat(t *testing.T) {
 			input: "fooffo",
 			state: func(b Builder[testMessageType]) *Chain[testMessageType] {
 				return b.String("foo").Repeat(CountBetween(1, 3)).Emit(messageType1)
+			},
+			wantMessages: []message.Message[testMessageType]{
+				{Level: 0, Type: message.Token, Token: messageType1, Value: []byte("foo"), Pos: 0, Width: 3},
+			},
+			wantError: ErrCommit,
+		},
+		{
+			name:  `fooffo 'foo'.'ffo'.CountBetween(0,3)`,
+			input: "fooffo",
+			state: func(b Builder[testMessageType]) *Chain[testMessageType] {
+				return b.String("foo").String("ffo").Repeat(CountBetween(0, 3)).Emit(messageType1)
+			},
+			wantMessages: []message.Message[testMessageType]{
+				{Level: 0, Type: message.Token, Token: messageType1, Value: []byte("fooffo"), Pos: 0, Width: 6},
+			},
+			wantError: ErrCommit,
+		},
+		{
+			name:  `foo 'foo'.'ffo'.CountBetween(0,3)`,
+			input: "foo",
+			state: func(b Builder[testMessageType]) *Chain[testMessageType] {
+				return b.String("foo").String("ffo").Repeat(CountBetween(0, 3)).Emit(messageType1)
 			},
 			wantMessages: []message.Message[testMessageType]{
 				{Level: 0, Type: message.Token, Token: messageType1, Value: []byte("foo"), Pos: 0, Width: 3},
