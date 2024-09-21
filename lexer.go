@@ -17,18 +17,25 @@ type (
 		source   xio.Source
 		builder  state.Builder[T]
 		provider state.Provider[T]
-		receiver message.Receiver[T]
 	}
 )
 
 // New creates a new lexer instance with the given reader and logger.
-func New[T any](logger common.Logger, reader io.Reader, receiver message.Receiver[T]) (ret *Lexer[T]) {
+func New[T any](
+	logger common.Logger,
+	reader io.Reader,
+	factory message.Factory[T],
+	receiver message.Receiver[T],
+) (ret *Lexer[T]) {
 	ret = &Lexer[T]{
-		logger:   logger,
-		source:   xio.New(logger, reader),
-		receiver: receiver,
+		builder: state.Make(
+			logger,
+			factory,
+			receiver,
+		),
+		logger: logger,
+		source: xio.New(logger, reader),
 	}
-	ret.builder = state.Make(ret.logger, ret.receiver)
 	return ret
 }
 

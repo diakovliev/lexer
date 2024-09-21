@@ -7,15 +7,21 @@ import (
 
 // Builder is a builder for the chains of states.
 type Builder[T any] struct {
+	factory  message.Factory[T]
 	receiver message.Receiver[T]
 	logger   common.Logger
 	last     *Chain[T]
 }
 
 // Make creates a new builder for the chains of states.
-func Make[T any](logger common.Logger, receiver message.Receiver[T]) Builder[T] {
+func Make[T any](
+	logger common.Logger,
+	factory message.Factory[T],
+	receiver message.Receiver[T],
+) Builder[T] {
 	return Builder[T]{
 		logger:   logger,
+		factory:  factory,
 		receiver: receiver,
 	}
 }

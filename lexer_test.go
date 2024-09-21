@@ -138,7 +138,7 @@ func TestLexer(t *testing.T) {
 				)
 			},
 			wantMessages: []message.Message[testMessageType]{
-				{Level: 0, Type: message.Error, Value: &state.ErrorValue{Err: errUnhandledData, Value: []byte("123")}, Pos: 0, Width: 3},
+				{Level: 0, Type: message.Error, Value: &message.ErrorValue{Err: errUnhandledData, Value: []byte("123")}, Pos: 0, Width: 3},
 			},
 			wantError: io.EOF,
 		},
@@ -205,6 +205,7 @@ func TestLexer(t *testing.T) {
 			l := lexer.New(
 				logger,
 				bytes.NewBufferString(tc.input),
+				message.DefaultFactory[testMessageType](),
 				receiver,
 			).With(tc.state)
 			err := l.Run(context.Background())
