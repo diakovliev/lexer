@@ -3,6 +3,7 @@ package state
 import (
 	"bytes"
 	"context"
+	"errors"
 	"os"
 	"testing"
 
@@ -12,36 +13,87 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRepeat_invalidQuantifier(t *testing.T) {
-	logger := logger.New(
-		logger.WithLevel(logger.Trace),
-		logger.WithWriter(os.Stdout),
-	)
-	receiver := message.Slice[testMessageType]()
-	b := Make(logger, receiver)
+func TestRepeat_Builder(t *testing.T) {
+	type testCase struct {
+		name      string
+		state     func(b Builder[Token]) *Chain[Token]
+		wantPanic bool
+	}
 
-	// min == max
-	assert.NotNil(t, b.String("foo").Repeat(CountBetween(100, 100)).Emit(messageType1))
-	// min == max = 0
-	assert.NotNil(t, b.String("foo").Repeat(Count(0)).Emit(messageType1))
-	// min == max = 1
-	assert.NotNil(t, b.String("foo").Repeat(Count(1)).Emit(messageType1))
-	// min > max
-	assert.Panics(t, func() {
-		b.String("foo").Repeat(CountBetween(100, 50)).Emit(messageType1)
-	})
-	// can't chain repeats
-	assert.Panics(t, func() {
-		b.String("foo").Repeat(Count(1)).Repeat(CountBetween(100, 50)).Emit(messageType1)
-	})
+	tests := []testCase{
+		{
+			name: `min == max`,
+			state: func(b Builder[Token]) *Chain[Token] {
+				return b.String("foo").Repeat(CountBetween(100, 100)).Emit(Token1)
+			},
+		},
+		{
+			name: `min == max = 0`,
+			state: func(b Builder[Token]) *Chain[Token] {
+				return b.String("foo").Repeat(Count(0)).Emit(Token1)
+			},
+		},
+		{
+			name: `min == max = 1`,
+			state: func(b Builder[Token]) *Chain[Token] {
+				return b.String("foo").Repeat(Count(1)).Emit(Token1)
+			},
+		},
+		{
+			name: `min > max`,
+			state: func(b Builder[Token]) *Chain[Token] {
+				return b.String("foo").Repeat(CountBetween(100, 50)).Emit(Token1)
+			},
+			wantPanic: true,
+		},
+		{
+			name: `can't repeat repeat`,
+			state: func(b Builder[Token]) *Chain[Token] {
+				return b.String("foo").Repeat(Count(1)).Repeat(CountBetween(100, 50)).Emit(Token1)
+			},
+			wantPanic: true,
+		},
+		{
+			name: `can't repeat emit`,
+			state: func(b Builder[Token]) *Chain[Token] {
+				return b.String("foo").Emit(Token1).Repeat(Count(1))
+			},
+			wantPanic: true,
+		},
+		{
+			name: `can't repeat error`,
+			state: func(b Builder[Token]) *Chain[Token] {
+				return b.String("foo").Error(errors.New("test")).Repeat(Count(1))
+			},
+			wantPanic: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			logger := logger.New(
+				logger.WithLevel(logger.Trace),
+				logger.WithWriter(os.Stdout),
+			)
+			receiver := message.Slice[Token]()
+			b := Make(logger, receiver)
+			if tc.wantPanic {
+				assert.Panics(t, func() {
+					tc.state(b)
+				})
+			} else {
+				assert.NotNil(t, tc.state(b))
+			}
+		})
+	}
 }
 
 func TestRepeat(t *testing.T) {
 	type testCase struct {
 		name         string
 		input        string
-		state        func(b Builder[testMessageType]) *Chain[testMessageType]
-		wantMessages []message.Message[testMessageType]
+		state        func(b Builder[Token]) *Chain[Token]
+		wantMessages []message.Message[Token]
 		wantError    error
 	}
 
@@ -49,74 +101,74 @@ func TestRepeat(t *testing.T) {
 		{
 			name:  `foofoofoo 'foo'.Count(3)`,
 			input: "foofoofoo",
-			state: func(b Builder[testMessageType]) *Chain[testMessageType] {
-				return b.String("foo").Repeat(Count(3)).Emit(messageType1)
+			state: func(b Builder[Token]) *Chain[Token] {
+				return b.String("foo").Repeat(Count(3)).Emit(Token1)
 			},
-			wantMessages: []message.Message[testMessageType]{
-				{Level: 0, Type: message.Token, Token: messageType1, Value: []byte("foofoofoo"), Pos: 0, Width: 9},
+			wantMessages: []message.Message[Token]{
+				{Level: 0, Type: message.Token, Token: Token1, Value: []byte("foofoofoo"), Pos: 0, Width: 9},
 			},
 			wantError: ErrCommit,
 		},
 		{
 			name:  "foofoofo 'foo'.Count(3)",
 			input: "foofoofo",
-			state: func(b Builder[testMessageType]) *Chain[testMessageType] {
-				return b.String("foo").Repeat(Count(3)).Emit(messageType1)
+			state: func(b Builder[Token]) *Chain[Token] {
+				return b.String("foo").Repeat(Count(3)).Emit(Token1)
 			},
 			wantError: ErrRollback,
 		},
 		{
 			name:  `foofoofo 'foo'.Count(2)`,
 			input: "foofoofo",
-			state: func(b Builder[testMessageType]) *Chain[testMessageType] {
-				return b.String("foo").Repeat(Count(2)).Emit(messageType1)
+			state: func(b Builder[Token]) *Chain[Token] {
+				return b.String("foo").Repeat(Count(2)).Emit(Token1)
 			},
-			wantMessages: []message.Message[testMessageType]{
-				{Level: 0, Type: message.Token, Token: messageType1, Value: []byte("foofoo"), Pos: 0, Width: 6},
+			wantMessages: []message.Message[Token]{
+				{Level: 0, Type: message.Token, Token: Token1, Value: []byte("foofoo"), Pos: 0, Width: 6},
 			},
 			wantError: ErrCommit,
 		},
 		{
 			name:  `foofoofo 'foo'.CountBetween(2,3)`,
 			input: "foofoofo",
-			state: func(b Builder[testMessageType]) *Chain[testMessageType] {
-				return b.String("foo").Repeat(CountBetween(2, 3)).Emit(messageType1)
+			state: func(b Builder[Token]) *Chain[Token] {
+				return b.String("foo").Repeat(CountBetween(2, 3)).Emit(Token1)
 			},
-			wantMessages: []message.Message[testMessageType]{
-				{Level: 0, Type: message.Token, Token: messageType1, Value: []byte("foofoo"), Pos: 0, Width: 6},
+			wantMessages: []message.Message[Token]{
+				{Level: 0, Type: message.Token, Token: Token1, Value: []byte("foofoo"), Pos: 0, Width: 6},
 			},
 			wantError: ErrCommit,
 		},
 		{
 			name:  `fooffo 'foo'.CountBetween(1,3)`,
 			input: "fooffo",
-			state: func(b Builder[testMessageType]) *Chain[testMessageType] {
-				return b.String("foo").Repeat(CountBetween(1, 3)).Emit(messageType1)
+			state: func(b Builder[Token]) *Chain[Token] {
+				return b.String("foo").Repeat(CountBetween(1, 3)).Emit(Token1)
 			},
-			wantMessages: []message.Message[testMessageType]{
-				{Level: 0, Type: message.Token, Token: messageType1, Value: []byte("foo"), Pos: 0, Width: 3},
+			wantMessages: []message.Message[Token]{
+				{Level: 0, Type: message.Token, Token: Token1, Value: []byte("foo"), Pos: 0, Width: 3},
 			},
 			wantError: ErrCommit,
 		},
 		{
 			name:  `fooffo 'foo'.'ffo'.CountBetween(0,3)`,
 			input: "fooffo",
-			state: func(b Builder[testMessageType]) *Chain[testMessageType] {
-				return b.String("foo").String("ffo").Repeat(CountBetween(0, 3)).Emit(messageType1)
+			state: func(b Builder[Token]) *Chain[Token] {
+				return b.String("foo").String("ffo").Repeat(CountBetween(0, 3)).Emit(Token1)
 			},
-			wantMessages: []message.Message[testMessageType]{
-				{Level: 0, Type: message.Token, Token: messageType1, Value: []byte("fooffo"), Pos: 0, Width: 6},
+			wantMessages: []message.Message[Token]{
+				{Level: 0, Type: message.Token, Token: Token1, Value: []byte("fooffo"), Pos: 0, Width: 6},
 			},
 			wantError: ErrCommit,
 		},
 		{
 			name:  `foo 'foo'.'ffo'.CountBetween(0,3)`,
 			input: "foo",
-			state: func(b Builder[testMessageType]) *Chain[testMessageType] {
-				return b.String("foo").String("ffo").Repeat(CountBetween(0, 3)).Emit(messageType1)
+			state: func(b Builder[Token]) *Chain[Token] {
+				return b.String("foo").String("ffo").Repeat(CountBetween(0, 3)).Emit(Token1)
 			},
-			wantMessages: []message.Message[testMessageType]{
-				{Level: 0, Type: message.Token, Token: messageType1, Value: []byte("foo"), Pos: 0, Width: 3},
+			wantMessages: []message.Message[Token]{
+				{Level: 0, Type: message.Token, Token: Token1, Value: []byte("foo"), Pos: 0, Width: 3},
 			},
 			wantError: ErrCommit,
 		},
@@ -128,7 +180,7 @@ func TestRepeat(t *testing.T) {
 				logger.WithLevel(logger.Trace),
 				logger.WithWriter(os.Stdout),
 			)
-			receiver := message.Slice[testMessageType]()
+			receiver := message.Slice[Token]()
 			b := Make(logger, receiver)
 			tx := xio.New(logger, bytes.NewBufferString(tc.input))
 			err := tc.state(b).Update(WithNextStateLevel(context.Background()), tx.Begin())

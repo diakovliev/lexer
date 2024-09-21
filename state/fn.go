@@ -35,22 +35,22 @@ func (f Fn[T]) Update(ctx context.Context, tx xio.State) (err error) {
 }
 
 // Fn is a state that matches rune by the given function.
-func (b Builder[T]) Fn(fn func(rune) bool) (head *Chain[T]) {
+func (b Builder[T]) Fn(fn func(rune) bool) (tail *Chain[T]) {
 	defaultName := "Fn"
-	head = b.createNode(defaultName, func() any { return newFn[T](b.logger, fn) })
+	tail = b.createNode(defaultName, func() any { return newFn[T](b.logger, fn) })
 	return
 }
 
 // Rune is a state that matches the given rune.
-func (b Builder[T]) Rune(ir rune) (head *Chain[T]) {
+func (b Builder[T]) Rune(ir rune) (tail *Chain[T]) {
 	defaultName := "Rune"
-	head = b.createNode(defaultName, func() any { return newFn[T](b.logger, func(r rune) bool { return r == ir }) })
+	tail = b.createNode(defaultName, func() any { return newFn[T](b.logger, func(r rune) bool { return r == ir }) })
 	return
 }
 
 // AnyRune is a state that matches any rune.
-func (b Builder[T]) AnyRune() (head *Chain[T]) {
+func (b Builder[T]) AnyRune() (tail *Chain[T]) {
 	defaultName := "AnyRune"
-	head = b.createNode(defaultName, func() any { return newFn[T](b.logger, func(r rune) bool { return true }) })
+	tail = b.createNode(defaultName, func() any { return newFn[T](b.logger, func(r rune) bool { return true }) })
 	return
 }

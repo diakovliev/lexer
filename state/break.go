@@ -22,8 +22,8 @@ func (b Break[T]) Update(_ context.Context, _ xio.State) (err error) {
 	return
 }
 
-func (b Builder[T]) Break() (head *Chain[T]) {
+func (b Builder[T]) Break() (tail *Chain[T]) {
 	defaultName := "Break"
-	head = b.createNode(defaultName, func() any { return newBreak[T](b.logger) })
+	tail = b.createNode(defaultName, func() any { return newBreak[T](b.logger) })
 	return
 }

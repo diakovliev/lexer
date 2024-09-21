@@ -60,11 +60,16 @@ func (e Emit[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	return
 }
 
-func (b Builder[T]) Emit(token T) (head *Chain[T]) {
+func (b Builder[T]) Emit(token T) (tail *Chain[T]) {
 	defaultName := "Emit"
 	newNode := newEmit(b.logger, token)
-	head = b.createNode(defaultName, func() any { return newNode })
+	tail = b.createNode(defaultName, func() any { return newNode })
 	// sent all messages to the the first node receiver
-	newNode.setReceiver(head.Receiver)
+	newNode.setReceiver(tail.Head().receiver)
+	return
+}
+
+func isEmit[T any](s State[T]) (ret bool) {
+	_, ret = s.(*Emit[T])
 	return
 }

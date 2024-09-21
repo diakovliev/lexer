@@ -7,37 +7,38 @@ import (
 
 // Builder is a builder for the chains of states.
 type Builder[T any] struct {
-	Receiver message.Receiver[T]
+	receiver message.Receiver[T]
 	logger   common.Logger
-	next     *Chain[T]
+	last     *Chain[T]
 }
 
 // Make creates a new builder for the chains of states.
 func Make[T any](logger common.Logger, receiver message.Receiver[T]) Builder[T] {
 	return Builder[T]{
 		logger:   logger,
-		Receiver: receiver,
+		receiver: receiver,
 	}
 }
 
 // createNode creates a new node in chain of states and returns the head of the chain.
-func (b Builder[T]) createNode(name string, newState func() any) (head *Chain[T]) {
+func (b Builder[T]) createNode(name string, newState func() any) (tail *Chain[T]) {
 	created := newState()
 	var state State[T]
 	var ok bool
 	if state, ok = created.(State[T]); !ok {
-		b.logger.Fatal("state must implement State[T] interface: name: %s", name)
+		b.logger.Fatal("not a state: %T", created)
 	}
-	prev := b.next
-	node := newChain(b, name, state)
-	if node.Builder.next != nil {
-		node.Builder.next.Append(node)
-		node.prev = prev
-	} else {
-		node.Builder.next = node
-		node.prev = prev
+	prev := b.last
+	var node *Chain[T]
+	if prev == nil {
+		tail = newChain(b, name, state)
+		tail.Builder.last = tail
+		return
 	}
-	head = node.Builder.next
-	node.head = head
+	node = newChain(prev.Builder, name, state)
+	node.Builder.last = node
+	node.prev = prev
+	prev.next = node
+	tail = node
 	return
 }

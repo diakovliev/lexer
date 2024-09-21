@@ -32,8 +32,8 @@ func (t Tap[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	return
 }
 
-func (b Builder[T]) Tap(ctx context.Context, fn TapFn) (head *Chain[T]) {
+func (b Builder[T]) Tap(ctx context.Context, fn TapFn) (tail *Chain[T]) {
 	defaultName := "Tap"
-	head = b.createNode(defaultName, func() any { return newTap[T](b.logger, fn) })
+	tail = b.createNode(defaultName, func() any { return newTap[T](b.logger, fn) })
 	return
 }

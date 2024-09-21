@@ -11,26 +11,27 @@ import (
 )
 
 // Quantifier is a Count state quantifier.
-// Cases:
-//   - min == max: match exact count of runes
-//   - min < max: match any count of runes in range [min, max]
-//   - min == 0: match any count of runes in range [0, max]
-//   - max == math.MaxInt: match any count of runes in range [min, infinity(EOF)]
 type Quantifier struct {
 	min uint
 	max uint
 }
 
-// CountBetween returns a new Quantified state quantifier with min and max runes to match.
+// CountBetween returns a new Quantifier with min and max runes to match.
+// Cases:
+//   - min == max: match exact count of runes
+//   - min < max: match any count of runes in range [min, max]
+//   - min == 0: match any count of runes in range [0, max]
+//   - max == math.MaxUint: match any count of runes in range [min, infinity(EOF)]
 func CountBetween(min, max uint) Quantifier {
 	return Quantifier{min: min, max: max}
 }
 
-// Count returns a new Quantified state quantifier with exact n runes to match.
+// Count returns a new Quantifier with exact n runes to match.
 func Count(n uint) Quantifier {
 	return Quantifier{min: n, max: n}
 }
 
+// String implements fmt.Stringer interface.
 func (q Quantifier) String() string {
 	return fmt.Sprintf("min: %d, max: %d", q.min, q.max)
 }
@@ -50,12 +51,7 @@ func (q Quantifier) isOne() (ret bool) {
 	return
 }
 
-func (q Quantifier) InRange(repeats uint) (ret bool) {
-	ret = q.min <= repeats && (q.max == math.MaxInt || repeats <= q.max)
-	return
-}
-
-func (q Quantifier) MakeResult(repeats uint) (err error) {
+func (q Quantifier) makeResult(repeats uint) (err error) {
 	switch {
 	case q.min == q.max:
 		if repeats != q.min {
@@ -75,7 +71,7 @@ func (q Quantifier) MakeResult(repeats uint) (err error) {
 		} else {
 			err = ErrNext
 		}
-	case q.max == math.MaxInt:
+	case q.max == math.MaxUint:
 		if repeats < q.min {
 			err = ErrRollback
 		} else {
@@ -111,13 +107,13 @@ func (r Repeat[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	return
 }
 
-func isRepeat[T any](state State[T]) (ret bool) {
-	_, ret = state.(*Repeat[T])
+func isRepeat[T any](s State[T]) (ret bool) {
+	_, ret = s.(*Repeat[T])
 	return
 }
 
-func isZeroRepeat[T any](state State[T]) (ret bool) {
-	repeat, ok := state.(*Repeat[T])
+func isZeroRepeat[T any](s State[T]) (ret bool) {
+	repeat, ok := s.(*Repeat[T])
 	if !ok {
 		return
 	}
@@ -147,7 +143,7 @@ loop:
 			if err := tx.Rollback(); err != nil {
 				c.logger.Fatal("rollback error: %s", err)
 			}
-			err = q.MakeResult(count)
+			err = q.makeResult(count)
 			break loop
 		case errors.Is(err, ErrNext), errors.Is(err, ErrCommit):
 			if err := tx.Commit(); err != nil {
@@ -157,7 +153,7 @@ loop:
 			if nextCount < q.max {
 				continue
 			}
-			err = q.MakeResult(nextCount)
+			err = q.makeResult(nextCount)
 			break loop
 		default:
 			if err := tx.Rollback(); err != nil {
@@ -170,14 +166,20 @@ loop:
 }
 
 // Repeat is a state that applies a	quantifier to a previous state.
-func (b Builder[T]) Repeat(q Quantifier) (head *Chain[T]) {
+func (b Builder[T]) Repeat(q Quantifier) (tail *Chain[T]) {
 	if !q.isValid() {
 		b.logger.Fatal("invalid grammar: invalid quantifier: %s", q)
 	}
-	if isRepeat[T](b.next.state) {
-		b.logger.Fatal("invalid grammar: can't chain repeats")
+	if isRepeat[T](b.last.state) {
+		b.logger.Fatal("invalid grammar: can't repeat repeat")
+	}
+	if isEmit[T](b.last.state) {
+		b.logger.Fatal("invalid grammar: can't repeat emit")
+	}
+	if isError[T](b.last.state) {
+		b.logger.Fatal("invalid grammar: can't repeat error")
 	}
 	defaultName := "Q"
-	head = b.createNode(defaultName, func() any { return newRepeat[T](b.logger, q) })
+	tail = b.createNode(defaultName, func() any { return newRepeat[T](b.logger, q) })
 	return
 }

@@ -66,11 +66,16 @@ func (e Error[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	return
 }
 
-func (b Builder[T]) Error(err error) (head *Chain[T]) {
+func (b Builder[T]) Error(err error) (tail *Chain[T]) {
 	defaultName := "Error"
 	newNode := newError[T](b.logger, err)
-	head = b.createNode(defaultName, func() any { return newNode })
+	tail = b.createNode(defaultName, func() any { return newNode })
 	// sent all messages to the the first node receiver
-	newNode.setReceiver(head.Receiver)
+	newNode.setReceiver(tail.Head().receiver)
+	return
+}
+
+func isError[T any](s State[T]) (ret bool) {
+	_, ret = s.(*Error[T])
 	return
 }
