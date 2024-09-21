@@ -28,11 +28,14 @@ func (b Builder[T]) createNode(name string, newState func() any) (head *Chain[T]
 	if state, ok = created.(State[T]); !ok {
 		b.logger.Fatal("state must implement State[T] interface: name: %s", name)
 	}
+	prev := b.next
 	node := newChain(b, name, state)
 	if node.Builder.next != nil {
 		node.Builder.next.Append(node)
+		node.prev = prev
 	} else {
 		node.Builder.next = node
+		node.prev = prev
 	}
 	head = node.Builder.next
 	node.head = head

@@ -77,6 +77,11 @@ loop:
 			r.logger.Fatal("unexpected nil")
 		}
 		switch {
+		case errors.Is(err, ErrRepeat), errors.Is(err, ErrNext):
+			if err := tx.Rollback(); err != nil {
+				r.logger.Fatal("commit error: %v", err)
+			}
+			r.logger.Fatal("invalid grammar: repeat and next allowed only inside chain")
 		case errors.Is(err, ErrCommit):
 			if err := tx.Commit(); err != nil {
 				r.logger.Fatal("commit error: %v", err)

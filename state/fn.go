@@ -22,11 +22,11 @@ func newFn[T any](logger common.Logger, fn func(rune) bool) *Fn[T] {
 }
 
 func (f Fn[T]) Update(ctx context.Context, tx xio.State) (err error) {
-	r, w, err := tx.NextRune()
+	r, rw, err := tx.NextRune()
 	if err != nil && !errors.Is(err, io.EOF) {
 		return
 	}
-	if (errors.Is(err, io.EOF) && w == 0) || !f.fn(r) {
+	if (errors.Is(err, io.EOF) && rw == 0) || !f.fn(r) {
 		err = ErrRollback
 		return
 	}
