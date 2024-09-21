@@ -52,8 +52,8 @@ func (w While[T]) Update(ctx context.Context, tx xio.State) (err error) {
 }
 
 // While creates a state that reads runes while fn returns true.
-func (b Builder[T]) While(fn func(rune) bool) (head *Chain[T]) {
+func (b Builder[T]) While(fn func(rune) bool) (tail *Chain[T]) {
 	defaultName := "While"
-	head = b.createNode(defaultName, func() any { return newWhile[T](b.logger, fn) })
+	tail = b.createNode(defaultName, func() any { return newWhile[T](b.logger, fn) })
 	return
 }

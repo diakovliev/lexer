@@ -41,8 +41,8 @@ func (s String) Update(ctx context.Context, tx xio.State) (err error) {
 }
 
 // String is a state that matches the given string.
-func (b Builder[T]) String(input string) (head *Chain[T]) {
+func (b Builder[T]) String(input string) (tail *Chain[T]) {
 	defaultName := "String"
-	head = b.createNode(defaultName, func() any { return newString[T](input, b.logger) })
+	tail = b.createNode(defaultName, func() any { return newString[T](input, b.logger) })
 	return
 }

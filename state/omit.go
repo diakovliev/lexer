@@ -30,8 +30,8 @@ func (o Omit[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	return
 }
 
-func (b Builder[T]) Omit() (head *Chain[T]) {
+func (b Builder[T]) Omit() (tail *Chain[T]) {
 	defaultName := "Omit"
-	head = b.createNode(defaultName, func() any { return newOmit[T](b.logger) })
+	tail = b.createNode(defaultName, func() any { return newOmit[T](b.logger) })
 	return
 }

@@ -31,8 +31,8 @@ func (ss SubState[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	return
 }
 
-func (b Builder[T]) State(builder Builder[T], provider Provider[T]) (head *Chain[T]) {
+func (b Builder[T]) State(builder Builder[T], provider Provider[T]) (tail *Chain[T]) {
 	defaultName := "SubState"
-	head = b.createNode(defaultName, func() any { return newSubState(b.logger, builder, provider) })
+	tail = b.createNode(defaultName, func() any { return newSubState(b.logger, builder, provider) })
 	return
 }

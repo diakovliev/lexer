@@ -12,23 +12,22 @@ import (
 type (
 	Chain[T any] struct {
 		Builder[T]
-		Receiver *message.SliceReceiver[T]
 		logger   common.Logger
-		state    State[T]
-		name     string
-		head     *Chain[T]
 		prev     *Chain[T]
 		next     *Chain[T]
+		state    State[T]
+		name     string
+		receiver *message.SliceReceiver[T]
 	}
 )
 
 // newChain creates a new instance of Node struct. It takes logger and name as parameters.
 // The name parameter is used for logging purposes.
-func newChain[T any](factory Builder[T], name string, state State[T]) *Chain[T] {
+func newChain[T any](builder Builder[T], name string, state State[T]) *Chain[T] {
 	return &Chain[T]{
-		Builder:  factory,
-		Receiver: message.Slice[T](),
-		logger:   factory.logger,
+		Builder:  builder,
+		receiver: message.Slice[T](),
+		logger:   builder.logger,
 		name:     name,
 		state:    state,
 	}
@@ -43,46 +42,43 @@ func (c *Chain[T]) Prev() *Chain[T] {
 	return c.prev
 }
 
-// Last returns the last state in the chain of nodes. If there is no next node, it returns current node.
-func (c *Chain[T]) Last() *Chain[T] {
-	currentState := c
-	for currentState.Next() != nil {
-		currentState = currentState.Next()
+// Tail returns the last state in the chain of nodes. If there is no next node, it returns current node.
+func (c *Chain[T]) Tail() *Chain[T] {
+	current := c
+	for current.Next() != nil {
+		current = current.Next()
 	}
-	return currentState
+	return current
 }
 
-// Append appends a new state to the end of the chain of nodes. If there is no next node,
-// it sets the next node as the one passed in parameter. Otherwise, it updates the last node's next
-// field with the one passed in parameter. It returns the updated node.
-func (c *Chain[T]) Append(node *Chain[T]) *Chain[T] {
-	if c.next == nil {
-		c.next = node
-		return c
+func (c *Chain[T]) Head() *Chain[T] {
+	current := c
+	for current.Prev() != nil {
+		current = current.Prev()
 	}
-	last := c.Last()
-	last.next = node
-	return c
+	return current
 }
 
 // Update implements State interface
 func (c *Chain[T]) Update(ctx context.Context, tx xio.State) (err error) {
-	current := c
+	head := c.Head()
+	current := head
 	for current != nil {
+		prev := current.Prev()
+		next := current.Next()
 		if err = current.state.Update(ctx, tx); err == nil {
 			c.logger.Fatal("unexpected nil")
 		}
 		if errors.Is(err, ErrRepeat) {
-			err = c.repeat(ctx, current.Prev().state, err, tx)
+			err = c.repeat(ctx, prev.state, err, tx)
 		}
-		next := current.Next()
 		switch {
 		case errors.Is(err, ErrNext):
 			if next == nil {
 				c.logger.Fatal("invalid grammar: next can't be from last in state")
 			}
 		case errors.Is(err, ErrCommit):
-			if err := c.head.Receiver.EmitTo(c.head.Builder.Receiver); err != nil {
+			if err := head.receiver.EmitTo(head.Builder.receiver); err != nil {
 				c.logger.Fatal("emit to error: %s", err)
 			}
 			if next == nil {
@@ -96,9 +92,10 @@ func (c *Chain[T]) Update(ctx context.Context, tx xio.State) (err error) {
 			if isRepeat[T](current.state) {
 				return
 			}
-			if isZeroRepeat[T](next.state) {
-				err = ErrNext
+			if !isZeroRepeat[T](next.state) {
+				return
 			}
+			err = ErrNext
 		case errors.Is(err, ErrBreak):
 			if next != nil {
 				c.logger.Fatal("invalid grammar: break must be last in state")

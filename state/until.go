@@ -52,8 +52,8 @@ func (u Until[T]) Update(ctx context.Context, tx xio.State) (err error) {
 }
 
 // Until creates a state that reads until the given function returns true.
-func (b Builder[T]) Until(fn func(rune) bool) (head *Chain[T]) {
+func (b Builder[T]) Until(fn func(rune) bool) (tail *Chain[T]) {
 	defaultName := "Until"
-	head = b.createNode(defaultName, func() any { return newUntil[T](b.logger, fn) })
+	tail = b.createNode(defaultName, func() any { return newUntil[T](b.logger, fn) })
 	return
 }
