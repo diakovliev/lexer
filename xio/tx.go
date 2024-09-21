@@ -181,6 +181,7 @@ func (t *Tx) nextBytes(size int) (data []byte, err error) {
 	if t.offset == -1 {
 		t.logger.Fatal("transaction already complete")
 	}
+	_, _ = t.reader.Fetch(utf8.UTFMax)
 	data = make([]byte, size)
 	n, err := t.Read(data)
 	if err != nil && !errors.Is(err, io.EOF) {
@@ -203,34 +204,34 @@ func (t *Tx) NextByte() (b byte, err error) {
 
 // NextRune implements NextRune interface.
 func (t *Tx) NextRune() (r rune, w int, err error) {
-	for i := 1; i < utf8.UTFMax+1; i++ {
-		tx := t.Begin()
-		data, nextBytesErr := tx.nextBytes(i)
-		if i == 1 && errors.Is(nextBytesErr, io.EOF) {
-			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				t.logger.Fatal("rollback error: %s", rollbackErr)
-			}
-			err = io.EOF
+	if t.offset == -1 {
+		t.logger.Fatal("transaction already complete")
+		return
+	}
+	_, _ = t.reader.Fetch(utf8.UTFMax)
+	data := make([]byte, utf8.UTFMax+1)
+	offset := t.offset
+	var i, n int
+	for i = 1; i < utf8.UTFMax+1; i++ {
+		n, err = t.reader.ReadAt(offset, data[:i])
+		if err != nil && !errors.Is(err, io.EOF) {
+			t.logger.Error("read error: %s", err)
+			return
+		}
+		if n < i && errors.Is(err, io.EOF) {
+			r = utf8.RuneError
+			w = 0
+			return
+		}
+		if r, w = utf8.DecodeRune(data[:i]); w != i {
+			t.logger.Fatal("unexpected decoded rune width")
+		}
+		if w != utf8.RuneError {
 			break
-		}
-		decoded, decodedSize := utf8.DecodeRune(data)
-		if decodedSize != i {
-			t.logger.Fatal("%p: %d != %d", t, decodedSize, i)
-		}
-		if nextBytesErr != nil || decoded != utf8.RuneError {
-			if commitErr := tx.Commit(); commitErr != nil {
-				t.logger.Fatal("commit error: %s", commitErr)
-			}
-			r = decoded
-			w = len(data)
-			// lastN for Unread
-			t.lastN = w
-			err = nextBytesErr
-			break
-		}
-		if rollbackErr := tx.Rollback(); rollbackErr != nil {
-			t.logger.Fatal("rollback error: %s", rollbackErr)
 		}
 	}
+	// offset and lastN for Unread
+	t.lastN = i
+	t.offset += int64(t.lastN)
 	return
 }
