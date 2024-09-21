@@ -19,17 +19,13 @@ const (
 )
 
 func TestNode(t *testing.T) {
-
 	logger := logger.New(
 		logger.WithLevel(logger.Trace),
 		logger.WithWriter(os.Stdout),
 	)
-
-	factory := Make(logger, message.Dispose[testMessageType]())
-
-	chain1 := factory.Fn(unicode.IsDigit).Fn(unicode.IsDigit).Fn(unicode.IsDigit).Emit(messageType1)
+	b := Make(logger, message.Dispose[testMessageType]())
+	chain1 := b.Fn(unicode.IsDigit).Fn(unicode.IsDigit).Fn(unicode.IsDigit).Emit(messageType1)
 	assert.NotNil(t, chain1)
-
-	chain2 := factory.Fn(unicode.IsDigit).Fn(unicode.IsDigit).Fn(unicode.IsDigit).Emit(messageType1)
+	chain2 := b.Fn(unicode.IsDigit).Fn(unicode.IsDigit).Fn(unicode.IsDigit).Emit(messageType1)
 	assert.NotNil(t, chain2)
 }

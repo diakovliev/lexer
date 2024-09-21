@@ -17,6 +17,7 @@ type (
 		state    State[T]
 		name     string
 		head     *Chain[T]
+		prev     *Chain[T]
 		next     *Chain[T]
 	}
 )
@@ -36,6 +37,10 @@ func newChain[T any](factory Builder[T], name string, state State[T]) *Chain[T] 
 // Next returns the next state in the chain of nodes. If there is no next nodes, it returns an nil.
 func (c *Chain[T]) Next() *Chain[T] {
 	return c.next
+}
+
+func (c *Chain[T]) Prev() *Chain[T] {
+	return c.prev
 }
 
 // Last returns the last state in the chain of nodes. If there is no next node, it returns current node.
@@ -60,12 +65,58 @@ func (c *Chain[T]) Append(node *Chain[T]) *Chain[T] {
 	return c
 }
 
+func (c *Chain[T]) repeat(ctx context.Context, state State[T], repeat error, tx xio.State) (err error) {
+	if state == nil {
+		c.logger.Fatal("invalid grammar: repeat without previous state")
+	}
+	q, ok := getQuantifier(repeat)
+	if !ok {
+		c.logger.Fatal("not a quantifier: %s", repeat)
+	}
+	source := xio.AsSource(tx)
+	count := 1
+loop:
+	for ; count < q.max; count++ {
+		tx := source.Begin()
+		if err = state.Update(ctx, tx); err == nil {
+			c.logger.Fatal("unexpected nil")
+		}
+		switch {
+		case errors.Is(err, ErrRollback):
+			if err := tx.Rollback(); err != nil {
+				c.logger.Fatal("rollback error: %s", err)
+			}
+			err = q.MakeResult(count)
+			break loop
+		case errors.Is(err, ErrNext), errors.Is(err, ErrCommit):
+			if err := tx.Commit(); err != nil {
+				c.logger.Fatal("commit error: %s", err)
+			}
+			nextCount := count + 1
+			if nextCount < q.max {
+				continue
+			}
+			err = q.MakeResult(nextCount)
+			break loop
+		default:
+			if err := tx.Rollback(); err != nil {
+				c.logger.Fatal("rollback error: %s", err)
+			}
+			c.logger.Fatal("unexpected error: %s", err)
+		}
+	}
+	return
+}
+
 // Update implements State interface
 func (c *Chain[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	current := c
 	for current != nil {
 		if err = current.state.Update(ctx, tx); err == nil {
 			c.logger.Fatal("unexpected nil")
+		}
+		if errors.Is(err, ErrRepeat) {
+			err = c.repeat(ctx, current.Prev().state, err, tx)
 		}
 		next := current.Next()
 		switch {
