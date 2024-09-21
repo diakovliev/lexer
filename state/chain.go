@@ -64,12 +64,16 @@ func (c *Chain[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	head := c.Head()
 	current := head
 	for current != nil {
-		prev := current.Prev()
 		next := current.Next()
 		if err = current.state.Update(ctx, tx); err == nil {
 			c.logger.Fatal("unexpected nil")
 		}
 		if errors.Is(err, ErrRepeat) {
+			prev := current.Prev()
+			if prev == nil {
+				c.logger.Fatal("unexpected nil")
+				return
+			}
 			err = c.repeat(ctx, prev.state, err, tx)
 		}
 		switch {
