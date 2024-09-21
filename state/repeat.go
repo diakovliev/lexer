@@ -121,6 +121,19 @@ func isZeroRepeat[T any](s State[T]) (ret bool) {
 	return
 }
 
+func isRepeatable[T any](s State[T]) (ret bool) {
+	if isRepeat[T](s) {
+		return
+	}
+	if isEmit[T](s) {
+		return
+	}
+	if isError[T](s) {
+		return
+	}
+	return true
+}
+
 // repeat implements repeat substate.
 func (c *Chain[T]) repeat(ctx context.Context, state State[T], repeat error, tx xio.State) (err error) {
 	if state == nil {
@@ -170,16 +183,13 @@ func (b Builder[T]) Repeat(q Quantifier) (tail *Chain[T]) {
 	if !q.isValid() {
 		b.logger.Fatal("invalid grammar: invalid quantifier: %s", q)
 	}
-	if isRepeat[T](b.last.state) {
-		b.logger.Fatal("invalid grammar: can't repeat repeat")
+	if b.last == nil {
+		b.logger.Fatal("invalid grammar: repeat can't be the first state in chain")
 	}
-	if isEmit[T](b.last.state) {
-		b.logger.Fatal("invalid grammar: can't repeat emit")
+	if !isRepeatable[T](b.last.state) {
+		b.logger.Fatal("invalid grammar: previous state '%s' is not repeatable", b.last.name)
 	}
-	if isError[T](b.last.state) {
-		b.logger.Fatal("invalid grammar: can't repeat error")
-	}
-	defaultName := "Q"
+	defaultName := "Repeat"
 	tail = b.createNode(defaultName, func() any { return newRepeat[T](b.logger, q) })
 	return
 }

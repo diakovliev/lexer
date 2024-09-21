@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"math"
 	"os"
 	"testing"
 	"unicode"
@@ -30,11 +31,11 @@ const (
 
 func buildScopeState(b state.Builder[testMessageType]) []state.State[testMessageType] {
 	return state.AsSlice[state.State[testMessageType]](
-		b.While(unicode.IsSpace).Omit(),
+		b.Fn(unicode.IsSpace).Repeat(state.CountBetween(1, math.MaxUint)).Omit(),
+		b.Rune(')').Emit(Ket).Break(),
 		b.Rune('(').Emit(Bra).State(b, buildScopeState),
 		b.Rune(',').Emit(Comma),
-		b.Rune(')').Emit(Ket).Break(),
-		b.While(unicode.IsDigit).Emit(Number),
+		b.Fn(unicode.IsDigit).Repeat(state.CountBetween(1, math.MaxUint)).Emit(Number),
 		b.String("foo").Emit(Term),
 		b.String("bar").Emit(Term),
 		b.Rest().Error(errUnhandledData),
@@ -43,9 +44,9 @@ func buildScopeState(b state.Builder[testMessageType]) []state.State[testMessage
 
 func buildInitialState(b state.Builder[testMessageType]) []state.State[testMessageType] {
 	return state.AsSlice[state.State[testMessageType]](
-		b.While(unicode.IsSpace).Omit(),
+		b.Fn(unicode.IsSpace).Repeat(state.CountBetween(1, math.MaxUint)).Omit(),
 		b.Rune('(').Emit(Bra).State(b, buildScopeState),
-		b.While(unicode.IsDigit).Emit(Number),
+		b.Fn(unicode.IsDigit).Repeat(state.CountBetween(1, math.MaxUint)).Emit(Number),
 		b.String("foo").Emit(Term),
 		b.String("bar").Emit(Term),
 		b.Rest().Error(errUnhandledData),
