@@ -154,19 +154,19 @@ func (c *Chain[T]) repeat(ctx context.Context, state Update[T], repeat error, tx
 	count := uint(1)
 loop:
 	for ; count < q.max; count++ {
-		tx := source.Begin()
+		tx := source.Begin().Ref
 		if err = state.Update(ctx, tx); err == nil {
 			c.logger.Fatal("unexpected nil")
 		}
 		switch {
 		case errors.Is(err, ErrRollback):
-			if err := tx.Rollback(); err != nil {
+			if err := xio.AsTx(tx).Rollback(); err != nil {
 				c.logger.Fatal("rollback error: %s", err)
 			}
 			err = q.makeResult(count)
 			break loop
 		case errors.Is(err, ErrNext), errors.Is(err, ErrCommit):
-			if err := tx.Commit(); err != nil {
+			if err := xio.AsTx(tx).Commit(); err != nil {
 				c.logger.Fatal("commit error: %s", err)
 			}
 			nextCount := count + 1
@@ -176,7 +176,7 @@ loop:
 			err = q.makeResult(nextCount)
 			break loop
 		default:
-			if err := tx.Rollback(); err != nil {
+			if err := xio.AsTx(tx).Rollback(); err != nil {
 				c.logger.Fatal("rollback error: %s", err)
 			}
 			c.logger.Fatal("unexpected error: %s", err)

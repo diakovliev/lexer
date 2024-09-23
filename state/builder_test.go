@@ -1,55 +1,44 @@
 package state
 
 import (
-	"context"
-	"errors"
 	"os"
 	"testing"
 
 	"github.com/diakovliev/lexer/logger"
 	"github.com/diakovliev/lexer/message"
-	"github.com/diakovliev/lexer/xio"
 	"github.com/stretchr/testify/assert"
 )
 
-type fakeState struct{}
-type notAState struct{}
-
-func (t fakeState) Update(_ context.Context, tx xio.State) error {
-	return errors.New("state error")
+func makeTestDisposeBuilder() Builder[Token] {
+	logger := logger.New(
+		logger.WithLevel(logger.Trace),
+		logger.WithWriter(os.Stdout),
+	)
+	return Make(
+		logger,
+		message.DefaultFactory[Token](),
+		message.Dispose[Token](),
+	)
 }
 
-func newNotAState() any {
-	return &notAState{}
-}
-
-func newFakeState() any {
-	return &fakeState{}
+func makeTestBuilder[Token any](receiver message.Receiver[Token]) Builder[Token] {
+	logger := logger.New(
+		logger.WithLevel(logger.Trace),
+		logger.WithWriter(os.Stdout),
+	)
+	return Make(
+		logger,
+		message.DefaultFactory[Token](),
+		receiver,
+	)
 }
 
 func TestBuilder_NotAState(t *testing.T) {
-	logger := logger.New(
-		logger.WithLevel(logger.Trace),
-		logger.WithWriter(os.Stdout),
-	)
-	b := Make(
-		logger,
-		message.DefaultFactory[Token](),
-		message.Dispose[Token](),
-	)
-	assert.Panics(t, func() { b.createNode("s0", newNotAState) })
+	assert.Panics(t, func() { makeTestDisposeBuilder().createNode("s0", newNotAState) })
 }
 
 func TestBuilder(t *testing.T) {
-	logger := logger.New(
-		logger.WithLevel(logger.Trace),
-		logger.WithWriter(os.Stdout),
-	)
-	b := Make(
-		logger,
-		message.DefaultFactory[Token](),
-		message.Dispose[Token](),
-	)
+	b := makeTestDisposeBuilder()
 
 	s0 := b.createNode("s0", newFakeState)
 	assert.NotNil(t, s0)

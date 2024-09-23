@@ -21,31 +21,31 @@ func TestTx(t *testing.T) {
 
 	// read first 4 bytes and rollback the transaction
 	out := make([]byte, 4)
-	rt := r.Begin()
+	rt := r.Begin().Ref
 	n, err := rt.Read(out)
 	assert.NoError(t, err)
 	assert.Equal(t, 4, n)
 	assert.Equal(t, []byte("this"), out)
-	assert.NoError(t, rt.Rollback())
+	assert.NoError(t, rt.(*state).Rollback())
 
 	// read first 4 bytes and commit the transaction
 	out = make([]byte, 4)
-	rt = r.Begin()
+	rt = r.Begin().Ref
 	n, err = rt.Read(out)
 	assert.NoError(t, err)
 	assert.Equal(t, 4, n)
 	assert.Equal(t, []byte("this"), out)
-	err = rt.Commit()
+	err = rt.(*state).Commit()
 	assert.NoError(t, err)
 
 	// read next 4 bytes and rollback the transaction
 	out = make([]byte, 4)
-	rt = r.Begin()
+	rt = r.Begin().Ref
 	n, err = rt.Read(out)
 	assert.NoError(t, err)
 	assert.Equal(t, 4, n)
 	assert.Equal(t, []byte(" is "), out)
-	assert.NoError(t, rt.Rollback())
+	assert.NoError(t, rt.(*state).Rollback())
 }
 
 func TestTx2(t *testing.T) {
@@ -59,18 +59,18 @@ func TestTx2(t *testing.T) {
 
 	r := New(logger, bytes.NewBufferString(""))
 
-	tx0 := r.Begin()
+	tx0 := r.Begin().Ref
 
-	ctx0 := tx0.Begin()
+	ctx0 := tx0.(*state).Begin().Ref
 
-	_, err := ctx0.Read(out)
+	_, err := ctx0.(*state).Read(out)
 	assert.ErrorIs(t, err, io.EOF)
-	err = ctx0.Commit()
+	err = ctx0.(*state).Commit()
 	assert.NoError(t, err)
 
-	_, err = tx0.Read(out)
+	_, err = tx0.(*state).Read(out)
 	assert.ErrorIs(t, err, io.EOF)
 
-	err = tx0.Commit()
+	err = tx0.(*state).Commit()
 	assert.NoError(t, err)
 }

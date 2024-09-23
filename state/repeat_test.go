@@ -4,10 +4,8 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"os"
 	"testing"
 
-	"github.com/diakovliev/lexer/logger"
 	"github.com/diakovliev/lexer/message"
 	"github.com/diakovliev/lexer/xio"
 	"github.com/stretchr/testify/assert"
@@ -92,16 +90,7 @@ func TestRepeat_Builder(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			logger := logger.New(
-				logger.WithLevel(logger.Trace),
-				logger.WithWriter(os.Stdout),
-			)
-			receiver := message.Slice[Token]()
-			builder := Make(
-				logger,
-				message.DefaultFactory[Token](),
-				receiver,
-			)
+			builder := makeTestDisposeBuilder()
 			if tc.wantPanic {
 				assert.Panics(t, func() {
 					tc.state(builder)
@@ -223,18 +212,10 @@ func TestRepeat(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			logger := logger.New(
-				logger.WithLevel(logger.Trace),
-				logger.WithWriter(os.Stdout),
-			)
 			receiver := message.Slice[Token]()
-			builder := Make(
-				logger,
-				message.DefaultFactory[Token](),
-				receiver,
-			)
-			tx := xio.New(logger, bytes.NewBufferString(tc.input))
-			err := tc.state(builder).Update(WithNextTokenLevel(context.Background()), tx.Begin())
+			builder := makeTestBuilder(receiver)
+			source := xio.New(builder.logger, bytes.NewBufferString(tc.input))
+			err := tc.state(builder).Update(WithNextTokenLevel(context.Background()), source.Begin().Ref)
 			assert.ErrorIs(t, err, tc.wantError)
 			assert.Equal(t, tc.wantMessages, receiver.Slice)
 		})
