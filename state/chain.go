@@ -15,7 +15,7 @@ type (
 		logger   common.Logger
 		prev     *Chain[T]
 		next     *Chain[T]
-		state    State[T]
+		state    Update[T]
 		name     string
 		receiver *message.SliceReceiver[T]
 	}
@@ -23,7 +23,7 @@ type (
 
 // newChain creates a new instance of Node struct. It takes logger and name as parameters.
 // The name parameter is used for logging purposes.
-func newChain[T any](builder Builder[T], name string, state State[T]) *Chain[T] {
+func newChain[T any](builder Builder[T], name string, state Update[T]) *Chain[T] {
 	return &Chain[T]{
 		Builder:  builder,
 		receiver: message.Slice[T](),

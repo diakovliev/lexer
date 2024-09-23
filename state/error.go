@@ -71,7 +71,7 @@ func (b Builder[T]) Error(err error) (tail *Chain[T]) {
 	return
 }
 
-func isError[T any](s State[T]) (ret bool) {
+func isError[T any](s Update[T]) (ret bool) {
 	_, ret = s.(*Error[T])
 	return
 }
