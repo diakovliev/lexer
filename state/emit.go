@@ -44,9 +44,9 @@ func (e Emit[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	if len(data) == 0 {
 		e.logger.Fatal("nothing to emit")
 	}
-	level, ok := GetStateLevel(ctx)
+	level, ok := GetTokenLevel(ctx)
 	if !ok {
-		e.logger.Fatal("state level is not set")
+		e.logger.Fatal("no token level in context")
 	}
 	msg, err := e.factory.Token(ctx, level, e.token, data, int(pos), len(data))
 	if err != nil {

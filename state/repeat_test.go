@@ -176,6 +176,28 @@ func TestRepeat(t *testing.T) {
 			},
 			wantError: ErrCommit,
 		},
+		{
+			name:  `fooffo 'foo'.'ffo'.Optional()`,
+			input: "fooffo",
+			state: func(b Builder[Token]) *Chain[Token] {
+				return b.String("foo").String("ffo").Optional().Emit(Token1)
+			},
+			wantMessages: []*message.Message[Token]{
+				{Level: 0, Type: message.Token, Token: Token1, Value: []byte("fooffo"), Pos: 0, Width: 6},
+			},
+			wantError: ErrCommit,
+		},
+		{
+			name:  `foo 'foo'.'ffo'.Optional()`,
+			input: "foo",
+			state: func(b Builder[Token]) *Chain[Token] {
+				return b.String("foo").String("ffo").Optional().Emit(Token1)
+			},
+			wantMessages: []*message.Message[Token]{
+				{Level: 0, Type: message.Token, Token: Token1, Value: []byte("foo"), Pos: 0, Width: 3},
+			},
+			wantError: ErrCommit,
+		},
 	}
 
 	for _, tc := range tests {
@@ -191,7 +213,7 @@ func TestRepeat(t *testing.T) {
 				receiver,
 			)
 			tx := xio.New(logger, bytes.NewBufferString(tc.input))
-			err := tc.state(builder).Update(WithNextStateLevel(context.Background()), tx.Begin())
+			err := tc.state(builder).Update(WithNextTokenLevel(context.Background()), tx.Begin())
 			assert.ErrorIs(t, err, tc.wantError)
 			assert.Equal(t, tc.wantMessages, receiver.Slice)
 		})

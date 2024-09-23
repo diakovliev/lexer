@@ -81,7 +81,15 @@ func (c *Chain[T]) Update(ctx context.Context, tx xio.State) (err error) {
 			if next == nil {
 				c.logger.Fatal("invalid grammar: next can't be from last in state")
 			}
+			if next != nil && isZeroMaxRepeat[T](next.state) {
+				err = ErrRollback
+				return
+			}
 		case errors.Is(err, ErrCommit):
+			if next != nil && isZeroMaxRepeat[T](next.state) {
+				err = ErrRollback
+				return
+			}
 			if err := head.receiver.EmitTo(head.Builder.receiver); err != nil {
 				c.logger.Fatal("emit to error: %s", err)
 			}
@@ -89,14 +97,13 @@ func (c *Chain[T]) Update(ctx context.Context, tx xio.State) (err error) {
 				return
 			}
 		case errors.Is(err, ErrRollback):
-			// Repeat(CountBetween(0, N))
 			if next == nil {
 				return
 			}
-			if isRepeat[T](current.state) {
+			if !isZeroMinRepeat[T](next.state) {
 				return
 			}
-			if !isZeroRepeat[T](next.state) {
+			if isRepeat[T](current.state) {
 				return
 			}
 			err = ErrNext
