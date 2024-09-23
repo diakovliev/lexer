@@ -1,6 +1,10 @@
 package xio
 
-import "io"
+import (
+	"io"
+
+	"github.com/diakovliev/lexer/common"
+)
 
 type (
 	// Read is a reference to io.Reader
@@ -17,7 +21,7 @@ type (
 	// Begin begins new transaction.
 	Begin interface {
 		// Begin begins new transaction.
-		Begin() *Tx
+		Begin() common.IfaceRef[State]
 	}
 
 	// Commit commits the transaction.
@@ -70,6 +74,12 @@ type (
 		Data
 	}
 
+	// Tx is the interface that groups the methods for IO transaction manipulation.
+	Tx interface {
+		Commit
+		Rollback
+	}
+
 	// Source is the interface that groups the methods for IO source manipulation.
 	// Use New to obtain new instance of Xio which is implements Source interface.
 	Source interface {
@@ -84,7 +94,17 @@ func AsSource(state State) (source Source) {
 	var i any = state
 	source, ok := i.(Source)
 	if !ok {
-		panic("not a Transaction")
+		panic("not a Source")
+	}
+	return
+}
+
+// AsTx converts the given State to a Tx if it possible.
+func AsTx(state State) (tx Tx) {
+	var i any = state
+	tx, ok := i.(Tx)
+	if !ok {
+		panic("not a Tx")
 	}
 	return
 }

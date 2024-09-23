@@ -91,18 +91,17 @@ func TestReader_Truncate(t *testing.T) {
 		t.Run(
 			fmt.Sprintf("tx %d, buffer size: %d, expected: %s", i, bufferSize, expected),
 			func(t *testing.T) {
-				tx := r.Begin()
+				state := r.Begin().Ref
 				buffer := make([]byte, bufferSize)
-				n, err := tx.Read(buffer)
+				n, err := state.Read(buffer)
 				if n < bufferSize {
 					assert.ErrorIs(t, err, io.EOF)
 				} else {
 					assert.NoError(t, err)
 				}
 				assert.Equal(t, testStringData[pos:pos+n], buffer[:n])
-				err = tx.Commit()
+				err = AsTx(state).Commit()
 				assert.NoError(t, err)
-				// assert.NoError(t, r.Truncate(int64(pos)))
 			})
 	}
 }

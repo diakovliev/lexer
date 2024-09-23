@@ -17,7 +17,7 @@ type (
 		buffer *buffer
 		pos    int64 // buffer position
 		offset int64 // current position in the reader, used for transactions and truncates
-		tx     *Tx
+		tx     *state
 	}
 )
 
@@ -34,12 +34,12 @@ func New(logger common.Logger, r io.Reader) *Xio {
 }
 
 // Begin starts a new transaction for reading from the buffered reader.
-func (r *Xio) Begin() (ret *Tx) {
+func (r *Xio) Begin() (ret common.IfaceRef[State]) {
 	if r.tx != nil {
 		r.logger.Fatal("too many transactions, Xio supports only one active transaction")
 	}
-	r.tx = newTx(r.logger, r, r.offset)
-	ret = r.tx
+	r.tx = newState(r.logger, r, r.offset)
+	ret = common.Ref[State](r.tx)
 	return
 }
 

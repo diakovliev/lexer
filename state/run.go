@@ -55,14 +55,19 @@ func (r *Run[T]) reset() {
 	r.current = 0
 }
 
+func (r *Run[T]) isLast() (ret bool) {
+	return r.current == len(r.states)-1
+}
+
 // update updates the current state of the lexer with the given transaction.
-func (r *Run[T]) update(ctx context.Context, tx xio.State) (err error) {
+func (r *Run[T]) update(ctx context.Context, source xio.Source) (tx xio.State, err error) {
 	state := r.currentState()
 	if state == nil {
 		// no more states to process, we're done
 		err = ErrNoMoreStates
 		return
 	}
+	tx = source.Begin().Ref
 	err = state.Update(ctx, tx)
 	return
 }
@@ -72,45 +77,41 @@ func (r *Run[T]) Run(ctx context.Context, source xio.Source) (err error) {
 	ctx = WithNextTokenLevel(ctx)
 loop:
 	for ctx.Err() == nil {
-		tx := source.Begin()
-		if err = r.update(ctx, tx); err == nil {
+		var tx xio.State
+		tx, err = r.update(ctx, source)
+		if err == nil {
 			r.logger.Fatal("unexpected nil")
 		}
 		switch {
-		case errors.Is(err, ErrRepeat), errors.Is(err, ErrNext):
-			if err := tx.Rollback(); err != nil {
-				r.logger.Fatal("commit error: %v", err)
-			}
-			r.logger.Fatal("invalid grammar: repeat and next allowed only inside chain")
-		case errors.Is(err, ErrCommit):
-			if err := tx.Commit(); err != nil {
-				r.logger.Fatal("commit error: %v", err)
-			}
-			r.reset()
-		case errors.Is(err, ErrRollback):
-			if err := tx.Rollback(); err != nil {
-				r.logger.Fatal("rollback error: %v", err)
-			}
-			r.next()
 		case errors.Is(err, ErrNoMoreStates):
-			if err := tx.Rollback(); err != nil {
-				r.logger.Fatal("rollback error: %v", err)
-			}
-			if source.Has() {
-				err = ErrHasMoreData
-			} else {
+			if !source.Has() {
 				err = r.incompleteStateErr
 			}
 			break loop
+		case errors.Is(err, ErrRepeat), errors.Is(err, ErrNext):
+			if err := xio.AsTx(tx).Rollback(); err != nil {
+				r.logger.Fatal("rollback error: %s", err)
+			}
+			r.logger.Fatal("invalid grammar: repeat and next allowed only inside chain")
+		case errors.Is(err, ErrCommit):
+			if err := xio.AsTx(tx).Commit(); err != nil {
+				r.logger.Fatal("commit error: %s", err)
+			}
+			r.reset()
+		case errors.Is(err, ErrRollback):
+			if err := xio.AsTx(tx).Rollback(); err != nil {
+				r.logger.Fatal("rollback error: %s", err)
+			}
+			r.next()
 		case errors.Is(err, ErrBreak):
-			if err := tx.Commit(); err != nil {
-				r.logger.Fatal("commit error: %v", err)
+			if err := xio.AsTx(tx).Commit(); err != nil {
+				r.logger.Fatal("commit error: %s", err)
 			}
 			err = ErrCommit
 			break loop
 		default:
-			if err := tx.Rollback(); err != nil {
-				r.logger.Fatal("rollback error: %v", err)
+			if err := xio.AsTx(tx).Rollback(); err != nil {
+				r.logger.Fatal("rollback error: %s", err)
 			}
 			break loop
 		}
