@@ -44,9 +44,9 @@ func (ur UntilRune[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	}
 	if count == 0 {
 		// if no runes were read, then rollback the state.
-		err = ErrRollback
+		err = errRollback
 	} else {
-		err = ErrNext
+		err = errNext
 	}
 	return
 }

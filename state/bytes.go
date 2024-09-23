@@ -59,10 +59,10 @@ func (bs Bytes) Update(ctx context.Context, tx xio.State) (err error) {
 	}
 	in := buffer[:n]
 	if !bs.pred(in, samples) {
-		err = ErrRollback
+		err = errRollback
 		return
 	}
-	err = ErrNext
+	err = errNext
 	return
 }
 

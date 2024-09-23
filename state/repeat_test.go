@@ -121,7 +121,7 @@ func TestRepeat(t *testing.T) {
 			wantMessages: []*message.Message[Token]{
 				{Level: 0, Type: message.Token, Token: Token1, Value: []byte("foofoofoo"), Pos: 0, Width: 9},
 			},
-			wantError: ErrCommit,
+			wantError: errCommit,
 		},
 		{
 			name:  "foofoofo 'foo'.Count(3)",
@@ -129,7 +129,7 @@ func TestRepeat(t *testing.T) {
 			state: func(b Builder[Token]) *Chain[Token] {
 				return b.String("foo").Repeat(Count(3)).Emit(Token1)
 			},
-			wantError: ErrRollback,
+			wantError: errRollback,
 		},
 		{
 			name:  `foofoofo 'foo'.Count(2)`,
@@ -140,7 +140,7 @@ func TestRepeat(t *testing.T) {
 			wantMessages: []*message.Message[Token]{
 				{Level: 0, Type: message.Token, Token: Token1, Value: []byte("foofoo"), Pos: 0, Width: 6},
 			},
-			wantError: ErrCommit,
+			wantError: errCommit,
 		},
 		{
 			name:  `foofoofo 'foo'.CountBetween(2,3)`,
@@ -151,7 +151,7 @@ func TestRepeat(t *testing.T) {
 			wantMessages: []*message.Message[Token]{
 				{Level: 0, Type: message.Token, Token: Token1, Value: []byte("foofoo"), Pos: 0, Width: 6},
 			},
-			wantError: ErrCommit,
+			wantError: errCommit,
 		},
 		{
 			name:  `fooffo 'foo'.CountBetween(1,3)`,
@@ -162,7 +162,7 @@ func TestRepeat(t *testing.T) {
 			wantMessages: []*message.Message[Token]{
 				{Level: 0, Type: message.Token, Token: Token1, Value: []byte("foo"), Pos: 0, Width: 3},
 			},
-			wantError: ErrCommit,
+			wantError: errCommit,
 		},
 		{
 			name:  `fooffo 'foo'.'ffo'.CountBetween(0,3)`,
@@ -173,7 +173,7 @@ func TestRepeat(t *testing.T) {
 			wantMessages: []*message.Message[Token]{
 				{Level: 0, Type: message.Token, Token: Token1, Value: []byte("fooffo"), Pos: 0, Width: 6},
 			},
-			wantError: ErrCommit,
+			wantError: errCommit,
 		},
 		{
 			name:  `foo 'foo'.'ffo'.CountBetween(0,3)`,
@@ -184,7 +184,7 @@ func TestRepeat(t *testing.T) {
 			wantMessages: []*message.Message[Token]{
 				{Level: 0, Type: message.Token, Token: Token1, Value: []byte("foo"), Pos: 0, Width: 3},
 			},
-			wantError: ErrCommit,
+			wantError: errCommit,
 		},
 		{
 			name:  `fooffo 'foo'.'ffo'.Optional()`,
@@ -195,7 +195,7 @@ func TestRepeat(t *testing.T) {
 			wantMessages: []*message.Message[Token]{
 				{Level: 0, Type: message.Token, Token: Token1, Value: []byte("fooffo"), Pos: 0, Width: 6},
 			},
-			wantError: ErrCommit,
+			wantError: errCommit,
 		},
 		{
 			name:  `foo 'foo'.'ffo'.Optional()`,
@@ -206,7 +206,7 @@ func TestRepeat(t *testing.T) {
 			wantMessages: []*message.Message[Token]{
 				{Level: 0, Type: message.Token, Token: Token1, Value: []byte("foo"), Pos: 0, Width: 3},
 			},
-			wantError: ErrCommit,
+			wantError: errCommit,
 		},
 	}
 

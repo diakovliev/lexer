@@ -55,27 +55,27 @@ func (q Quantifier) makeResult(repeats uint) (err error) {
 	switch {
 	case q.min == q.max:
 		if repeats != q.min {
-			err = ErrRollback
+			err = errRollback
 		} else {
-			err = ErrNext
+			err = errNext
 		}
 	case q.min < q.max:
 		if repeats < q.min || repeats > q.max {
-			err = ErrRollback
+			err = errRollback
 		} else {
-			err = ErrNext
+			err = errNext
 		}
 	case q.min == 0:
 		if repeats > q.max {
-			err = ErrRollback
+			err = errRollback
 		} else {
-			err = ErrNext
+			err = errNext
 		}
 	case q.max == math.MaxUint:
 		if repeats < q.min {
-			err = ErrRollback
+			err = errRollback
 		} else {
-			err = ErrNext
+			err = errNext
 		}
 	default:
 		panic("unreachable")
@@ -98,11 +98,11 @@ func newRepeat[T any](logger common.Logger, q Quantifier) *Repeat[T] {
 func (r Repeat[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	switch {
 	case r.q.isZero():
-		err = ErrRollback
+		err = errRollback
 	case r.q.isOne():
-		err = ErrNext
+		err = errNext
 	default:
-		err = MakeRepeat(r.q)
+		err = makeErrRepeat(r.q)
 	}
 	return
 }
@@ -147,7 +147,7 @@ func (c *Chain[T]) repeat(ctx context.Context, state Update[T], repeat error, tx
 		c.logger.Fatal("not a quantifier: %s", repeat)
 	}
 	if q.max == 1 {
-		err = ErrNext
+		err = errNext
 		return
 	}
 	source := xio.AsSource(tx)
@@ -159,13 +159,13 @@ loop:
 			c.logger.Fatal("unexpected nil")
 		}
 		switch {
-		case errors.Is(err, ErrRollback):
+		case errors.Is(err, errRollback):
 			if err := xio.AsTx(tx).Rollback(); err != nil {
 				c.logger.Fatal("rollback error: %s", err)
 			}
 			err = q.makeResult(count)
 			break loop
-		case errors.Is(err, ErrNext), errors.Is(err, ErrCommit):
+		case errors.Is(err, errNext), errors.Is(err, errCommit):
 			if err := xio.AsTx(tx).Commit(); err != nil {
 				c.logger.Fatal("commit error: %s", err)
 			}

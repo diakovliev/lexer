@@ -26,7 +26,7 @@ func TestState(t *testing.T) {
 			state: func(b Builder[Token]) *Chain[Token] {
 				return b.State(b, func(b Builder[Token]) []Update[Token] {
 					return AsSlice[Update[Token]](
-						b.createNode("ErrCommit", newFixedResultState(ErrCommit)).Break(),
+						b.createNode("ErrCommit", newFixedResultState(errCommit)).Break(),
 					)
 				})
 			},
@@ -34,14 +34,14 @@ func TestState(t *testing.T) {
 				m.xioSource.On("Begin").Once()
 				m.xioState.On("Commit").Return(nil).Once()
 			},
-			wantError: ErrCommit,
+			wantError: errCommit,
 		},
 		{
 			name: "State Rollback no more states",
 			state: func(b Builder[Token]) *Chain[Token] {
 				return b.State(b, func(b Builder[Token]) []Update[Token] {
 					return AsSlice[Update[Token]](
-						b.createNode("ErrCommit", newFixedResultState(ErrRollback)).Break(),
+						b.createNode("ErrCommit", newFixedResultState(errRollback)).Break(),
 					)
 				})
 			},
@@ -50,14 +50,14 @@ func TestState(t *testing.T) {
 				m.xioSource.On("Has").Return(true).Once()
 				m.xioState.On("Rollback").Return(nil).Once()
 			},
-			wantError: ErrNoMoreStates,
+			wantError: errNoMoreStates,
 		},
 		{
 			name: "State Rollback has more data",
 			state: func(b Builder[Token]) *Chain[Token] {
 				return b.State(b, func(b Builder[Token]) []Update[Token] {
 					return AsSlice[Update[Token]](
-						b.createNode("ErrCommit", newFixedResultState(ErrRollback)).Break(),
+						b.createNode("ErrCommit", newFixedResultState(errRollback)).Break(),
 					)
 				})
 			},
@@ -66,7 +66,7 @@ func TestState(t *testing.T) {
 				m.xioSource.On("Has").Return(false).Once()
 				m.xioState.On("Rollback").Return(nil).Once()
 			},
-			wantError: ErrIncompleteState,
+			wantError: ErrInvalidInput,
 		},
 	}
 

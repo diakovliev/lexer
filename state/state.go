@@ -27,7 +27,7 @@ func newState[T any](logger common.Logger, builder Builder[T], provider Provider
 
 // Update implements State interface. It updates the current state of the lexer with the given transaction.
 func (s State[T]) Update(ctx context.Context, tx xio.State) (err error) {
-	err = NewRun(s.logger, s.builder, s.provider, ErrIncompleteState).Run(ctx, xio.AsSource(tx))
+	err = NewRun(s.logger, s.builder, s.provider, ErrInvalidInput).Run(ctx, xio.AsSource(tx))
 	return
 }
 

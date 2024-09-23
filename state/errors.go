@@ -3,23 +3,22 @@ package state
 import "errors"
 
 var (
-	ErrNoMoreStates    = errors.New("no more states")
-	ErrIncompleteState = errors.New("incomplete state")
-	ErrHasMoreData     = errors.New("has more data")
-	ErrCommit          = errors.New("commit")
-	ErrRollback        = errors.New("rollback")
-	ErrNext            = errors.New("next")
-	ErrBreak           = errors.New("break")
-	ErrRepeat          = errors.New("repeat")
+	ErrInvalidInput = errors.New("invalid input")
+	errCommit       = errors.New("commit")
+	errRollback     = errors.New("rollback")
+	errNext         = errors.New("next")
+	errBreak        = errors.New("break")
+	errRepeat       = errors.New("repeat")
+	errNoMoreStates = errors.New("no more states")
 )
 
-type errRepeat struct {
+type errRepeatImpl struct {
 	Q Quantifier
 }
 
-// MakeRepeat returns an error that can be unwrapped
-func MakeRepeat(Q Quantifier) error {
-	return &errRepeat{
+// makeErrRepeat returns an error that can be unwrapped
+func makeErrRepeat(Q Quantifier) error {
+	return &errRepeatImpl{
 		Q: Q,
 	}
 }
@@ -29,17 +28,17 @@ func getQuantifier(err error) (Quantifier, bool) {
 	if err == nil {
 		return Quantifier{}, false
 	}
-	e, ok := err.(*errRepeat)
+	e, ok := err.(*errRepeatImpl)
 	if !ok {
 		return Quantifier{}, false
 	}
 	return e.Q, true
 }
 
-func (errRepeat) Error() string {
+func (errRepeatImpl) Error() string {
 	return "repeat"
 }
 
-func (err errRepeat) Unwrap() error {
-	return ErrRepeat
+func (err errRepeatImpl) Unwrap() error {
+	return errRepeat
 }

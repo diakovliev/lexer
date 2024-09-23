@@ -23,7 +23,7 @@ func newRest[T any](logger common.Logger) *Rest[T] {
 func (r *Rest[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	// just advance the reader and do nothing else
 	_, _ = io.Copy(io.Discard, tx)
-	err = ErrNext
+	err = errNext
 	return
 }
 
