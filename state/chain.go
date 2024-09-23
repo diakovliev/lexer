@@ -68,7 +68,7 @@ func (c *Chain[T]) Update(ctx context.Context, tx xio.State) (err error) {
 		if err = current.state.Update(ctx, tx); err == nil {
 			c.logger.Fatal("unexpected nil")
 		}
-		if errors.Is(err, ErrRepeat) {
+		if errors.Is(err, errRepeat) {
 			prev := current.Prev()
 			if prev == nil {
 				c.logger.Fatal("unexpected nil")
@@ -77,17 +77,17 @@ func (c *Chain[T]) Update(ctx context.Context, tx xio.State) (err error) {
 			err = c.repeat(ctx, prev.state, err, tx)
 		}
 		switch {
-		case errors.Is(err, ErrNext):
+		case errors.Is(err, errNext):
 			if next == nil {
 				c.logger.Fatal("invalid grammar: next can't be from last in state")
 			}
 			if next != nil && isZeroMaxRepeat[T](next.state) {
-				err = ErrRollback
+				err = errRollback
 				return
 			}
-		case errors.Is(err, ErrCommit):
+		case errors.Is(err, errCommit):
 			if next != nil && isZeroMaxRepeat[T](next.state) {
-				err = ErrRollback
+				err = errRollback
 				return
 			}
 			if err := head.receiver.EmitTo(head.Builder.receiver); err != nil {
@@ -96,7 +96,7 @@ func (c *Chain[T]) Update(ctx context.Context, tx xio.State) (err error) {
 			if next == nil {
 				return
 			}
-		case errors.Is(err, ErrRollback):
+		case errors.Is(err, errRollback):
 			if next == nil {
 				return
 			}
@@ -106,8 +106,8 @@ func (c *Chain[T]) Update(ctx context.Context, tx xio.State) (err error) {
 			if isRepeat[T](current.state) {
 				return
 			}
-			err = ErrNext
-		case errors.Is(err, ErrBreak):
+			err = errNext
+		case errors.Is(err, errBreak):
 			if next != nil {
 				c.logger.Fatal("invalid grammar: break must be last in state")
 			}

@@ -26,7 +26,7 @@ func (o Omit[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	if len(data) == 0 {
 		o.logger.Fatal("nothing to omit")
 	}
-	err = ErrCommit
+	err = errCommit
 	return
 }
 

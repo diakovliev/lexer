@@ -168,7 +168,7 @@ func TestLexer(t *testing.T) {
 				{Level: 1, Type: message.Token, Token: Comma, Value: []byte(","), Pos: 8, Width: 1},
 				{Level: 1, Type: message.Token, Token: Number, Value: []byte("333"), Pos: 10, Width: 3},
 			},
-			wantError: state.ErrIncompleteState,
+			wantError: state.ErrInvalidInput,
 		},
 		{
 			name:  "inner substates",

@@ -43,7 +43,7 @@ func (e Error[T]) Update(ctx context.Context, tx xio.State) (err error) {
 		e.logger.Fatal("data error: %s", err)
 	}
 	if len(data) == 0 {
-		err = ErrRollback
+		err = errRollback
 		return
 	}
 	level, ok := GetTokenLevel(ctx)
@@ -58,7 +58,7 @@ func (e Error[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	if err != nil {
 		e.logger.Fatal("receiver error: %s", err)
 	}
-	err = ErrCommit
+	err = errCommit
 	return
 }
 

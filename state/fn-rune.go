@@ -29,10 +29,10 @@ func (fr FnRune[T]) Update(ctx context.Context, tx xio.State) (err error) {
 		return
 	}
 	if (errors.Is(err, io.EOF) && rw == 0) || !fr.pred(r) {
-		err = ErrRollback
+		err = errRollback
 		return
 	}
-	err = ErrNext
+	err = errNext
 	return
 }
 

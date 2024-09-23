@@ -29,10 +29,10 @@ func (fb FnByte[T]) Update(ctx context.Context, tx xio.State) (err error) {
 		return
 	}
 	if (errors.Is(err, io.EOF)) || !fb.pred(b) {
-		err = ErrRollback
+		err = errRollback
 		return
 	}
-	err = ErrNext
+	err = errNext
 	return
 }
 

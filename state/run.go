@@ -64,7 +64,7 @@ func (r *Run[T]) update(ctx context.Context, source xio.Source) (tx xio.State, e
 	state := r.currentState()
 	if state == nil {
 		// no more states to process, we're done
-		err = ErrNoMoreStates
+		err = errNoMoreStates
 		return
 	}
 	tx = source.Begin().Ref
@@ -83,31 +83,35 @@ loop:
 			r.logger.Fatal("unexpected nil")
 		}
 		switch {
-		case errors.Is(err, ErrNoMoreStates):
+		case errors.Is(err, errNoMoreStates):
+			if tx != nil {
+				r.logger.Fatal("unexpected not nil")
+			}
 			if !source.Has() {
+				// We're done, and we have no more data to process.
 				err = r.incompleteStateErr
 			}
 			break loop
-		case errors.Is(err, ErrRepeat), errors.Is(err, ErrNext):
+		case errors.Is(err, errRepeat), errors.Is(err, errNext):
 			if err := xio.AsTx(tx).Rollback(); err != nil {
 				r.logger.Fatal("rollback error: %s", err)
 			}
 			r.logger.Fatal("invalid grammar: repeat and next allowed only inside chain")
-		case errors.Is(err, ErrCommit):
+		case errors.Is(err, errCommit):
 			if err := xio.AsTx(tx).Commit(); err != nil {
 				r.logger.Fatal("commit error: %s", err)
 			}
 			r.reset()
-		case errors.Is(err, ErrRollback):
+		case errors.Is(err, errRollback):
 			if err := xio.AsTx(tx).Rollback(); err != nil {
 				r.logger.Fatal("rollback error: %s", err)
 			}
 			r.next()
-		case errors.Is(err, ErrBreak):
+		case errors.Is(err, errBreak):
 			if err := xio.AsTx(tx).Commit(); err != nil {
 				r.logger.Fatal("commit error: %s", err)
 			}
-			err = ErrCommit
+			err = errCommit
 			break loop
 		default:
 			if err := xio.AsTx(tx).Rollback(); err != nil {
