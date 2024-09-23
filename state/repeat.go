@@ -146,7 +146,7 @@ func isRepeatable[T any](s Update[T]) (ret bool) {
 	return true
 }
 
-// repeat implements repeat substate.
+// repeat implements repeat sub state.
 func (c *Chain[T]) repeat(ctx context.Context, state Update[T], repeat error, tx xio.State) (err error) {
 	if state == nil {
 		c.logger.Fatal("invalid grammar: repeat without previous state")
