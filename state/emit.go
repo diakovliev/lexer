@@ -61,6 +61,9 @@ func (e Emit[T]) Update(ctx context.Context, tx xio.State) (err error) {
 }
 
 func (b Builder[T]) Emit(token T) (tail *Chain[T]) {
+	if b.last == nil {
+		b.logger.Fatal("invalid grammar: emit can't be the first state in chain")
+	}
 	defaultName := "Emit"
 	newNode := newEmit(b.logger, b.factory, token)
 	tail = b.createNode(defaultName, func() any { return newNode })

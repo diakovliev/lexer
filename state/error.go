@@ -63,6 +63,9 @@ func (e Error[T]) Update(ctx context.Context, tx xio.State) (err error) {
 }
 
 func (b Builder[T]) Error(err error) (tail *Chain[T]) {
+	if b.last == nil {
+		b.logger.Fatal("invalid grammar: error can't be the first state in chain")
+	}
 	defaultName := "Error"
 	newNode := newError[T](b.logger, b.factory, err)
 	tail = b.createNode(defaultName, func() any { return newNode })

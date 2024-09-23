@@ -131,7 +131,7 @@ func isZeroMaxRepeat[T any](s Update[T]) (ret bool) {
 }
 
 func isRepeatable[T any](s Update[T]) bool {
-	if isRepeat[T](s) || isEmit[T](s) || isError[T](s) || isOmit[T](s) || isRest[T](s) || isTap[T](s) {
+	if isRepeat[T](s) || isEmit[T](s) || isError[T](s) || isOmit[T](s) || isRest[T](s) || isTap[T](s) || isBreak[T](s) {
 		return false
 	}
 	return true
@@ -205,7 +205,7 @@ func (b Builder[T]) Repeat(q Quantifier) (tail *Chain[T]) {
 	return
 }
 
-// Optional is a quantifier for previous state.
+// Optional is a quantifier for previous state. It is equivalent to Repeat(CountBetween(0, 1)).
 func (b Builder[T]) Optional() (tail *Chain[T]) {
 	tail = b.repeat("Optional", CountBetween(0, 1))
 	return
