@@ -21,7 +21,7 @@ type (
 	// BytesSamplesProvider is a function that returns the slice of a sample bytes to match.
 	BytesSamplesProvider func() [][]byte
 	// BytesPredicate is a function that checks if the given bytes matches the samples.
-	BytesPredicate func([][]byte, []byte) bool
+	BytesPredicate func(in []byte, samples [][]byte) bool
 )
 
 func newBytes[T any](
@@ -58,7 +58,7 @@ func (bs Bytes) Update(ctx context.Context, tx xio.State) (err error) {
 		return
 	}
 	in := buffer[:n]
-	if !bs.pred(samples, in) {
+	if !bs.pred(in, samples) {
 		err = ErrRollback
 		return
 	}
@@ -81,7 +81,31 @@ func (b Builder[T]) bytesState(
 	return
 }
 
-func bytesMatches(samples [][]byte, in []byte) bool {
+func providerFromBytes(logger common.Logger, samples [][]byte) BytesSamplesProvider {
+	return func() (ret [][]byte) {
+		for _, s := range samples {
+			if len(s) == 0 {
+				logger.Fatal("invalid grammar: empty sample")
+			}
+			ret = append(ret, []byte(s))
+		}
+		return
+	}
+}
+
+func providerFromStrings(logger common.Logger, samples []string) BytesSamplesProvider {
+	return func() (ret [][]byte) {
+		for _, s := range samples {
+			if len(s) == 0 {
+				logger.Fatal("invalid grammar: empty sample")
+			}
+			ret = append(ret, []byte(s))
+		}
+		return
+	}
+}
+
+func bytesMatches(in []byte, samples [][]byte) bool {
 	for _, sample := range samples {
 		if bytes.Equal(sample, in) {
 			return true
@@ -90,52 +114,30 @@ func bytesMatches(samples [][]byte, in []byte) bool {
 	return false
 }
 
-func bytesNotMatches(samples [][]byte, in []byte) bool {
-	return !bytesMatches(samples, in)
+func bytesNotMatches(in []byte, samples [][]byte) bool {
+	return !bytesMatches(in, samples)
 }
 
 func (b Builder[T]) Bytes(samples ...[]byte) (tail *Chain[T]) {
-	tail = b.bytesState("Bytes",
-		func() [][]byte { return samples },
-		bytesMatches,
-	)
+	tail = b.bytesState("Bytes", providerFromBytes(b.logger, samples), bytesMatches)
 	return
 }
 
 func (b Builder[T]) NotBytes(samples ...[]byte) (tail *Chain[T]) {
-	tail = b.bytesState("NotBytes",
-		func() [][]byte { return samples },
-		bytesNotMatches,
-	)
+	tail = b.bytesState("NotBytes", providerFromBytes(b.logger, samples), bytesNotMatches)
 	return
 }
 
 // String is a state that compares the given samples with state input.
 // It will has positive result if any sample is equal to state input.
 func (b Builder[T]) String(samples ...string) (tail *Chain[T]) {
-	tail = b.bytesState("String",
-		func() (ret [][]byte) {
-			for _, s := range samples {
-				ret = append(ret, []byte(s))
-			}
-			return
-		},
-		bytesMatches,
-	)
+	tail = b.bytesState("String", providerFromStrings(b.logger, samples), bytesMatches)
 	return
 }
 
 // NotString is a state that compares the given samples with state input.
 // It will has positive result if nothing from samples is equal to state input.
 func (b Builder[T]) NotString(samples ...string) (tail *Chain[T]) {
-	tail = b.bytesState("NotString",
-		func() (ret [][]byte) {
-			for _, s := range samples {
-				ret = append(ret, []byte(s))
-			}
-			return
-		},
-		bytesNotMatches,
-	)
+	tail = b.bytesState("NotString", providerFromStrings(b.logger, samples), bytesNotMatches)
 	return
 }
