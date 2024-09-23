@@ -74,6 +74,20 @@ func TestRepeat_Builder(t *testing.T) {
 			},
 			wantPanic: true,
 		},
+		{
+			name: `can't repeat rest`,
+			state: func(b Builder[Token]) *Chain[Token] {
+				return b.Rest().Repeat(Count(1))
+			},
+			wantPanic: true,
+		},
+		{
+			name: `can't repeat tap`,
+			state: func(b Builder[Token]) *Chain[Token] {
+				return b.Tap(func(context.Context, xio.State) error { return nil }).Repeat(Count(1))
+			},
+			wantPanic: true,
+		},
 	}
 
 	for _, tc := range tests {
