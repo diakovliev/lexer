@@ -67,6 +67,13 @@ func TestRepeat_Builder(t *testing.T) {
 			},
 			wantPanic: true,
 		},
+		{
+			name: `can't repeat omit`,
+			state: func(b Builder[Token]) *Chain[Token] {
+				return b.String("foo").Omit().Repeat(Count(1))
+			},
+			wantPanic: true,
+		},
 	}
 
 	for _, tc := range tests {

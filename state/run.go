@@ -13,7 +13,7 @@ type Run[T any] struct {
 	builder            Builder[T]
 	provider           Provider[T]
 	incompleteStateErr error
-	states             []State[T]
+	states             []Update[T]
 	current            int
 }
 
@@ -32,7 +32,7 @@ func NewRun[T any](
 }
 
 // currentState returns the current state of the lexer.
-func (r *Run[T]) currentState() State[T] {
+func (r *Run[T]) currentState() Update[T] {
 	if len(r.states) == 0 && r.provider != nil {
 		r.states = r.provider(r.builder)
 	}

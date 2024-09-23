@@ -69,7 +69,7 @@ func (b Builder[T]) Emit(token T) (tail *Chain[T]) {
 	return
 }
 
-func isEmit[T any](s State[T]) (ret bool) {
+func isEmit[T any](s Update[T]) (ret bool) {
 	_, ret = s.(*Emit[T])
 	return
 }

@@ -29,8 +29,8 @@ const (
 	Term
 )
 
-func buildScopeState(b state.Builder[Token]) []state.State[Token] {
-	return state.AsSlice[state.State[Token]](
+func buildScopeState(b state.Builder[Token]) []state.Update[Token] {
+	return state.AsSlice[state.Update[Token]](
 		b.Fn(unicode.IsSpace).Repeat(state.CountBetween(1, math.MaxUint)).Omit(),
 		b.Rune(')').Emit(Ket).Break(),
 		b.Rune('(').Emit(Bra).State(b, buildScopeState),
@@ -42,8 +42,8 @@ func buildScopeState(b state.Builder[Token]) []state.State[Token] {
 	)
 }
 
-func buildInitialState(b state.Builder[Token]) []state.State[Token] {
-	return state.AsSlice[state.State[Token]](
+func buildInitialState(b state.Builder[Token]) []state.Update[Token] {
+	return state.AsSlice[state.Update[Token]](
 		b.Fn(unicode.IsSpace).Repeat(state.CountBetween(1, math.MaxUint)).Omit(),
 		b.Rune('(').Emit(Bra).State(b, buildScopeState),
 		b.Fn(unicode.IsDigit).Repeat(state.CountBetween(1, math.MaxUint)).Emit(Number),
@@ -71,8 +71,8 @@ func TestLexer(t *testing.T) {
 		{
 			name:  "simple accept-fn",
 			input: "123",
-			state: func(b state.Builder[Token]) []state.State[Token] {
-				return state.AsSlice[state.State[Token]](
+			state: func(b state.Builder[Token]) []state.Update[Token] {
+				return state.AsSlice[state.Update[Token]](
 					b.Fn(unicode.IsDigit).Fn(unicode.IsDigit).Fn(unicode.IsDigit).Emit(Number),
 					b.Rest().Error(errUnhandledData),
 				)
@@ -85,8 +85,8 @@ func TestLexer(t *testing.T) {
 		{
 			name:  "simple accept-fn 1",
 			input: "123 345",
-			state: func(b state.Builder[Token]) []state.State[Token] {
-				return state.AsSlice[state.State[Token]](
+			state: func(b state.Builder[Token]) []state.Update[Token] {
+				return state.AsSlice[state.Update[Token]](
 					b.While(unicode.IsDigit).Emit(Number).
 						While(unicode.IsSpace).Omit().
 						While(unicode.IsDigit).Emit(Number),
@@ -102,8 +102,8 @@ func TestLexer(t *testing.T) {
 		{
 			name:  "simple accept-fn with spaces",
 			input: "  123  ",
-			state: func(b state.Builder[Token]) []state.State[Token] {
-				return state.AsSlice[state.State[Token]](
+			state: func(b state.Builder[Token]) []state.Update[Token] {
+				return state.AsSlice[state.Update[Token]](
 					b.While(unicode.IsSpace).Omit(),
 					b.While(unicode.IsDigit).Emit(Number),
 					b.Rest().Error(errUnhandledData),
@@ -117,8 +117,8 @@ func TestLexer(t *testing.T) {
 		{
 			name:  "simple accept-fn with spaces",
 			input: "  1  ",
-			state: func(b state.Builder[Token]) []state.State[Token] {
-				return state.AsSlice[state.State[Token]](
+			state: func(b state.Builder[Token]) []state.Update[Token] {
+				return state.AsSlice[state.Update[Token]](
 					b.While(unicode.IsSpace).Omit(),
 					b.While(unicode.IsDigit).Emit(Number),
 					b.Rest().Error(errUnhandledData),
@@ -132,8 +132,8 @@ func TestLexer(t *testing.T) {
 		{
 			name:  "unhandled data",
 			input: "123",
-			state: func(b state.Builder[Token]) []state.State[Token] {
-				return state.AsSlice[state.State[Token]](
+			state: func(b state.Builder[Token]) []state.Update[Token] {
+				return state.AsSlice[state.Update[Token]](
 					b.Rest().Error(errUnhandledData),
 				)
 			},

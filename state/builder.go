@@ -29,9 +29,9 @@ func Make[T any](
 // createNode creates a new node in chain of states and returns the head of the chain.
 func (b Builder[T]) createNode(name string, newState func() any) (tail *Chain[T]) {
 	created := newState()
-	var state State[T]
+	var state Update[T]
 	var ok bool
-	if state, ok = created.(State[T]); !ok {
+	if state, ok = created.(Update[T]); !ok {
 		b.logger.Fatal("not a state: %T", created)
 	}
 	prev := b.last

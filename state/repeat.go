@@ -107,12 +107,12 @@ func (r Repeat[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	return
 }
 
-func isRepeat[T any](s State[T]) (ret bool) {
+func isRepeat[T any](s Update[T]) (ret bool) {
 	_, ret = s.(*Repeat[T])
 	return
 }
 
-func isZeroMinRepeat[T any](s State[T]) (ret bool) {
+func isZeroMinRepeat[T any](s Update[T]) (ret bool) {
 	repeat, ok := s.(*Repeat[T])
 	if !ok {
 		return
@@ -121,7 +121,7 @@ func isZeroMinRepeat[T any](s State[T]) (ret bool) {
 	return
 }
 
-func isZeroMaxRepeat[T any](s State[T]) (ret bool) {
+func isZeroMaxRepeat[T any](s Update[T]) (ret bool) {
 	repeat, ok := s.(*Repeat[T])
 	if !ok {
 		return
@@ -130,7 +130,7 @@ func isZeroMaxRepeat[T any](s State[T]) (ret bool) {
 	return
 }
 
-func isRepeatable[T any](s State[T]) (ret bool) {
+func isRepeatable[T any](s Update[T]) (ret bool) {
 	if isRepeat[T](s) {
 		return
 	}
@@ -140,11 +140,14 @@ func isRepeatable[T any](s State[T]) (ret bool) {
 	if isError[T](s) {
 		return
 	}
+	if isOmit[T](s) {
+		return
+	}
 	return true
 }
 
 // repeat implements repeat substate.
-func (c *Chain[T]) repeat(ctx context.Context, state State[T], repeat error, tx xio.State) (err error) {
+func (c *Chain[T]) repeat(ctx context.Context, state Update[T], repeat error, tx xio.State) (err error) {
 	if state == nil {
 		c.logger.Fatal("invalid grammar: repeat without previous state")
 	}

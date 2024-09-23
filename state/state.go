@@ -8,17 +8,17 @@ import (
 )
 
 type (
-	Provider[T any] func(b Builder[T]) []State[T]
+	Provider[T any] func(b Builder[T]) []Update[T]
 
-	SubState[T any] struct {
+	State[T any] struct {
 		logger   common.Logger
 		builder  Builder[T]
 		provider Provider[T]
 	}
 )
 
-func newSubState[T any](logger common.Logger, builder Builder[T], provider Provider[T]) *SubState[T] {
-	return &SubState[T]{
+func newState[T any](logger common.Logger, builder Builder[T], provider Provider[T]) *State[T] {
+	return &State[T]{
 		logger:   logger,
 		builder:  builder,
 		provider: provider,
@@ -26,15 +26,15 @@ func newSubState[T any](logger common.Logger, builder Builder[T], provider Provi
 }
 
 // Update implements State interface. It updates the current state of the lexer with the given transaction.
-func (ss SubState[T]) Update(ctx context.Context, tx xio.State) (err error) {
-	err = NewRun(ss.logger, ss.builder, ss.provider, ErrIncompleteState).Run(ctx, xio.AsSource(tx))
+func (s State[T]) Update(ctx context.Context, tx xio.State) (err error) {
+	err = NewRun(s.logger, s.builder, s.provider, ErrIncompleteState).Run(ctx, xio.AsSource(tx))
 	return
 }
 
 // State creates a new state that will be used to update the current state of the lexer.
 // It returns the tail of the chain.
 func (b Builder[T]) State(builder Builder[T], provider Provider[T]) (tail *Chain[T]) {
-	defaultName := "SubState"
-	tail = b.createNode(defaultName, func() any { return newSubState(b.logger, builder, provider) })
+	defaultName := "State"
+	tail = b.createNode(defaultName, func() any { return newState(b.logger, builder, provider) })
 	return
 }

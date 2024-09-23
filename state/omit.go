@@ -35,3 +35,8 @@ func (b Builder[T]) Omit() (tail *Chain[T]) {
 	tail = b.createNode(defaultName, func() any { return newOmit[T](b.logger) })
 	return
 }
+
+func isOmit[T any](s Update[T]) (ret bool) {
+	_, ret = s.(*Omit[T])
+	return
+}
