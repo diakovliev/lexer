@@ -31,11 +31,11 @@ const (
 
 func buildScopeState(b state.Builder[Token]) []state.Update[Token] {
 	return state.AsSlice[state.Update[Token]](
-		b.Fn(unicode.IsSpace).Repeat(state.CountBetween(1, math.MaxUint)).Omit(),
+		b.FnRune(unicode.IsSpace).Repeat(state.CountBetween(1, math.MaxUint)).Omit(),
 		b.Rune(')').Emit(Ket).Break(),
 		b.Rune('(').Emit(Bra).State(b, buildScopeState),
 		b.Rune(',').Emit(Comma),
-		b.Fn(unicode.IsDigit).Repeat(state.CountBetween(1, math.MaxUint)).Emit(Number),
+		b.FnRune(unicode.IsDigit).Repeat(state.CountBetween(1, math.MaxUint)).Emit(Number),
 		b.String("foo").Emit(Term),
 		b.String("bar").Emit(Term),
 		b.Rest().Error(errUnhandledData),
@@ -44,9 +44,9 @@ func buildScopeState(b state.Builder[Token]) []state.Update[Token] {
 
 func buildInitialState(b state.Builder[Token]) []state.Update[Token] {
 	return state.AsSlice[state.Update[Token]](
-		b.Fn(unicode.IsSpace).Repeat(state.CountBetween(1, math.MaxUint)).Omit(),
+		b.FnRune(unicode.IsSpace).Repeat(state.CountBetween(1, math.MaxUint)).Omit(),
 		b.Rune('(').Emit(Bra).State(b, buildScopeState),
-		b.Fn(unicode.IsDigit).Repeat(state.CountBetween(1, math.MaxUint)).Emit(Number),
+		b.FnRune(unicode.IsDigit).Repeat(state.CountBetween(1, math.MaxUint)).Emit(Number),
 		b.String("foo").Emit(Term),
 		b.String("bar").Emit(Term),
 		b.Rest().Error(errUnhandledData),
@@ -73,7 +73,7 @@ func TestLexer(t *testing.T) {
 			input: "123",
 			state: func(b state.Builder[Token]) []state.Update[Token] {
 				return state.AsSlice[state.Update[Token]](
-					b.Fn(unicode.IsDigit).Fn(unicode.IsDigit).Fn(unicode.IsDigit).Emit(Number),
+					b.FnRune(unicode.IsDigit).FnRune(unicode.IsDigit).FnRune(unicode.IsDigit).Emit(Number),
 					b.Rest().Error(errUnhandledData),
 				)
 			},
