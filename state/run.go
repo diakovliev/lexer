@@ -89,7 +89,7 @@ loop:
 			}
 			if source.Has() {
 				// We're done, and we have more data to process, pass error to the parent state.
-				err = ErrIncompleteState
+				err = ErrIncomplete
 			} else {
 				// We're done, and we have no more data to process.
 				err = r.eofErr

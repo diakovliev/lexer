@@ -50,7 +50,7 @@ func TestState(t *testing.T) {
 				m.xioSource.On("Has").Return(true).Once()
 				m.xioState.On("Rollback").Return(nil).Once()
 			},
-			wantError: ErrIncompleteState,
+			wantError: ErrIncomplete,
 		},
 		{
 			name: "State Rollback has more data",

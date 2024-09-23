@@ -9,12 +9,10 @@ import (
 	"github.com/diakovliev/lexer/xio"
 )
 
-type (
-	FnByte[T any] struct {
-		logger common.Logger
-		pred   BytePredicate
-	}
-)
+type FnByte[T any] struct {
+	logger common.Logger
+	pred   BytePredicate
+}
 
 func newFnByte[T any](logger common.Logger, pred BytePredicate) *FnByte[T] {
 	return &FnByte[T]{
