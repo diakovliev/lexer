@@ -3,12 +3,22 @@ package state
 import "errors"
 
 var (
+	// ErrInvalidInput indicates that the input is invalid
 	ErrInvalidInput = errors.New("invalid input")
-	errCommit       = errors.New("commit")
-	errRollback     = errors.New("rollback")
-	errNext         = errors.New("next")
-	errBreak        = errors.New("break")
-	errRepeat       = errors.New("repeat")
+	// ErrIncomplete indicates that the combined state is incomplete
+	ErrIncomplete = errors.New("incomplete")
+
+	// errCommit indicates that the state should be committed
+	errCommit = errors.New("commit")
+	// errRollback indicates that the state should be rolled back
+	errRollback = errors.New("rollback")
+	// errNext indicates that the next state inside the chain should be processed
+	errNext = errors.New("next")
+	// errBreak indicates that the combined state is done
+	errBreak = errors.New("break")
+	// errRepeat indicates that the previous state should be repeated
+	errRepeat = errors.New("repeat")
+	// errNoMoreStates indicates that there are no more states to process in the combined state
 	errNoMoreStates = errors.New("no more states")
 )
 
@@ -35,10 +45,12 @@ func getQuantifier(err error) (Quantifier, bool) {
 	return e.Q, true
 }
 
+// Error implements the error interface
 func (errRepeatImpl) Error() string {
 	return "repeat"
 }
 
+// Unwrap implements the error interface
 func (err errRepeatImpl) Unwrap() error {
 	return errRepeat
 }

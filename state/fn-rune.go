@@ -9,12 +9,10 @@ import (
 	"github.com/diakovliev/lexer/xio"
 )
 
-type (
-	FnRune[T any] struct {
-		logger common.Logger
-		pred   RunePredicate
-	}
-)
+type FnRune[T any] struct {
+	logger common.Logger
+	pred   RunePredicate
+}
 
 func newFnRune[T any](logger common.Logger, pred RunePredicate) *FnRune[T] {
 	return &FnRune[T]{
