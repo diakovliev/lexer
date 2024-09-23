@@ -9,25 +9,25 @@ import (
 )
 
 type Run[T any] struct {
-	logger             common.Logger
-	builder            Builder[T]
-	provider           Provider[T]
-	incompleteStateErr error
-	states             []Update[T]
-	current            int
+	logger   common.Logger
+	builder  Builder[T]
+	provider Provider[T]
+	eofErr   error
+	states   []Update[T]
+	current  int
 }
 
 func NewRun[T any](
 	logger common.Logger,
 	builder Builder[T],
 	provider Provider[T],
-	incompleteStateErr error,
+	eofErr error,
 ) *Run[T] {
 	return &Run[T]{
-		logger:             logger,
-		builder:            builder,
-		provider:           provider,
-		incompleteStateErr: incompleteStateErr,
+		logger:   logger,
+		builder:  builder,
+		provider: provider,
+		eofErr:   eofErr,
 	}
 }
 
@@ -87,9 +87,12 @@ loop:
 			if tx != nil {
 				r.logger.Fatal("unexpected not nil")
 			}
-			if !source.Has() {
+			if source.Has() {
+				// We're done, and we have more data to process, pass error to the parent state.
+				err = ErrIncompleteState
+			} else {
 				// We're done, and we have no more data to process.
-				err = r.incompleteStateErr
+				err = r.eofErr
 			}
 			break loop
 		case errors.Is(err, errRepeat), errors.Is(err, errNext):

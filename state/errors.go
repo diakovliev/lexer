@@ -3,13 +3,14 @@ package state
 import "errors"
 
 var (
-	ErrInvalidInput = errors.New("invalid input")
-	errCommit       = errors.New("commit")
-	errRollback     = errors.New("rollback")
-	errNext         = errors.New("next")
-	errBreak        = errors.New("break")
-	errRepeat       = errors.New("repeat")
-	errNoMoreStates = errors.New("no more states")
+	ErrInvalidInput    = errors.New("invalid input")
+	ErrIncompleteState = errors.New("incomplete state")
+	errCommit          = errors.New("commit")
+	errRollback        = errors.New("rollback")
+	errNext            = errors.New("next")
+	errBreak           = errors.New("break")
+	errRepeat          = errors.New("repeat")
+	errNoMoreStates    = errors.New("no more states")
 )
 
 type errRepeatImpl struct {
