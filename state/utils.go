@@ -21,9 +21,9 @@ func alwaysTrue[T any]() func(T) bool {
 	return func(_ T) bool { return true }
 }
 
-func alwaysFalse[T any]() func(T) bool {
-	return func(_ T) bool { return false }
-}
+// func alwaysFalse[T any]() func(T) bool {
+// 	return func(_ T) bool { return false }
+// }
 
 func negatePredicate[T any](positive func(T) bool) (negative func(T) bool) {
 	return func(v T) bool { return !positive(v) }

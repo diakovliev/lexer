@@ -131,7 +131,7 @@ func isZeroMaxRepeat[T any](s Update[T]) (ret bool) {
 }
 
 func isRepeatable[T any](s Update[T]) bool {
-	if isRepeat[T](s) || isEmit[T](s) || isError[T](s) || isOmit[T](s) || isRest[T](s) || isTap[T](s) {
+	if isRepeat[T](s) || isEmit[T](s) || isError[T](s) || isOmit[T](s) || isRest[T](s) || isTap[T](s) || isBreak[T](s) {
 		return false
 	}
 	return true

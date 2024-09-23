@@ -23,7 +23,15 @@ func (b Break[T]) Update(_ context.Context, _ xio.State) (err error) {
 }
 
 func (b Builder[T]) Break() (tail *Chain[T]) {
+	if b.last == nil {
+		b.logger.Fatal("invalid grammar: break can't be the first state in chain")
+	}
 	defaultName := "Break"
 	tail = b.createNode(defaultName, func() any { return newBreak[T](b.logger) })
+	return
+}
+
+func isBreak[T any](state Update[T]) (ret bool) {
+	_, ret = state.(*Break[T])
 	return
 }
