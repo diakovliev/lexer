@@ -9,14 +9,25 @@ import (
 	"github.com/diakovliev/lexer/xio"
 )
 
-// String is a state that matches the given string.
-type String struct {
-	logger common.Logger
-	sample func() string
-	pred   func(string) bool
-}
+type (
+	// String is a state that matches the given string.
+	String struct {
+		logger common.Logger
+		sample StringSampleProvider
+		pred   StringPredicate
+	}
 
-func newString[T any](logger common.Logger, sample func() string, pred func(string) bool) *String {
+	// StringSampleProvider is a function that returns the sample string to match.
+	StringSampleProvider func() string
+	// StringPredicate is a function that checks if the given string matches the sample.
+	StringPredicate func(string, string) bool
+)
+
+func newString[T any](
+	logger common.Logger,
+	sample StringSampleProvider,
+	pred StringPredicate,
+) *String {
 	return &String{
 		logger: logger,
 		sample: sample,
@@ -26,14 +37,15 @@ func newString[T any](logger common.Logger, sample func() string, pred func(stri
 
 // Update implements State interface.
 func (s String) Update(ctx context.Context, tx xio.State) (err error) {
-	size := len(s.sample())
+	sample := s.sample()
+	size := len(sample)
 	buffer := make([]byte, size)
 	n, err := tx.Read(buffer)
 	if err != nil && !errors.Is(err, io.EOF) {
 		return
 	}
 	in := buffer[:n]
-	if !s.pred(string(in)) {
+	if !s.pred(sample, string(in)) {
 		err = ErrRollback
 		return
 	}
@@ -41,30 +53,31 @@ func (s String) Update(ctx context.Context, tx xio.State) (err error) {
 	return
 }
 
+func (b Builder[T]) stringState(
+	name string,
+	source StringSampleProvider,
+	pred StringPredicate,
+) (tail *Chain[T]) {
+	tail = b.createNode(name, func() any {
+		return newString[T](
+			b.logger,
+			source,
+			pred,
+		)
+	})
+	return
+}
+
 // String is a state that compares the given sample with state input.
 // It will has positive result if sample is equal to state input.
 func (b Builder[T]) String(sample string) (tail *Chain[T]) {
-	defaultName := "String"
-	tail = b.createNode(defaultName, func() any {
-		return newString[T](
-			b.logger,
-			func() string { return sample },
-			func(s string) bool { return sample == s },
-		)
-	})
+	tail = b.stringState("String", func() string { return sample }, func(sample, in string) bool { return sample == in })
 	return
 }
 
 // NotString is a state that compares the given sample with state input.
 // It will has positive result if sample is not equal to state input.
 func (b Builder[T]) NotString(sample string) (tail *Chain[T]) {
-	defaultName := "NotString"
-	tail = b.createNode(defaultName, func() any {
-		return newString[T](
-			b.logger,
-			func() string { return sample },
-			func(s string) bool { return sample != s },
-		)
-	})
+	tail = b.stringState("NotString", func() string { return sample }, func(sample, in string) bool { return sample != in })
 	return
 }
