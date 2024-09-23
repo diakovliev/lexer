@@ -32,3 +32,8 @@ func (b Builder[T]) Rest() (tail *Chain[T]) {
 	tail = b.createNode(defaultName, func() any { return newRest[T](b.logger) })
 	return
 }
+
+func isRest[T any](s Update[T]) bool {
+	_, ok := s.(*Rest[T])
+	return ok
+}
