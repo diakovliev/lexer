@@ -50,8 +50,11 @@ func (e Error[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	if !ok {
 		e.logger.Fatal("state level is not set")
 	}
-	message := e.factory.Error(level, e.err, data, int(pos), len(data))
-	err = e.receiver.Receive(message)
+	msg, err := e.factory.Error(ctx, level, e.err, data, int(pos), len(data))
+	if err != nil {
+		e.logger.Fatal("messages factory error: %s", err)
+	}
+	err = e.receiver.Receive(msg)
 	if err != nil {
 		e.logger.Fatal("receiver error: %s", err)
 	}

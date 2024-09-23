@@ -1,12 +1,14 @@
 package message
 
+import "context"
+
 type (
 	// Factory is a message factory
 	Factory[T any] interface {
 		// Token creates a token message
-		Token(level int, token T, value any, pos int, width int) Message[T]
+		Token(ctx context.Context, level int, token T, value any, pos int, width int) (*Message[T], error)
 		// Error creates an error message
-		Error(level int, err error, value any, pos int, width int) Message[T]
+		Error(ctx context.Context, level int, err error, value any, pos int, width int) (*Message[T], error)
 	}
 
 	DefaultFactoryImpl[T any] struct{}
@@ -16,8 +18,8 @@ func DefaultFactory[T any]() *DefaultFactoryImpl[T] {
 	return &DefaultFactoryImpl[T]{}
 }
 
-func (f DefaultFactoryImpl[T]) Token(level int, token T, value any, pos int, width int) Message[T] {
-	return Message[T]{
+func (f DefaultFactoryImpl[T]) Token(ctx context.Context, level int, token T, value any, pos int, width int) (msg *Message[T], err error) {
+	msg = &Message[T]{
 		Level: level,
 		Type:  Token,
 		Token: token,
@@ -25,17 +27,19 @@ func (f DefaultFactoryImpl[T]) Token(level int, token T, value any, pos int, wid
 		Pos:   pos,
 		Width: width,
 	}
+	return
 }
 
-func (f DefaultFactoryImpl[T]) Error(level int, err error, value any, pos int, width int) Message[T] {
-	return Message[T]{
+func (f DefaultFactoryImpl[T]) Error(ctx context.Context, level int, userErr error, value any, pos int, width int) (msg *Message[T], err error) {
+	msg = &Message[T]{
 		Level: level,
 		Type:  Error,
 		Value: &ErrorValue{
-			Err:   err,
+			Err:   userErr,
 			Value: value,
 		},
 		Pos:   pos,
 		Width: width,
 	}
+	return
 }
