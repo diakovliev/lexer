@@ -87,9 +87,9 @@ func TestLexer(t *testing.T) {
 			input: "123 345",
 			state: func(b state.Builder[Token]) []state.Update[Token] {
 				return state.AsSlice[state.Update[Token]](
-					b.While(unicode.IsDigit).Emit(Number).
-						While(unicode.IsSpace).Omit().
-						While(unicode.IsDigit).Emit(Number),
+					b.WhileRune(unicode.IsDigit).Emit(Number).
+						WhileRune(unicode.IsSpace).Omit().
+						WhileRune(unicode.IsDigit).Emit(Number),
 					b.Rest().Error(errUnhandledData),
 				)
 			},
@@ -104,8 +104,8 @@ func TestLexer(t *testing.T) {
 			input: "  123  ",
 			state: func(b state.Builder[Token]) []state.Update[Token] {
 				return state.AsSlice[state.Update[Token]](
-					b.While(unicode.IsSpace).Omit(),
-					b.While(unicode.IsDigit).Emit(Number),
+					b.WhileRune(unicode.IsSpace).Omit(),
+					b.WhileRune(unicode.IsDigit).Emit(Number),
 					b.Rest().Error(errUnhandledData),
 				)
 			},
@@ -119,8 +119,8 @@ func TestLexer(t *testing.T) {
 			input: "  1  ",
 			state: func(b state.Builder[Token]) []state.Update[Token] {
 				return state.AsSlice[state.Update[Token]](
-					b.While(unicode.IsSpace).Omit(),
-					b.While(unicode.IsDigit).Emit(Number),
+					b.WhileRune(unicode.IsSpace).Omit(),
+					b.WhileRune(unicode.IsDigit).Emit(Number),
 					b.Rest().Error(errUnhandledData),
 				)
 			},

@@ -41,17 +41,22 @@ func (b Builder[T]) FnByte(pred BytePredicate) (tail *Chain[T]) {
 	return
 }
 
+func (b Builder[T]) NotFbByte(pred BytePredicate) (tail *Chain[T]) {
+	tail = b.createNode("NotFnByte", func() any { return newFnByte[T](b.logger, negatePredicate(pred)) })
+	return
+}
+
 func (b Builder[T]) Byte(sample byte) (tail *Chain[T]) {
-	tail = b.createNode("Byte", func() any { return newFnByte[T](b.logger, func(b byte) bool { return sample == b }) })
+	tail = b.createNode("Byte", func() any { return newFnByte[T](b.logger, byteEqual(sample)) })
 	return
 }
 
 func (b Builder[T]) NotByte(sample byte) (tail *Chain[T]) {
-	tail = b.createNode("NotByte", func() any { return newFnByte[T](b.logger, func(b byte) bool { return sample != b }) })
+	tail = b.createNode("NotByte", func() any { return newFnByte[T](b.logger, negatePredicate(byteEqual(sample))) })
 	return
 }
 
 func (b Builder[T]) AnyByte() (tail *Chain[T]) {
-	tail = b.createNode("AnyByte", func() any { return newFnByte[T](b.logger, func(_ byte) bool { return true }) })
+	tail = b.createNode("AnyByte", func() any { return newFnByte[T](b.logger, alwaysTrue[byte]()) })
 	return
 }

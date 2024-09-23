@@ -205,7 +205,7 @@ func (b Builder[T]) Repeat(q Quantifier) (tail *Chain[T]) {
 	return
 }
 
-// Optional is a quantifier for previous state.
+// Optional is a quantifier for previous state. It is equivalent to Repeat(CountBetween(0, 1)).
 func (b Builder[T]) Optional() (tail *Chain[T]) {
 	tail = b.repeat("Optional", CountBetween(0, 1))
 	return
