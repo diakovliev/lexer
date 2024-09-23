@@ -5,23 +5,23 @@ import "context"
 type keyType string
 
 const (
-	stateLevelKey keyType = "state-level"
+	tokenLevelKey keyType = "token-level"
 )
 
-func WithStateLevel(ctx context.Context, level int) context.Context {
-	return context.WithValue(ctx, stateLevelKey, level)
+func WithTokenLevel(ctx context.Context, level int) context.Context {
+	return context.WithValue(ctx, tokenLevelKey, level)
 }
 
-func WithNextStateLevel(ctx context.Context) context.Context {
-	level, ok := GetStateLevel(ctx)
+func WithNextTokenLevel(ctx context.Context) context.Context {
+	level, ok := GetTokenLevel(ctx)
 	if !ok {
-		return WithStateLevel(ctx, 0)
+		return WithTokenLevel(ctx, 0)
 	}
-	return WithStateLevel(ctx, level+1)
+	return WithTokenLevel(ctx, level+1)
 }
 
-func GetStateLevel(ctx context.Context) (int, bool) {
-	if v := ctx.Value(stateLevelKey); v != nil {
+func GetTokenLevel(ctx context.Context) (int, bool) {
+	if v := ctx.Value(tokenLevelKey); v != nil {
 		return v.(int), true
 	}
 	return 0, false

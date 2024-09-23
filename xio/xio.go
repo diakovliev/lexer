@@ -58,7 +58,7 @@ func (r Xio) copyTo(pos int64, out []byte) (n int, err error) {
 	if int(pos)+len(out) < end {
 		end = int(pos) + len(out)
 	}
-	data, err := r.Data(start, end)
+	data, err := r.Range(start, end)
 	if err != nil {
 		r.logger.Fatal("data range error: %s", err)
 	}
@@ -75,7 +75,8 @@ func (r Xio) Has() (ret bool) {
 	return
 }
 
-func (r Xio) Data(from, to int) (out []byte, err error) {
+// Range returns a slice of the buffered data between from and to positions.
+func (r Xio) Range(from, to int) (out []byte, err error) {
 	start := from - int(r.pos)
 	// check bounds
 	if start < 0 || start > r.buffer.Len() {
@@ -94,6 +95,7 @@ func (r Xio) Data(from, to int) (out []byte, err error) {
 	return
 }
 
+// Update updates the reader offset.
 func (r *Xio) Update(offset int64) {
 	r.offset = offset
 }
@@ -110,7 +112,7 @@ func (r *Xio) Truncate(pos int64) (err error) {
 	if pos > r.offset {
 		r.logger.Fatal("out of bounds")
 	}
-	data, err := r.Data(int(pos), math.MaxInt)
+	data, err := r.Range(int(pos), math.MaxInt)
 	if err != nil {
 		r.logger.Fatal("data range error: %s", err)
 	}
@@ -120,6 +122,8 @@ func (r *Xio) Truncate(pos int64) (err error) {
 	return
 }
 
+// Fetch fetches data from the reader and appends it to the buffer if it needed.
+// Fetch ensures that the buffer contains at least `size` bytes from the reader.
 func (r Xio) Fetch(size int64) (n int64, err error) {
 	if size <= 0 {
 		return

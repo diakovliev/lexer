@@ -112,12 +112,21 @@ func isRepeat[T any](s State[T]) (ret bool) {
 	return
 }
 
-func isZeroRepeat[T any](s State[T]) (ret bool) {
+func isZeroMinRepeat[T any](s State[T]) (ret bool) {
 	repeat, ok := s.(*Repeat[T])
 	if !ok {
 		return
 	}
 	ret = repeat.q.min == 0
+	return
+}
+
+func isZeroMaxRepeat[T any](s State[T]) (ret bool) {
+	repeat, ok := s.(*Repeat[T])
+	if !ok {
+		return
+	}
+	ret = repeat.q.max == 0
 	return
 }
 
@@ -142,6 +151,10 @@ func (c *Chain[T]) repeat(ctx context.Context, state State[T], repeat error, tx 
 	q, ok := getQuantifier(repeat)
 	if !ok {
 		c.logger.Fatal("not a quantifier: %s", repeat)
+	}
+	if q.max == 1 {
+		err = ErrNext
+		return
 	}
 	source := xio.AsSource(tx)
 	count := uint(1)
@@ -178,8 +191,7 @@ loop:
 	return
 }
 
-// Repeat is a state that applies a	quantifier to a previous state.
-func (b Builder[T]) Repeat(q Quantifier) (tail *Chain[T]) {
+func (b Builder[T]) repeat(defaultName string, q Quantifier) (tail *Chain[T]) {
 	if !q.isValid() {
 		b.logger.Fatal("invalid grammar: invalid quantifier: %s", q)
 	}
@@ -189,7 +201,18 @@ func (b Builder[T]) Repeat(q Quantifier) (tail *Chain[T]) {
 	if !isRepeatable[T](b.last.state) {
 		b.logger.Fatal("invalid grammar: previous state '%s' is not repeatable", b.last.name)
 	}
-	defaultName := "Repeat"
 	tail = b.createNode(defaultName, func() any { return newRepeat[T](b.logger, q) })
+	return
+}
+
+// Repeat is a quantifier for previous state.
+func (b Builder[T]) Repeat(q Quantifier) (tail *Chain[T]) {
+	tail = b.repeat("Repeat", q)
+	return
+}
+
+// Optional is a quantifier for previous state.
+func (b Builder[T]) Optional() (tail *Chain[T]) {
+	tail = b.repeat("Optional", CountBetween(0, 1))
 	return
 }

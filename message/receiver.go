@@ -2,11 +2,11 @@ package message
 
 type (
 	Receiver[T any] interface {
-		Receive(Message[T]) error
+		Receive(*Message[T]) error
 	}
 
 	SliceReceiver[T any] struct {
-		Slice []Message[T]
+		Slice []*Message[T]
 	}
 
 	DisposeReceiver[T any] struct{}
@@ -16,7 +16,7 @@ func Dispose[T any]() *DisposeReceiver[T] {
 	return &DisposeReceiver[T]{}
 }
 
-func (DisposeReceiver[T]) Receive(Message[T]) (err error) {
+func (DisposeReceiver[T]) Receive(*Message[T]) (err error) {
 	return
 }
 
@@ -24,7 +24,7 @@ func Slice[T any]() *SliceReceiver[T] {
 	return &SliceReceiver[T]{}
 }
 
-func (sr *SliceReceiver[T]) Receive(m Message[T]) (err error) {
+func (sr *SliceReceiver[T]) Receive(m *Message[T]) (err error) {
 	sr.Slice = append(sr.Slice, m)
 	return
 }

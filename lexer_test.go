@@ -17,20 +17,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type testMessageType int
+type Token int
 
 var errUnhandledData = errors.New("unhandled data")
 
 const (
-	Number testMessageType = iota
+	Number Token = iota
 	Bra
 	Ket
 	Comma
 	Term
 )
 
-func buildScopeState(b state.Builder[testMessageType]) []state.State[testMessageType] {
-	return state.AsSlice[state.State[testMessageType]](
+func buildScopeState(b state.Builder[Token]) []state.State[Token] {
+	return state.AsSlice[state.State[Token]](
 		b.Fn(unicode.IsSpace).Repeat(state.CountBetween(1, math.MaxUint)).Omit(),
 		b.Rune(')').Emit(Ket).Break(),
 		b.Rune('(').Emit(Bra).State(b, buildScopeState),
@@ -42,8 +42,8 @@ func buildScopeState(b state.Builder[testMessageType]) []state.State[testMessage
 	)
 }
 
-func buildInitialState(b state.Builder[testMessageType]) []state.State[testMessageType] {
-	return state.AsSlice[state.State[testMessageType]](
+func buildInitialState(b state.Builder[Token]) []state.State[Token] {
+	return state.AsSlice[state.State[Token]](
 		b.Fn(unicode.IsSpace).Repeat(state.CountBetween(1, math.MaxUint)).Omit(),
 		b.Rune('(').Emit(Bra).State(b, buildScopeState),
 		b.Fn(unicode.IsDigit).Repeat(state.CountBetween(1, math.MaxUint)).Emit(Number),
@@ -62,8 +62,8 @@ func TestLexer(t *testing.T) {
 	type testCase struct {
 		name         string
 		input        string
-		state        state.Provider[testMessageType]
-		wantMessages []message.Message[testMessageType]
+		state        state.Provider[Token]
+		wantMessages []*message.Message[Token]
 		wantError    error
 	}
 
@@ -71,13 +71,13 @@ func TestLexer(t *testing.T) {
 		{
 			name:  "simple accept-fn",
 			input: "123",
-			state: func(b state.Builder[testMessageType]) []state.State[testMessageType] {
-				return state.AsSlice[state.State[testMessageType]](
+			state: func(b state.Builder[Token]) []state.State[Token] {
+				return state.AsSlice[state.State[Token]](
 					b.Fn(unicode.IsDigit).Fn(unicode.IsDigit).Fn(unicode.IsDigit).Emit(Number),
 					b.Rest().Error(errUnhandledData),
 				)
 			},
-			wantMessages: []message.Message[testMessageType]{
+			wantMessages: []*message.Message[Token]{
 				{Level: 0, Type: message.Token, Token: Number, Value: []byte("123"), Pos: 0, Width: 3},
 			},
 			wantError: io.EOF,
@@ -85,15 +85,15 @@ func TestLexer(t *testing.T) {
 		{
 			name:  "simple accept-fn 1",
 			input: "123 345",
-			state: func(b state.Builder[testMessageType]) []state.State[testMessageType] {
-				return state.AsSlice[state.State[testMessageType]](
+			state: func(b state.Builder[Token]) []state.State[Token] {
+				return state.AsSlice[state.State[Token]](
 					b.While(unicode.IsDigit).Emit(Number).
 						While(unicode.IsSpace).Omit().
 						While(unicode.IsDigit).Emit(Number),
 					b.Rest().Error(errUnhandledData),
 				)
 			},
-			wantMessages: []message.Message[testMessageType]{
+			wantMessages: []*message.Message[Token]{
 				{Level: 0, Type: message.Token, Token: Number, Value: []byte("123"), Pos: 0, Width: 3},
 				{Level: 0, Type: message.Token, Token: Number, Value: []byte("345"), Pos: 4, Width: 3},
 			},
@@ -102,14 +102,14 @@ func TestLexer(t *testing.T) {
 		{
 			name:  "simple accept-fn with spaces",
 			input: "  123  ",
-			state: func(b state.Builder[testMessageType]) []state.State[testMessageType] {
-				return state.AsSlice[state.State[testMessageType]](
+			state: func(b state.Builder[Token]) []state.State[Token] {
+				return state.AsSlice[state.State[Token]](
 					b.While(unicode.IsSpace).Omit(),
 					b.While(unicode.IsDigit).Emit(Number),
 					b.Rest().Error(errUnhandledData),
 				)
 			},
-			wantMessages: []message.Message[testMessageType]{
+			wantMessages: []*message.Message[Token]{
 				{Level: 0, Type: message.Token, Token: Number, Value: []byte("123"), Pos: 2, Width: 3},
 			},
 			wantError: io.EOF,
@@ -117,14 +117,14 @@ func TestLexer(t *testing.T) {
 		{
 			name:  "simple accept-fn with spaces",
 			input: "  1  ",
-			state: func(b state.Builder[testMessageType]) []state.State[testMessageType] {
-				return state.AsSlice[state.State[testMessageType]](
+			state: func(b state.Builder[Token]) []state.State[Token] {
+				return state.AsSlice[state.State[Token]](
 					b.While(unicode.IsSpace).Omit(),
 					b.While(unicode.IsDigit).Emit(Number),
 					b.Rest().Error(errUnhandledData),
 				)
 			},
-			wantMessages: []message.Message[testMessageType]{
+			wantMessages: []*message.Message[Token]{
 				{Level: 0, Type: message.Token, Token: Number, Value: []byte("1"), Pos: 2, Width: 1},
 			},
 			wantError: io.EOF,
@@ -132,12 +132,12 @@ func TestLexer(t *testing.T) {
 		{
 			name:  "unhandled data",
 			input: "123",
-			state: func(b state.Builder[testMessageType]) []state.State[testMessageType] {
-				return state.AsSlice[state.State[testMessageType]](
+			state: func(b state.Builder[Token]) []state.State[Token] {
+				return state.AsSlice[state.State[Token]](
 					b.Rest().Error(errUnhandledData),
 				)
 			},
-			wantMessages: []message.Message[testMessageType]{
+			wantMessages: []*message.Message[Token]{
 				{Level: 0, Type: message.Error, Value: &message.ErrorValue{Err: errUnhandledData, Value: []byte("123")}, Pos: 0, Width: 3},
 			},
 			wantError: io.EOF,
@@ -146,7 +146,7 @@ func TestLexer(t *testing.T) {
 			name:  "substate",
 			input: "123 (123, 333) 555",
 			state: buildInitialState,
-			wantMessages: []message.Message[testMessageType]{
+			wantMessages: []*message.Message[Token]{
 				{Level: 0, Type: message.Token, Token: Number, Value: []byte("123"), Pos: 0, Width: 3},
 				{Level: 0, Type: message.Token, Token: Bra, Value: []byte("("), Pos: 4, Width: 1},
 				{Level: 1, Type: message.Token, Token: Number, Value: []byte("123"), Pos: 5, Width: 3},
@@ -161,7 +161,7 @@ func TestLexer(t *testing.T) {
 			name:  "substate incomplete",
 			input: "123 (123, 333 ",
 			state: buildInitialState,
-			wantMessages: []message.Message[testMessageType]{
+			wantMessages: []*message.Message[Token]{
 				{Level: 0, Type: message.Token, Token: Number, Value: []byte("123"), Pos: 0, Width: 3},
 				{Level: 0, Type: message.Token, Token: Bra, Value: []byte("("), Pos: 4, Width: 1},
 				{Level: 1, Type: message.Token, Token: Number, Value: []byte("123"), Pos: 5, Width: 3},
@@ -174,7 +174,7 @@ func TestLexer(t *testing.T) {
 			name:  "inner substates",
 			input: "123 (123, 333, (1, 3, 4), 345) 555 foo bar",
 			state: buildInitialState,
-			wantMessages: []message.Message[testMessageType]{
+			wantMessages: []*message.Message[Token]{
 				{Level: 0, Type: message.Token, Token: Number, Value: []byte("123"), Pos: 0, Width: 3},
 				{Level: 0, Type: message.Token, Token: Bra, Value: []byte("("), Pos: 4, Width: 1},
 				{Level: 1, Type: message.Token, Token: Number, Value: []byte("123"), Pos: 5, Width: 3},
@@ -201,11 +201,11 @@ func TestLexer(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			receiver := message.Slice[testMessageType]()
+			receiver := message.Slice[Token]()
 			l := lexer.New(
 				logger,
 				bytes.NewBufferString(tc.input),
-				message.DefaultFactory[testMessageType](),
+				message.DefaultFactory[Token](),
 				receiver,
 			).With(tc.state)
 			err := l.Run(context.Background())

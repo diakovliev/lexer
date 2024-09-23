@@ -46,12 +46,15 @@ func (e Error[T]) Update(ctx context.Context, tx xio.State) (err error) {
 		err = ErrRollback
 		return
 	}
-	level, ok := GetStateLevel(ctx)
+	level, ok := GetTokenLevel(ctx)
 	if !ok {
-		e.logger.Fatal("state level is not set")
+		e.logger.Fatal("no token level in context")
 	}
-	message := e.factory.Error(level, e.err, data, int(pos), len(data))
-	err = e.receiver.Receive(message)
+	msg, err := e.factory.Error(ctx, level, e.err, data, int(pos), len(data))
+	if err != nil {
+		e.logger.Fatal("messages factory error: %s", err)
+	}
+	err = e.receiver.Receive(msg)
 	if err != nil {
 		e.logger.Fatal("receiver error: %s", err)
 	}

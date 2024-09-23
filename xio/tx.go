@@ -138,7 +138,7 @@ func (t *Tx) Unread() (n int, err error) {
 	return
 }
 
-// Data returns transaction data (reader data from lastDataPos to pos) and
+// Data returns transaction data (reader data from offset to pos), updates pos and
 // returns data position.
 func (t *Tx) Data() (data []byte, pos int64, err error) {
 	if t.offset == -1 {

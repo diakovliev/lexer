@@ -69,7 +69,7 @@ func (r *Run[T]) update(ctx context.Context, tx xio.State) (err error) {
 
 func (r *Run[T]) Run(ctx context.Context, source xio.Source) (err error) {
 	// set state level
-	ctx = WithNextStateLevel(ctx)
+	ctx = WithNextTokenLevel(ctx)
 loop:
 	for ctx.Err() == nil {
 		tx := source.Begin()
