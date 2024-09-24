@@ -69,7 +69,7 @@ func TestLexer(t *testing.T) {
 
 	tests := []testCase{
 		{
-			name:  "BNF a(b/c)d abd",
+			name:  "BNF a(b/c)d",
 			input: "abd acd add",
 			state: func(b state.Builder[Token]) []state.Update[Token] {
 				return state.AsSlice[state.Update[Token]](
@@ -90,6 +90,50 @@ func TestLexer(t *testing.T) {
 				{Level: 0, Type: message.Error, Value: &message.ErrorValue{Err: errUnhandledData, Value: []byte("add")}, Pos: 8, Width: 3},
 			},
 			wantError: io.EOF,
+		},
+		{
+			name:  "BNF a(b/c)?d",
+			input: "ad acd ab",
+			state: func(b state.Builder[Token]) []state.Update[Token] {
+				return state.AsSlice[state.Update[Token]](
+					b.CheckRune(unicode.IsSpace).Repeat(state.CountBetween(1, math.MaxUint)).Omit(),
+					b.Rune('a').State(b, func(b state.Builder[Token]) []state.Update[Token] {
+						return state.AsSlice[state.Update[Token]](
+							b.Rune('b').Break(),
+							b.Rune('c').Break(),
+							b.Break(state.ErrRollback),
+						)
+					}).Optional().Rune('d').Emit(Term),
+					b.Rest().Error(errUnhandledData),
+				)
+			},
+			wantMessages: []*message.Message[Token]{
+				{Level: 0, Type: message.Token, Token: Term, Value: []byte("ad"), Pos: 0, Width: 2},
+				{Level: 0, Type: message.Token, Token: Term, Value: []byte("acd"), Pos: 3, Width: 3},
+				{Level: 0, Type: message.Error, Value: &message.ErrorValue{Err: errUnhandledData, Value: []byte("ab")}, Pos: 7, Width: 2},
+			},
+			wantError: io.EOF,
+		},
+		{
+			name:  "BNF a(b/c)?d error",
+			input: "ad acd ab",
+			state: func(b state.Builder[Token]) []state.Update[Token] {
+				return state.AsSlice[state.Update[Token]](
+					b.CheckRune(unicode.IsSpace).Repeat(state.CountBetween(1, math.MaxUint)).Omit(),
+					b.Rune('a').State(b, func(b state.Builder[Token]) []state.Update[Token] {
+						return state.AsSlice[state.Update[Token]](
+							b.Rune('b').Break(),
+							b.Rune('c').Break(),
+							b.Rest().Error(errors.New("test error")),
+						)
+					}).Optional().Rune('d').Emit(Term),
+					b.Rest().Error(errUnhandledData),
+				)
+			},
+			wantMessages: []*message.Message[Token]{
+				{Level: 1, Type: message.Error, Value: &message.ErrorValue{Err: errors.New("test error"), Value: []byte("d acd ab")}, Pos: 1, Width: 8},
+			},
+			wantError: state.ErrInvalidInput,
 		},
 		{
 			name:  "simple accept-fn",
