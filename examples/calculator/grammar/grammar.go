@@ -11,6 +11,7 @@ import (
 var (
 	ErrUnhandledInput = errors.New("unhandled input")
 	ErrInvalidNumber  = errors.New("invalid number")
+	ErrUnexpectedKet  = errors.New("unexpected ')'")
 )
 
 type Token uint
@@ -70,21 +71,33 @@ func numberSubState(b state.Builder[Token]) []state.Update[Token] {
 	)
 }
 
-func BuildState(b state.Builder[Token]) []state.Update[Token] {
-	return state.AsSlice[state.Update[Token]](
-		// Spaces and tabs are omitted.
-		b.Named("OmitSpaces").CheckRune(unicode.IsSpace).Repeat(state.CountBetween(1, math.MaxUint)).Omit(),
-		// Parens
-		b.Named("Ket").Rune(')').Emit(Ket).Break(),
-		b.Named("Bra").Rune('(').Emit(Bra).State(b, BuildState),
-		// Operators
-		b.Named("Plus").Rune('+').Emit(Plus),
-		b.Named("Minus").Rune('-').Emit(Minus),
-		b.Named("Mul").Rune('*').Emit(Mul),
-		b.Named("Div").Rune('/').Emit(Div),
-		// Operands
-		b.Named("Number").CheckRune(unicode.IsDigit).State(b, numberSubState).Optional().Emit(Number),
-		// Error
-		b.Named("UnhandledInput").Rest().Error(ErrUnhandledInput),
-	)
+func BuildState(root bool) func(b state.Builder[Token]) []state.Update[Token] {
+	var ket func(b state.Builder[Token]) *state.Chain[Token]
+	if root {
+		ket = func(b state.Builder[Token]) *state.Chain[Token] {
+			return b.Named("Ket").Rune(')').Error(ErrUnexpectedKet)
+		}
+	} else {
+		ket = func(b state.Builder[Token]) *state.Chain[Token] {
+			return b.Named("Ket").Rune(')').Emit(Ket).Break()
+		}
+	}
+	return func(b state.Builder[Token]) []state.Update[Token] {
+		return state.AsSlice[state.Update[Token]](
+			// Spaces and tabs are omitted.
+			b.Named("OmitSpaces").CheckRune(unicode.IsSpace).Repeat(state.CountBetween(1, math.MaxUint)).Omit(),
+			// Parens
+			ket(b),
+			b.Named("Bra").Rune('(').Emit(Bra).State(b, BuildState(false)),
+			// Operators
+			b.Named("Plus").Rune('+').Emit(Plus),
+			b.Named("Minus").Rune('-').Emit(Minus),
+			b.Named("Mul").Rune('*').Emit(Mul),
+			b.Named("Div").Rune('/').Emit(Div),
+			// Operands
+			b.Named("Number").CheckRune(unicode.IsDigit).State(b, numberSubState).Optional().Emit(Number),
+			// Error
+			b.Named("UnhandledInput").Rest().Error(ErrUnhandledInput),
+		)
+	}
 }
