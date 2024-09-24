@@ -22,13 +22,18 @@ const (
 
 func evaluate(input string) (ret string, err error) {
 	fmt.Printf("input: '%s'\n", input)
-	logger := logger.New(
-		logger.WithLevel(logger.Trace),
-		logger.WithWriter(os.Stderr),
-	)
-	factory := message.DefaultFactory[grammar.Token]()
 	receiver := message.Slice[grammar.Token]()
-	lexer := lexer.New(logger, bytes.NewBufferString(input), factory, receiver).With(grammar.BuildState)
+
+	lexer := lexer.New(
+		logger.New(
+			logger.WithLevel(logger.Trace),
+			logger.WithWriter(os.Stderr),
+		),
+		bytes.NewBufferString(input),
+		message.DefaultFactory[grammar.Token](),
+		receiver).
+		With(grammar.BuildState(true))
+
 	lexErr := lexer.Run(context.TODO())
 	for _, msg := range receiver.Slice {
 		fmt.Printf("> %s\n", msg)
