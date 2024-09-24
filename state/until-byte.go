@@ -15,6 +15,7 @@ type UntilByte[T any] struct {
 	pred   BytePredicate
 }
 
+// newUntilRune creates a new instance of the state that reads until the given function returns true.
 func newUntilByte[T any](logger common.Logger, pred BytePredicate) *UntilByte[T] {
 	return &UntilByte[T]{
 		logger: logger,
@@ -46,21 +47,19 @@ func (ub UntilByte[T]) Update(ctx context.Context, tx xio.State) (err error) {
 		// if no runes were read, then rollback the state.
 		err = errRollback
 	} else {
-		err = errNext
+		err = errChainNext
 	}
 	return
 }
 
 // UntilRune creates a state that reads bytes until the pred returns true.
 func (b Builder[T]) UntilByte(pred BytePredicate) (tail *Chain[T]) {
-	defaultName := "UntilByte"
-	tail = b.createNode(defaultName, func() any { return newUntilByte[T](b.logger, pred) })
+	tail = b.append("UntilByte", func() any { return newUntilByte[T](b.logger, pred) })
 	return
 }
 
 // WhileByte creates a state that reads bytes while the pred returns true.
 func (b Builder[T]) WhileByte(pred BytePredicate) (tail *Chain[T]) {
-	defaultName := "WhileByte"
-	tail = b.createNode(defaultName, func() any { return newUntilByte[T](b.logger, negatePredicate(pred)) })
+	tail = b.append("WhileByte", func() any { return newUntilByte[T](b.logger, negatePredicate(pred)) })
 	return
 }

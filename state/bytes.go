@@ -50,7 +50,7 @@ func (bs Bytes) Update(ctx context.Context, tx xio.State) (err error) {
 		}
 	}
 	if maxLen == 0 {
-		bs.logger.Fatal("max sample len is zero")
+		bs.logger.Fatal("invalid grammar: max sample len is zero")
 	}
 	buffer := make([]byte, maxLen)
 	n, err := tx.Read(buffer)
@@ -59,25 +59,14 @@ func (bs Bytes) Update(ctx context.Context, tx xio.State) (err error) {
 	}
 	in := buffer[:n]
 	if !bs.pred(in, samples) {
+		if _, unreadErr := tx.Unread(); unreadErr != nil {
+			unreadErr = err
+			return
+		}
 		err = errRollback
 		return
 	}
-	err = errNext
-	return
-}
-
-func (b Builder[T]) bytesState(
-	name string,
-	provider BytesSamplesProvider,
-	pred BytesPredicate,
-) (tail *Chain[T]) {
-	tail = b.createNode(name, func() any {
-		return newBytes[T](
-			b.logger,
-			provider,
-			pred,
-		)
-	})
+	err = errChainNext
 	return
 }
 
@@ -116,6 +105,11 @@ func bytesMatches(in []byte, samples [][]byte) bool {
 
 func bytesNotMatches(in []byte, samples [][]byte) bool {
 	return !bytesMatches(in, samples)
+}
+
+func (b Builder[T]) bytesState(name string, provider BytesSamplesProvider, pred BytesPredicate) (tail *Chain[T]) {
+	tail = b.append(name, func() any { return newBytes[T](b.logger, provider, pred) })
+	return
 }
 
 func (b Builder[T]) Bytes(samples ...[]byte) (tail *Chain[T]) {

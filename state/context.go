@@ -6,6 +6,7 @@ type keyType string
 
 const (
 	tokenLevelKey keyType = "token-level"
+	stateNameKey  keyType = "state-name"
 )
 
 func WithTokenLevel(ctx context.Context, level int) context.Context {
@@ -25,4 +26,15 @@ func GetTokenLevel(ctx context.Context) (int, bool) {
 		return v.(int), true
 	}
 	return 0, false
+}
+
+func withStateName(ctx context.Context, name string) context.Context {
+	return context.WithValue(ctx, stateNameKey, name)
+}
+
+func GetStateName(ctx context.Context) string {
+	if v := ctx.Value(stateNameKey); v != nil {
+		return v.(string)
+	}
+	return ""
 }

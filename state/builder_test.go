@@ -34,13 +34,13 @@ func makeTestBuilder[Token any](receiver message.Receiver[Token]) Builder[Token]
 }
 
 func TestBuilder_NotAState(t *testing.T) {
-	assert.Panics(t, func() { makeTestDisposeBuilder().createNode("s0", newNotAState) })
+	assert.Panics(t, func() { makeTestDisposeBuilder().append("s0", newNotAState) })
 }
 
-func TestBuilder(t *testing.T) {
+func TestBuilder_append(t *testing.T) {
 	b := makeTestDisposeBuilder()
 
-	s0 := b.createNode("s0", newFakeState)
+	s0 := b.append("s0", newFakeState)
 	assert.NotNil(t, s0)
 	assert.NotNil(t, s0.state)
 	assert.Nil(t, s0.prev)
@@ -49,8 +49,9 @@ func TestBuilder(t *testing.T) {
 	assert.Equal(t, s0, s0.Builder.last)
 	assert.Equal(t, s0, s0.Tail())
 	assert.Equal(t, s0, s0.Head())
+	assert.Equal(t, "s0", s0.name)
 
-	s1 := s0.createNode("s1", newFakeState)
+	s1 := s0.append("s1", newFakeState)
 	assert.NotNil(t, s1)
 	assert.NotNil(t, s1.state)
 	assert.Nil(t, s1.next)
@@ -60,8 +61,9 @@ func TestBuilder(t *testing.T) {
 	assert.Equal(t, s1, s1.Builder.last)
 	assert.Equal(t, s1, s1.Tail())
 	assert.Equal(t, s0, s1.Head())
+	assert.Equal(t, "s0.s1", s1.name)
 
-	s2 := s1.createNode("s2", newFakeState)
+	s2 := s1.append("s2", newFakeState)
 	assert.NotNil(t, s2)
 	assert.NotNil(t, s2.state)
 	assert.Nil(t, s2.next)
@@ -71,10 +73,15 @@ func TestBuilder(t *testing.T) {
 	assert.Equal(t, s2, s2.Builder.last)
 	assert.Equal(t, s2, s2.Tail())
 	assert.Equal(t, s0, s2.Head())
+	assert.Equal(t, "s0.s1.s2", s2.name)
 
 	assert.Equal(t, s0, s1.Head())
 	assert.Equal(t, s0, s2.Head())
 
 	assert.Equal(t, s2, s0.Tail())
 	assert.Equal(t, s2, s1.Tail())
+
+	assert.Panics(t, func() {
+		s1.append("s3", newFakeState)
+	})
 }

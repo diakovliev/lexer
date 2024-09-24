@@ -18,7 +18,7 @@ func newBreak[T any](logger common.Logger) *Break[T] {
 }
 
 func (b Break[T]) Update(_ context.Context, _ xio.State) (err error) {
-	err = errBreak
+	err = errStateBreak
 	return
 }
 
@@ -26,8 +26,7 @@ func (b Builder[T]) Break() (tail *Chain[T]) {
 	if b.last == nil {
 		b.logger.Fatal("invalid grammar: break can't be the first state in chain")
 	}
-	defaultName := "Break"
-	tail = b.createNode(defaultName, func() any { return newBreak[T](b.logger) })
+	tail = b.append("Break", func() any { return newBreak[T](b.logger) })
 	return
 }
 

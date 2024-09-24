@@ -13,10 +13,10 @@ type (
 	Chain[T any] struct {
 		Builder[T]
 		logger   common.Logger
+		name     string
 		prev     *Chain[T]
 		next     *Chain[T]
 		state    Update[T]
-		name     string
 		receiver *message.SliceReceiver[T]
 	}
 )
@@ -26,9 +26,9 @@ type (
 func newChain[T any](builder Builder[T], name string, state Update[T]) *Chain[T] {
 	return &Chain[T]{
 		Builder:  builder,
+		name:     name,
 		receiver: message.Slice[T](),
 		logger:   builder.logger,
-		name:     name,
 		state:    state,
 	}
 }
@@ -65,19 +65,19 @@ func (c *Chain[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	current := head
 	for current != nil {
 		next := current.Next()
-		if err = current.state.Update(ctx, tx); err == nil {
+		if err = current.state.Update(withStateName(ctx, current.name), tx); err == nil {
 			c.logger.Fatal("unexpected nil")
 		}
-		if errors.Is(err, errRepeat) {
+		if errors.Is(err, errChainRepeat) {
 			prev := current.Prev()
 			if prev == nil {
 				c.logger.Fatal("unexpected nil")
 				return
 			}
-			err = c.repeat(ctx, prev.state, err, tx)
+			err = c.repeat(withStateName(ctx, prev.name), prev.state, err, tx)
 		}
 		switch {
-		case errors.Is(err, errNext):
+		case errors.Is(err, errChainNext):
 			if next == nil {
 				c.logger.Fatal("invalid grammar: next can't be from last in state")
 			}
@@ -106,8 +106,8 @@ func (c *Chain[T]) Update(ctx context.Context, tx xio.State) (err error) {
 			if isRepeat[T](current.state) {
 				return
 			}
-			err = errNext
-		case errors.Is(err, errBreak):
+			err = errChainNext
+		case errors.Is(err, errStateBreak):
 			if next != nil {
 				c.logger.Fatal("invalid grammar: break must be last in state")
 			}

@@ -26,7 +26,7 @@ func TestState(t *testing.T) {
 			state: func(b Builder[Token]) *Chain[Token] {
 				return b.State(b, func(b Builder[Token]) []Update[Token] {
 					return AsSlice[Update[Token]](
-						b.createNode("ErrCommit", newFixedResultState(errCommit)).Break(),
+						b.append("ErrCommit", newFixedResultState(errCommit)).Break(),
 					)
 				})
 			},
@@ -41,7 +41,7 @@ func TestState(t *testing.T) {
 			state: func(b Builder[Token]) *Chain[Token] {
 				return b.State(b, func(b Builder[Token]) []Update[Token] {
 					return AsSlice[Update[Token]](
-						b.createNode("ErrCommit", newFixedResultState(errRollback)).Break(),
+						b.append("ErrCommit", newFixedResultState(errRollback)).Break(),
 					)
 				})
 			},
@@ -57,7 +57,7 @@ func TestState(t *testing.T) {
 			state: func(b Builder[Token]) *Chain[Token] {
 				return b.State(b, func(b Builder[Token]) []Update[Token] {
 					return AsSlice[Update[Token]](
-						b.createNode("ErrCommit", newFixedResultState(errRollback)).Break(),
+						b.append("ErrCommit", newFixedResultState(errRollback)).Break(),
 					)
 				})
 			},
