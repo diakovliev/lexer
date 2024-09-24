@@ -36,8 +36,7 @@ func (fr FnRune[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	}
 	if !fr.pred(r) {
 		if _, unreadErr := tx.Unread(); unreadErr != nil {
-			unreadErr = err
-			return
+			fr.logger.Fatal("unread error: %s", unreadErr)
 		}
 		err = errRollback
 		return

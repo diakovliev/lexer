@@ -36,8 +36,7 @@ func (fb FnByte[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	}
 	if !fb.pred(b) {
 		if _, unreadErr := tx.Unread(); unreadErr != nil {
-			unreadErr = err
-			return
+			fb.logger.Fatal("unread error: %s", unreadErr)
 		}
 		err = errRollback
 		return
