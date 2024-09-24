@@ -35,26 +35,26 @@ func (fb FnByte[T]) Update(ctx context.Context, tx xio.State) (err error) {
 }
 
 func (b Builder[T]) FnByte(pred BytePredicate) (tail *Chain[T]) {
-	tail = b.createNode("FnByte", func() any { return newFnByte[T](b.logger, pred) })
+	tail = b.append("FnByte", func() any { return newFnByte[T](b.logger, pred) })
 	return
 }
 
 func (b Builder[T]) NotFbByte(pred BytePredicate) (tail *Chain[T]) {
-	tail = b.createNode("NotFnByte", func() any { return newFnByte[T](b.logger, negatePredicate(pred)) })
+	tail = b.append("NotFnByte", func() any { return newFnByte[T](b.logger, negatePredicate(pred)) })
 	return
 }
 
 func (b Builder[T]) Byte(sample byte) (tail *Chain[T]) {
-	tail = b.createNode("Byte", func() any { return newFnByte[T](b.logger, byteEqual(sample)) })
+	tail = b.append("Byte", func() any { return newFnByte[T](b.logger, byteEqual(sample)) })
 	return
 }
 
 func (b Builder[T]) NotByte(sample byte) (tail *Chain[T]) {
-	tail = b.createNode("NotByte", func() any { return newFnByte[T](b.logger, negatePredicate(byteEqual(sample))) })
+	tail = b.append("NotByte", func() any { return newFnByte[T](b.logger, negatePredicate(byteEqual(sample))) })
 	return
 }
 
 func (b Builder[T]) AnyByte() (tail *Chain[T]) {
-	tail = b.createNode("AnyByte", func() any { return newFnByte[T](b.logger, alwaysTrue[byte]()) })
+	tail = b.append("AnyByte", func() any { return newFnByte[T](b.logger, alwaysTrue[byte]()) })
 	return
 }

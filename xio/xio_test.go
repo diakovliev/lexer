@@ -102,6 +102,7 @@ func TestReader_Truncate(t *testing.T) {
 				assert.Equal(t, testStringData[pos:pos+n], buffer[:n])
 				err = AsTx(state).Commit()
 				assert.NoError(t, err)
-			})
+			},
+		)
 	}
 }

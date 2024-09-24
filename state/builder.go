@@ -26,8 +26,8 @@ func Make[T any](
 	}
 }
 
-// createNode creates a new node in chain of states and returns the head of the chain.
-func (b Builder[T]) createNode(name string, newState func() any) (tail *Chain[T]) {
+// append creates a new node in chain of states and returns the head of the chain.
+func (b Builder[T]) append(name string, newState func() any) (tail *Chain[T]) {
 	created := newState()
 	var state Update[T]
 	var ok bool

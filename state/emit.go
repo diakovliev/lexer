@@ -64,9 +64,8 @@ func (b Builder[T]) Emit(token T) (tail *Chain[T]) {
 	if b.last == nil {
 		b.logger.Fatal("invalid grammar: emit can't be the first state in chain")
 	}
-	defaultName := "Emit"
 	newNode := newEmit(b.logger, b.factory, token)
-	tail = b.createNode(defaultName, func() any { return newNode })
+	tail = b.append("Emit", func() any { return newNode })
 	// sent all messages to the the first node receiver
 	newNode.setReceiver(tail.Head().receiver)
 	return

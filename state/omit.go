@@ -34,8 +34,7 @@ func (b Builder[T]) Omit() (tail *Chain[T]) {
 	if b.last == nil {
 		b.logger.Fatal("invalid grammar: omit can't be the first state in chain")
 	}
-	defaultName := "Omit"
-	tail = b.createNode(defaultName, func() any { return newOmit[T](b.logger) })
+	tail = b.append("Omit", func() any { return newOmit[T](b.logger) })
 	return
 }
 

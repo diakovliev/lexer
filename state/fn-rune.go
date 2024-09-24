@@ -36,29 +36,29 @@ func (fr FnRune[T]) Update(ctx context.Context, tx xio.State) (err error) {
 
 // FnRune is a state that matches rune by the given function.
 func (b Builder[T]) FnRune(pred RunePredicate) (tail *Chain[T]) {
-	tail = b.createNode("FnRune", func() any { return newFnRune[T](b.logger, pred) })
+	tail = b.append("FnRune", func() any { return newFnRune[T](b.logger, pred) })
 	return
 }
 
 func (b Builder[T]) NotFnRune(pred RunePredicate) (tail *Chain[T]) {
-	tail = b.createNode("NotFnRune", func() any { return newFnRune[T](b.logger, negatePredicate(pred)) })
+	tail = b.append("NotFnRune", func() any { return newFnRune[T](b.logger, negatePredicate(pred)) })
 	return
 }
 
 // Rune is a state that matches the given rune.
 func (b Builder[T]) Rune(sample rune) (tail *Chain[T]) {
-	tail = b.createNode("Rune", func() any { return newFnRune[T](b.logger, runeEqual(sample)) })
+	tail = b.append("Rune", func() any { return newFnRune[T](b.logger, runeEqual(sample)) })
 	return
 }
 
 // NotRune is a state that matches all runes except the given one.
 func (b Builder[T]) NotRune(sample rune) (tail *Chain[T]) {
-	tail = b.createNode("NotRune", func() any { return newFnRune[T](b.logger, negatePredicate(runeEqual(sample))) })
+	tail = b.append("NotRune", func() any { return newFnRune[T](b.logger, negatePredicate(runeEqual(sample))) })
 	return
 }
 
 // AnyRune is a state that matches any rune.
 func (b Builder[T]) AnyRune() (tail *Chain[T]) {
-	tail = b.createNode("AnyRune", func() any { return newFnRune[T](b.logger, alwaysTrue[rune]()) })
+	tail = b.append("AnyRune", func() any { return newFnRune[T](b.logger, alwaysTrue[rune]()) })
 	return
 }

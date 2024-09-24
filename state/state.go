@@ -34,6 +34,6 @@ func (s State[T]) Update(ctx context.Context, tx xio.State) (err error) {
 // State creates a new state that will be used to update the current state of the lexer.
 // It returns the tail of the chain.
 func (b Builder[T]) State(builder Builder[T], provider Provider[T]) (tail *Chain[T]) {
-	tail = b.createNode("State", func() any { return newState(b.logger, builder, provider) })
+	tail = b.append("State", func() any { return newState(b.logger, builder, provider) })
 	return
 }

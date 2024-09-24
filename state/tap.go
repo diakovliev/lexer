@@ -33,8 +33,7 @@ func (t Tap[T]) Update(ctx context.Context, tx xio.State) (err error) {
 }
 
 func (b Builder[T]) Tap(fn TapFn) (tail *Chain[T]) {
-	defaultName := "Tap"
-	tail = b.createNode(defaultName, func() any { return newTap[T](b.logger, fn) })
+	tail = b.append("Tap", func() any { return newTap[T](b.logger, fn) })
 	return
 }
 

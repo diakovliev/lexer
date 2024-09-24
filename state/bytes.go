@@ -66,21 +66,6 @@ func (bs Bytes) Update(ctx context.Context, tx xio.State) (err error) {
 	return
 }
 
-func (b Builder[T]) bytesState(
-	name string,
-	provider BytesSamplesProvider,
-	pred BytesPredicate,
-) (tail *Chain[T]) {
-	tail = b.createNode(name, func() any {
-		return newBytes[T](
-			b.logger,
-			provider,
-			pred,
-		)
-	})
-	return
-}
-
 func providerFromBytes(logger common.Logger, samples [][]byte) BytesSamplesProvider {
 	return func() (ret [][]byte) {
 		for _, s := range samples {
@@ -116,6 +101,11 @@ func bytesMatches(in []byte, samples [][]byte) bool {
 
 func bytesNotMatches(in []byte, samples [][]byte) bool {
 	return !bytesMatches(in, samples)
+}
+
+func (b Builder[T]) bytesState(name string, provider BytesSamplesProvider, pred BytesPredicate) (tail *Chain[T]) {
+	tail = b.append(name, func() any { return newBytes[T](b.logger, provider, pred) })
+	return
 }
 
 func (b Builder[T]) Bytes(samples ...[]byte) (tail *Chain[T]) {

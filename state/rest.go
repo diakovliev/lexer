@@ -28,8 +28,7 @@ func (r *Rest[T]) Update(ctx context.Context, tx xio.State) (err error) {
 }
 
 func (b Builder[T]) Rest() (tail *Chain[T]) {
-	defaultName := "Rest"
-	tail = b.createNode(defaultName, func() any { return newRest[T](b.logger) })
+	tail = b.append("Rest", func() any { return newRest[T](b.logger) })
 	return
 }
 

@@ -138,7 +138,7 @@ func isRepeatable[T any](s Update[T]) bool {
 }
 
 // repeat implements repeat sub state.
-func (c *Chain[T]) repeat(ctx context.Context, state Update[T], repeat error, tx xio.State) (err error) {
+func (c *Chain[T]) repeat(ctx context.Context, state Update[T], repeat error, ioState xio.State) (err error) {
 	if state == nil {
 		c.logger.Fatal("invalid grammar: repeat without previous state")
 	}
@@ -150,23 +150,24 @@ func (c *Chain[T]) repeat(ctx context.Context, state Update[T], repeat error, tx
 		err = errNext
 		return
 	}
-	source := xio.AsSource(tx)
+	source := xio.AsSource(ioState)
 	count := uint(1)
 loop:
 	for ; count < q.max; count++ {
-		tx := source.Begin().Ref
-		if err = state.Update(ctx, tx); err == nil {
+		ioState := source.Begin().Ref
+		if err = state.Update(ctx, ioState); err == nil {
 			c.logger.Fatal("unexpected nil")
 		}
+		tx := xio.AsTx(ioState)
 		switch {
 		case errors.Is(err, errRollback):
-			if err := xio.AsTx(tx).Rollback(); err != nil {
+			if err := tx.Rollback(); err != nil {
 				c.logger.Fatal("rollback error: %s", err)
 			}
 			err = q.makeResult(count)
 			break loop
 		case errors.Is(err, errNext), errors.Is(err, errCommit):
-			if err := xio.AsTx(tx).Commit(); err != nil {
+			if err := tx.Commit(); err != nil {
 				c.logger.Fatal("commit error: %s", err)
 			}
 			nextCount := count + 1
@@ -176,7 +177,7 @@ loop:
 			err = q.makeResult(nextCount)
 			break loop
 		default:
-			if err := xio.AsTx(tx).Rollback(); err != nil {
+			if err := tx.Rollback(); err != nil {
 				c.logger.Fatal("rollback error: %s", err)
 			}
 			c.logger.Fatal("unexpected error: %s", err)
@@ -185,7 +186,7 @@ loop:
 	return
 }
 
-func (b Builder[T]) repeat(defaultName string, q Quantifier) (tail *Chain[T]) {
+func (b Builder[T]) repeat(name string, q Quantifier) (tail *Chain[T]) {
 	if !q.isValid() {
 		b.logger.Fatal("invalid grammar: invalid quantifier: %s", q)
 	}
@@ -195,7 +196,7 @@ func (b Builder[T]) repeat(defaultName string, q Quantifier) (tail *Chain[T]) {
 	if !isRepeatable[T](b.last.state) {
 		b.logger.Fatal("invalid grammar: previous state '%s' is not repeatable", b.last.name)
 	}
-	tail = b.createNode(defaultName, func() any { return newRepeat[T](b.logger, q) })
+	tail = b.append(name, func() any { return newRepeat[T](b.logger, q) })
 	return
 }
 
