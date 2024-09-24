@@ -1,6 +1,9 @@
 package state
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 var (
 	// ErrInvalidInput indicates that the input is invalid
@@ -8,10 +11,10 @@ var (
 	// ErrIncomplete indicates that the combined state is incomplete
 	ErrIncomplete = errors.New("incomplete")
 
-	// errCommit indicates that the state should be committed
-	errCommit = errors.New("commit")
-	// errRollback indicates that the state should be rolled back
-	errRollback = errors.New("rollback")
+	// ErrCommit indicates that the state should be committed
+	ErrCommit = errors.New("commit")
+	// ErrRollback indicates that the state should be rolled back
+	ErrRollback = errors.New("rollback")
 
 	// errChainNext indicates that the next state inside the chain should be processed
 	errChainNext = errors.New("next")
@@ -24,10 +27,17 @@ var (
 	errStateNoMoreStates = errors.New("no more states")
 )
 
-// errRepeatImpl is an implementation of the repeat error
-type errRepeatImpl struct {
-	q Quantifier
-}
+type (
+	// errRepeatImpl is an implementation of the repeat error
+	errRepeatImpl struct {
+		q Quantifier
+	}
+
+	// errBreakImpl is an implementation of the break error
+	errBreakImpl struct {
+		action error
+	}
+)
 
 // makeErrRepeat returns an error that can be unwrapped
 func makeErrRepeat(q Quantifier) error {
@@ -56,6 +66,36 @@ func getRepeatQuantifier(err error) (q Quantifier, ret bool) {
 		return
 	}
 	q = e.q
+	ret = true
+	return
+}
+
+func makeErrBreak(action error) error {
+	return &errBreakImpl{
+		action: action,
+	}
+}
+
+// Error implements the error interface
+func (eb errBreakImpl) Error() string {
+	return fmt.Sprintf("%s: %s", errStateBreak.Error(), eb.action)
+}
+
+// Unwrap implements the error interface
+func (eb errBreakImpl) Unwrap() error {
+	return errStateBreak
+}
+
+// getBreakAction returns the action from an error if it is a *errBreak
+func getBreakAction(err error) (action error, ret bool) {
+	if err == nil {
+		return
+	}
+	e, ok := err.(*errBreakImpl)
+	if !ok {
+		return
+	}
+	action = e.action
 	ret = true
 	return
 }

@@ -62,7 +62,7 @@ func (bs Bytes) Update(ctx context.Context, tx xio.State) (err error) {
 		if _, unreadErr := tx.Unread(); unreadErr != nil {
 			bs.logger.Fatal("unread error: %s", unreadErr)
 		}
-		err = errRollback
+		err = ErrRollback
 		return
 	}
 	err = errChainNext

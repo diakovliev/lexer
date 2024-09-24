@@ -60,12 +60,12 @@ func (c *Chain[T]) Head() *Chain[T] {
 }
 
 // Update implements State interface
-func (c *Chain[T]) Update(ctx context.Context, tx xio.State) (err error) {
+func (c *Chain[T]) Update(ctx context.Context, ioState xio.State) (err error) {
 	head := c.Head()
 	current := head
 	for current != nil {
 		next := current.Next()
-		if err = current.state.Update(withStateName(ctx, current.name), tx); err == nil {
+		if err = current.state.Update(withStateName(ctx, current.name), ioState); err == nil {
 			c.logger.Fatal("unexpected nil")
 		}
 		if errors.Is(err, errChainRepeat) {
@@ -74,7 +74,7 @@ func (c *Chain[T]) Update(ctx context.Context, tx xio.State) (err error) {
 				c.logger.Fatal("unexpected nil")
 				return
 			}
-			err = c.repeat(withStateName(ctx, prev.name), prev.state, err, tx)
+			err = c.repeat(withStateName(ctx, prev.name), prev.state, err, ioState)
 		}
 		switch {
 		case errors.Is(err, errChainNext):
@@ -82,12 +82,12 @@ func (c *Chain[T]) Update(ctx context.Context, tx xio.State) (err error) {
 				c.logger.Fatal("invalid grammar: next can't be from last in state")
 			}
 			if next != nil && isZeroMaxRepeat[T](next.state) {
-				err = errRollback
+				err = ErrRollback
 				return
 			}
-		case errors.Is(err, errCommit):
+		case errors.Is(err, ErrCommit):
 			if next != nil && isZeroMaxRepeat[T](next.state) {
-				err = errRollback
+				err = ErrRollback
 				return
 			}
 			if err := head.receiver.EmitTo(head.Builder.receiver); err != nil {
@@ -96,7 +96,7 @@ func (c *Chain[T]) Update(ctx context.Context, tx xio.State) (err error) {
 			if next == nil {
 				return
 			}
-		case errors.Is(err, errRollback):
+		case errors.Is(err, ErrRollback):
 			if next == nil {
 				return
 			}

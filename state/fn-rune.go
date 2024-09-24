@@ -31,14 +31,14 @@ func (fr FnRune[T]) Update(ctx context.Context, tx xio.State) (err error) {
 		return
 	}
 	if errors.Is(err, io.EOF) && rw == 0 {
-		err = errRollback
+		err = ErrRollback
 		return
 	}
 	if !fr.pred(r) {
 		if _, unreadErr := tx.Unread(); unreadErr != nil {
 			fr.logger.Fatal("unread error: %s", unreadErr)
 		}
-		err = errRollback
+		err = ErrRollback
 		return
 	}
 	err = errChainNext
