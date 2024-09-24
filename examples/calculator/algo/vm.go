@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	ErrVmComplete = errors.New("vm complete")
+	ErrVmComplete   = errors.New("vm complete")
+	ErrVmStackEmpty = errors.New("vm stack is empty")
 )
 
 // Simple stack virtual machine
@@ -33,6 +34,10 @@ func (vm *Vm) Pop() (value VmData) {
 }
 
 func (vm *Vm) getOperand() (oper VmData, err error) {
+	if vm.stack.Empty() {
+		err = ErrVmComplete
+		return
+	}
 	vm.stack, oper = vm.stack.Pop()
 	if Ops.HasToken(oper.Token) {
 		vm.stack = vm.stack.Push(oper)
@@ -46,6 +51,10 @@ func (vm *Vm) getOperand() (oper VmData, err error) {
 }
 
 func (vm *Vm) step() (err error) {
+	if vm.stack.Empty() {
+		err = ErrVmComplete
+		return
+	}
 	// pop operator
 	var token VmData
 	vm.stack, token = vm.stack.Pop()
@@ -89,4 +98,8 @@ func (vm *Vm) Execute() (err error) {
 	for err = vm.step(); err == nil; {
 	}
 	return
+}
+
+func (vm *Vm) Empty() bool {
+	return vm.stack.Empty()
 }

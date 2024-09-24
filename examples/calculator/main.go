@@ -50,6 +50,10 @@ func evaluate(input string) (ret string, err error) {
 		fmt.Printf("ERROR: %s\n", err)
 		return
 	}
+	if vm.Empty() {
+		err = errors.New("uups, empty stack")
+		return
+	}
 	err = nil
 	ret = fmt.Sprintf("%d", vm.Pop().Value)
 	return
@@ -57,6 +61,7 @@ func evaluate(input string) (ret string, err error) {
 
 func main() {
 	fmt.Print("The calculator example. Copyright (C) 2024, daemondzk@gmail.com.\n")
+	fmt.Print("Licensed under the MIT license.\n")
 	fmt.Print("It supports whole nubers, brackets and basic ariphmetic operations: +, -, *, /.\n")
 	fmt.Print("It is part of the github.com/diakovliev/lexer project.\n")
 	fmt.Print("To exit press Ctrl+C.\n")
