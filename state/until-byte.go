@@ -15,6 +15,7 @@ type UntilByte[T any] struct {
 	pred   BytePredicate
 }
 
+// newUntilRune creates a new instance of the state that reads until the given function returns true.
 func newUntilByte[T any](logger common.Logger, pred BytePredicate) *UntilByte[T] {
 	return &UntilByte[T]{
 		logger: logger,

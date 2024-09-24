@@ -8,20 +8,16 @@ import (
 	"github.com/diakovliev/lexer/xio"
 )
 
-type (
-	Error[T any] struct {
-		logger   common.Logger
-		err      error
-		factory  message.Factory[T]
-		receiver message.Receiver[T]
-	}
-)
+// Error is a state that produces an error message.
+type Error[T any] struct {
+	logger   common.Logger
+	err      error
+	factory  message.Factory[T]
+	receiver message.Receiver[T]
+}
 
-func newError[T any](
-	logger common.Logger,
-	factory message.Factory[T],
-	err error,
-) *Error[T] {
+// newError creates a new instance of the Error state.
+func newError[T any](logger common.Logger, factory message.Factory[T], err error) *Error[T] {
 	return &Error[T]{
 		logger:  logger,
 		factory: factory,
@@ -29,10 +25,12 @@ func newError[T any](
 	}
 }
 
+// setReceiver sets the receiver of the state.
 func (e *Error[T]) setReceiver(receiver message.Receiver[T]) {
 	e.receiver = receiver
 }
 
+// Update implements the Update interface. It produces an error message.
 func (e Error[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	if e.receiver == nil {
 		e.logger.Fatal("receiver is not set")

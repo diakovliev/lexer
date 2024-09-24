@@ -31,25 +31,25 @@ const (
 
 func buildScopeState(b state.Builder[Token]) []state.Update[Token] {
 	return state.AsSlice[state.Update[Token]](
-		b.FnRune(unicode.IsSpace).Repeat(state.CountBetween(1, math.MaxUint)).Omit(),
-		b.Rune(')').Emit(Ket).Break(),
-		b.Rune('(').Emit(Bra).State(b, buildScopeState),
-		b.Rune(',').Emit(Comma),
-		b.FnRune(unicode.IsDigit).Repeat(state.CountBetween(1, math.MaxUint)).Emit(Number),
-		b.String("foo").Emit(Term),
-		b.String("bar").Emit(Term),
-		b.Rest().Error(errUnhandledData),
+		b.Named("OmitSpaces").CheckRune(unicode.IsSpace).Repeat(state.CountBetween(1, math.MaxUint)).Omit(),
+		b.Named("Ket").Rune(')').Emit(Ket).Break(),
+		b.Named("Bra").Rune('(').Emit(Bra).State(b, buildScopeState),
+		b.Named("Comma").Rune(',').Emit(Comma),
+		b.Named("Number").CheckRune(unicode.IsDigit).CheckRune(unicode.IsDigit).Repeat(state.CountBetween(0, math.MaxUint)).Emit(Number),
+		b.Named("foo").String("foo").Emit(Term),
+		b.Named("bar").String("bar").Emit(Term),
+		b.Named("UnhandledData").Rest().Error(errUnhandledData),
 	)
 }
 
 func buildInitialState(b state.Builder[Token]) []state.Update[Token] {
 	return state.AsSlice[state.Update[Token]](
-		b.FnRune(unicode.IsSpace).Repeat(state.CountBetween(1, math.MaxUint)).Omit(),
-		b.Rune('(').Emit(Bra).State(b, buildScopeState),
-		b.FnRune(unicode.IsDigit).Repeat(state.CountBetween(1, math.MaxUint)).Emit(Number),
-		b.String("foo").Emit(Term),
-		b.String("bar").Emit(Term),
-		b.Rest().Error(errUnhandledData),
+		b.Named("OmitSpaces").CheckRune(unicode.IsSpace).Repeat(state.CountBetween(1, math.MaxUint)).Omit(),
+		b.Named("Bra").Rune('(').Emit(Bra).State(b, buildScopeState),
+		b.Named("Number").CheckRune(unicode.IsDigit).CheckRune(unicode.IsDigit).Repeat(state.CountBetween(0, math.MaxUint)).Emit(Number),
+		b.Named("foo").String("foo").Emit(Term),
+		b.Named("bar").String("bar").Emit(Term),
+		b.Named("UnhandledData").Rest().Error(errUnhandledData),
 	)
 }
 
@@ -73,7 +73,7 @@ func TestLexer(t *testing.T) {
 			input: "123",
 			state: func(b state.Builder[Token]) []state.Update[Token] {
 				return state.AsSlice[state.Update[Token]](
-					b.FnRune(unicode.IsDigit).FnRune(unicode.IsDigit).FnRune(unicode.IsDigit).Emit(Number),
+					b.CheckRune(unicode.IsDigit).CheckRune(unicode.IsDigit).CheckRune(unicode.IsDigit).Emit(Number),
 					b.Rest().Error(errUnhandledData),
 				)
 			},
@@ -143,7 +143,7 @@ func TestLexer(t *testing.T) {
 			wantError: io.EOF,
 		},
 		{
-			name:  "substate",
+			name:  "sub state",
 			input: "123 (123, 333) 555",
 			state: buildInitialState,
 			wantMessages: []*message.Message[Token]{
@@ -158,7 +158,7 @@ func TestLexer(t *testing.T) {
 			wantError: io.EOF,
 		},
 		{
-			name:  "substate incomplete",
+			name:  "sub state incomplete",
 			input: "123 (123, 333 ",
 			state: buildInitialState,
 			wantMessages: []*message.Message[Token]{
@@ -171,7 +171,7 @@ func TestLexer(t *testing.T) {
 			wantError: state.ErrInvalidInput,
 		},
 		{
-			name:  "inner substates",
+			name:  "inner sub states",
 			input: "123 (123, 333, (1, 3, 4), 345) 555 foo bar",
 			state: buildInitialState,
 			wantMessages: []*message.Message[Token]{

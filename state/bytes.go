@@ -59,6 +59,10 @@ func (bs Bytes) Update(ctx context.Context, tx xio.State) (err error) {
 	}
 	in := buffer[:n]
 	if !bs.pred(in, samples) {
+		if _, unreadErr := tx.Unread(); unreadErr != nil {
+			unreadErr = err
+			return
+		}
 		err = errRollback
 		return
 	}

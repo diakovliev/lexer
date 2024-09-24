@@ -15,6 +15,7 @@ type UntilRune[T any] struct {
 	pred   RunePredicate
 }
 
+// newUntilRune creates a new state that reads until the given function returns true.
 func newUntilRune[T any](logger common.Logger, pred RunePredicate) *UntilRune[T] {
 	return &UntilRune[T]{
 		logger: logger,
