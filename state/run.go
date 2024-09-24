@@ -101,21 +101,34 @@ loop:
 				r.logger.Fatal("rollback error: %s", err)
 			}
 			r.logger.Fatal("invalid grammar: repeat and next allowed only inside chain")
-		case errors.Is(err, errCommit):
+		case errors.Is(err, ErrCommit):
 			if err := tx.Commit(); err != nil {
 				r.logger.Fatal("commit error: %s", err)
 			}
 			r.reset()
-		case errors.Is(err, errRollback):
+		case errors.Is(err, ErrRollback):
 			if err := tx.Rollback(); err != nil {
 				r.logger.Fatal("rollback error: %s", err)
 			}
 			r.next()
 		case errors.Is(err, errStateBreak):
-			if err := tx.Commit(); err != nil {
-				r.logger.Fatal("commit error: %s", err)
+			action, ok := getBreakAction(err)
+			if !ok {
+				r.logger.Fatal("can't get break action")
 			}
-			err = errCommit
+			switch {
+			case errors.Is(action, ErrCommit):
+				if err := tx.Commit(); err != nil {
+					r.logger.Fatal("commit error: %s", err)
+				}
+			case errors.Is(action, ErrRollback):
+				if err := tx.Rollback(); err != nil {
+					r.logger.Fatal("rollback error: %s", err)
+				}
+			default:
+				r.logger.Fatal("unknown break action: %s", action)
+			}
+			err = action
 			break loop
 		default:
 			if err := tx.Rollback(); err != nil {

@@ -26,22 +26,23 @@ func TestState(t *testing.T) {
 			state: func(b Builder[Token]) *Chain[Token] {
 				return b.State(b, func(b Builder[Token]) []Update[Token] {
 					return AsSlice[Update[Token]](
-						b.append("ErrCommit", newFixedResultState(errCommit)).Break(),
+						b.append("ErrCommit", newFixedResultState(ErrCommit)).Break(),
 					)
 				})
 			},
 			setup: func(m *mocks) {
 				m.xioSource.On("Begin").Once()
+				m.xioState.On("Data").Return([]byte{}, int64(0), nil).Once()
 				m.xioState.On("Commit").Return(nil).Once()
 			},
-			wantError: errCommit,
+			wantError: ErrCommit,
 		},
 		{
 			name: "State Rollback no more states",
 			state: func(b Builder[Token]) *Chain[Token] {
 				return b.State(b, func(b Builder[Token]) []Update[Token] {
 					return AsSlice[Update[Token]](
-						b.append("ErrCommit", newFixedResultState(errRollback)).Break(),
+						b.append("ErrCommit", newFixedResultState(ErrRollback)).Break(),
 					)
 				})
 			},
@@ -57,7 +58,7 @@ func TestState(t *testing.T) {
 			state: func(b Builder[Token]) *Chain[Token] {
 				return b.State(b, func(b Builder[Token]) []Update[Token] {
 					return AsSlice[Update[Token]](
-						b.append("ErrCommit", newFixedResultState(errRollback)).Break(),
+						b.append("ErrCommit", newFixedResultState(ErrRollback)).Break(),
 					)
 				})
 			},

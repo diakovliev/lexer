@@ -69,6 +69,29 @@ func TestLexer(t *testing.T) {
 
 	tests := []testCase{
 		{
+			name:  "BNF a(b/c)d abd",
+			input: "abd acd add",
+			state: func(b state.Builder[Token]) []state.Update[Token] {
+				return state.AsSlice[state.Update[Token]](
+					b.CheckRune(unicode.IsSpace).Repeat(state.CountBetween(1, math.MaxUint)).Omit(),
+					b.Rune('a').State(b, func(b state.Builder[Token]) []state.Update[Token] {
+						return state.AsSlice[state.Update[Token]](
+							b.Rune('b').Break(),
+							b.Rune('c').Break(),
+							b.Break(state.ErrRollback),
+						)
+					}).Rune('d').Emit(Term),
+					b.Rest().Error(errUnhandledData),
+				)
+			},
+			wantMessages: []*message.Message[Token]{
+				{Level: 0, Type: message.Token, Token: Term, Value: []byte("abd"), Pos: 0, Width: 3},
+				{Level: 0, Type: message.Token, Token: Term, Value: []byte("acd"), Pos: 4, Width: 3},
+				{Level: 0, Type: message.Error, Value: &message.ErrorValue{Err: errUnhandledData, Value: []byte("add")}, Pos: 8, Width: 3},
+			},
+			wantError: io.EOF,
+		},
+		{
 			name:  "simple accept-fn",
 			input: "123",
 			state: func(b state.Builder[Token]) []state.Update[Token] {

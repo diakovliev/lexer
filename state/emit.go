@@ -55,7 +55,7 @@ func (e Emit[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	if err != nil {
 		e.logger.Fatal("receiver error: %s", err)
 	}
-	err = errCommit
+	err = ErrCommit
 	return
 }
 

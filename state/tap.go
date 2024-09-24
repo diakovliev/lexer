@@ -32,7 +32,7 @@ func (t Tap[T]) Update(ctx context.Context, tx xio.State) (err error) {
 		return
 	}
 	// return errCommit to be able to Tap end of the chain
-	err = errCommit
+	err = ErrCommit
 	return
 }
 

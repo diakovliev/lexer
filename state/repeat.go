@@ -55,25 +55,25 @@ func (q Quantifier) makeResult(repeats uint) (err error) {
 	switch {
 	case q.min == q.max:
 		if repeats != q.min {
-			err = errRollback
+			err = ErrRollback
 		} else {
 			err = errChainNext
 		}
 	case q.min < q.max:
 		if repeats < q.min || repeats > q.max {
-			err = errRollback
+			err = ErrRollback
 		} else {
 			err = errChainNext
 		}
 	case q.min == 0:
 		if repeats > q.max {
-			err = errRollback
+			err = ErrRollback
 		} else {
 			err = errChainNext
 		}
 	case q.max == math.MaxUint:
 		if repeats < q.min {
-			err = errRollback
+			err = ErrRollback
 		} else {
 			err = errChainNext
 		}
@@ -98,7 +98,7 @@ func newRepeat[T any](logger common.Logger, q Quantifier) *Repeat[T] {
 func (r Repeat[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	switch {
 	case r.q.isZero():
-		err = errRollback
+		err = ErrRollback
 	case r.q.isOne():
 		err = errChainNext
 	default:
@@ -131,7 +131,14 @@ func isZeroMaxRepeat[T any](s Update[T]) (ret bool) {
 }
 
 func isRepeatable[T any](s Update[T]) bool {
-	if isRepeat[T](s) || isEmit[T](s) || isError[T](s) || isOmit[T](s) || isRest[T](s) || isTap[T](s) || isBreak[T](s) || isNamed[T](s) {
+	if isRepeat[T](s) ||
+		isEmit[T](s) ||
+		isError[T](s) ||
+		isOmit[T](s) ||
+		isRest[T](s) ||
+		isTap[T](s) ||
+		isBreak[T](s) ||
+		isNamed[T](s) {
 		return false
 	}
 	return true
@@ -160,13 +167,13 @@ loop:
 		}
 		tx := xio.AsTx(ioState)
 		switch {
-		case errors.Is(err, errRollback):
+		case errors.Is(err, ErrRollback):
 			if err := tx.Rollback(); err != nil {
 				c.logger.Fatal("rollback error: %s", err)
 			}
 			err = q.makeResult(count)
 			break loop
-		case errors.Is(err, errChainNext), errors.Is(err, errCommit):
+		case errors.Is(err, errChainNext), errors.Is(err, ErrCommit):
 			if err := tx.Commit(); err != nil {
 				c.logger.Fatal("commit error: %s", err)
 			}
