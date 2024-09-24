@@ -40,22 +40,18 @@ func evaluate(input string) (ret string, err error) {
 		fmt.Printf("ERROR: %s\n", err)
 		return
 	}
-	// for _, msg := range receiver.Slice {
-	// 	fmt.Printf("> %s\n", msg)
-	// }
-	bpf := algo.ShuntingYarg(receiver.Slice)
-	// for _, msg := range bpf {
-	// 	fmt.Printf("bpf> %s\n", msg)
-	// }
-	vmData, err := algo.Parse(bpf)
+	code, err := algo.Parse(algo.ShuntingYard(receiver.Slice))
 	if err != nil {
 		fmt.Printf("ERROR: %s\n", err)
 		return
 	}
-	vm := algo.NewVm()
-	err = vm.Execute(vmData)
-	if err != nil && !errors.Is(err, algo.ErrVmComplete) {
+	vm := algo.NewVm(code)
+	if err = vm.Execute(); err != nil && !errors.Is(err, algo.ErrVmComplete) {
 		fmt.Printf("ERROR: %s\n", err)
+		return
+	}
+	if vm.Empty() {
+		err = errors.New("uups, empty stack")
 		return
 	}
 	err = nil
@@ -64,6 +60,11 @@ func evaluate(input string) (ret string, err error) {
 }
 
 func main() {
+	fmt.Print("The calculator example. Copyright (C) 2024, daemondzk@gmail.com.\n")
+	fmt.Print("Licensed under the MIT license.\n")
+	fmt.Print("It supports whole nubers, brackets and basic ariphmetic operations: +, -, *, /.\n")
+	fmt.Print("It is part of the github.com/diakovliev/lexer project.\n")
+	fmt.Print("To exit press Ctrl+C.\n")
 	fmt.Print(ps)
 	for {
 		scanner := bufio.NewScanner(os.Stdin)
