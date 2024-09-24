@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/diakovliev/lexer"
+	"github.com/diakovliev/lexer/examples/algo"
 	"github.com/diakovliev/lexer/examples/calculator/grammar"
 	"github.com/diakovliev/lexer/logger"
 	"github.com/diakovliev/lexer/message"
@@ -21,7 +22,6 @@ const (
 )
 
 func evaluate(input string) (ret string, err error) {
-	fmt.Printf("input: '%s'\n", input)
 	receiver := message.Slice[grammar.Token]()
 
 	lexer := lexer.New(
@@ -35,14 +35,31 @@ func evaluate(input string) (ret string, err error) {
 		With(grammar.BuildState(true))
 
 	lexErr := lexer.Run(context.TODO())
-	for _, msg := range receiver.Slice {
-		fmt.Printf("> %s\n", msg)
-	}
 	if !errors.Is(lexErr, io.EOF) {
 		err = lexErr
+		fmt.Printf("ERROR: %s\n", err)
 		return
 	}
-
+	// for _, msg := range receiver.Slice {
+	// 	fmt.Printf("> %s\n", msg)
+	// }
+	bpf := algo.ShuntingYarg(receiver.Slice)
+	// for _, msg := range bpf {
+	// 	fmt.Printf("bpf> %s\n", msg)
+	// }
+	vmData, err := algo.Parse(bpf)
+	if err != nil {
+		fmt.Printf("ERROR: %s\n", err)
+		return
+	}
+	vm := algo.NewVm()
+	err = vm.Execute(vmData)
+	if err != nil && !errors.Is(err, algo.ErrVmComplete) {
+		fmt.Printf("ERROR: %s\n", err)
+		return
+	}
+	err = nil
+	ret = fmt.Sprintf("%d", vm.Pop().Value)
 	return
 }
 
@@ -68,7 +85,7 @@ func main() {
 			fmt.Printf("%s", ps)
 			continue
 		}
-		fmt.Printf("res: %s\n", res)
+		fmt.Printf("%s\n", res)
 		fmt.Print(ps)
 	}
 }
