@@ -48,7 +48,7 @@ func (o Operators) IsLeftAssociative(t Token) (ok bool) {
 	return op.IsLeft
 }
 
-func ShuntingYarg(tokens []Token) (output []Token) {
+func ShuntingYard(tokens []Token) (output []Token) {
 	var stack stack[Token]
 	for _, token := range tokens {
 		switch {
