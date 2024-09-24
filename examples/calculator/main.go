@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/diakovliev/lexer"
-	"github.com/diakovliev/lexer/examples/algo"
+	"github.com/diakovliev/lexer/examples/calculator/algo"
 	"github.com/diakovliev/lexer/examples/calculator/grammar"
 	"github.com/diakovliev/lexer/logger"
 	"github.com/diakovliev/lexer/message"
