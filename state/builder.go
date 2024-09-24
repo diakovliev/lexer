@@ -5,7 +5,7 @@ import (
 	"github.com/diakovliev/lexer/message"
 )
 
-// Builder is a builder for the chains of states.
+// Builder is a builder.
 type Builder[T any] struct {
 	factory  message.Factory[T]
 	receiver message.Receiver[T]
@@ -13,7 +13,7 @@ type Builder[T any] struct {
 	last     *Chain[T]
 }
 
-// Make creates a new builder for the chains of states.
+// Make creates a new builder.
 func Make[T any](
 	logger common.Logger,
 	factory message.Factory[T],
@@ -26,22 +26,27 @@ func Make[T any](
 	}
 }
 
-// append creates a new node in chain of states and returns the head of the chain.
-func (b Builder[T]) append(name string, newState func() any) (tail *Chain[T]) {
+// append creates a new node in chain of states and returns the tail of the chain.
+// if builder is not yet associated with any chain then it creates the new one and
+// returns its tail. Each element in the chain is a builder.
+func (b Builder[T]) append(stateName string, newState func() any) (tail *Chain[T]) {
+	prev := b.last
+	if prev != nil && prev.next != nil {
+		b.logger.Fatal("invalid grammar: last element already has next: %T", prev.next)
+	}
 	created := newState()
 	var state Update[T]
 	var ok bool
 	if state, ok = created.(Update[T]); !ok {
 		b.logger.Fatal("not a state: %T", created)
 	}
-	prev := b.last
 	var node *Chain[T]
 	if prev == nil {
-		tail = newChain(b, name, state)
+		tail = newChain(b, stateName, state)
 		tail.Builder.last = tail
 		return
 	}
-	node = newChain(prev.Builder, name, state)
+	node = newChain(prev.Builder, prev.name+"."+stateName, state)
 	node.Builder.last = node
 	node.prev = prev
 	prev.next = node

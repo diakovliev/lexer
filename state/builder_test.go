@@ -49,6 +49,7 @@ func TestBuilder_append(t *testing.T) {
 	assert.Equal(t, s0, s0.Builder.last)
 	assert.Equal(t, s0, s0.Tail())
 	assert.Equal(t, s0, s0.Head())
+	assert.Equal(t, "s0", s0.name)
 
 	s1 := s0.append("s1", newFakeState)
 	assert.NotNil(t, s1)
@@ -60,6 +61,7 @@ func TestBuilder_append(t *testing.T) {
 	assert.Equal(t, s1, s1.Builder.last)
 	assert.Equal(t, s1, s1.Tail())
 	assert.Equal(t, s0, s1.Head())
+	assert.Equal(t, "s0.s1", s1.name)
 
 	s2 := s1.append("s2", newFakeState)
 	assert.NotNil(t, s2)
@@ -71,10 +73,15 @@ func TestBuilder_append(t *testing.T) {
 	assert.Equal(t, s2, s2.Builder.last)
 	assert.Equal(t, s2, s2.Tail())
 	assert.Equal(t, s0, s2.Head())
+	assert.Equal(t, "s0.s1.s2", s2.name)
 
 	assert.Equal(t, s0, s1.Head())
 	assert.Equal(t, s0, s2.Head())
 
 	assert.Equal(t, s2, s0.Tail())
 	assert.Equal(t, s2, s1.Tail())
+
+	assert.Panics(t, func() {
+		s1.append("s3", newFakeState)
+	})
 }

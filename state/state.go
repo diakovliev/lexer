@@ -8,8 +8,10 @@ import (
 )
 
 type (
+	// Provider is a function that returns collection of states
 	Provider[T any] func(b Builder[T]) []Update[T]
 
+	// State is a combined state
 	State[T any] struct {
 		logger   common.Logger
 		builder  Builder[T]
@@ -17,6 +19,7 @@ type (
 	}
 )
 
+// newState creates a new instance of State
 func newState[T any](logger common.Logger, builder Builder[T], provider Provider[T]) *State[T] {
 	return &State[T]{
 		logger:   logger,

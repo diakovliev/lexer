@@ -40,7 +40,6 @@ func (e Emit[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	if err != nil {
 		e.logger.Fatal("data error: %s", err)
 	}
-	// FIXME: do we need this check?
 	if len(data) == 0 {
 		e.logger.Fatal("nothing to emit")
 	}

@@ -18,7 +18,7 @@ func newBreak[T any](logger common.Logger) *Break[T] {
 }
 
 func (b Break[T]) Update(_ context.Context, _ xio.State) (err error) {
-	err = errBreak
+	err = errStateBreak
 	return
 }
 

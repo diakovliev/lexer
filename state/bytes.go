@@ -50,7 +50,7 @@ func (bs Bytes) Update(ctx context.Context, tx xio.State) (err error) {
 		}
 	}
 	if maxLen == 0 {
-		bs.logger.Fatal("max sample len is zero")
+		bs.logger.Fatal("invalid grammar: max sample len is zero")
 	}
 	buffer := make([]byte, maxLen)
 	n, err := tx.Read(buffer)
@@ -62,7 +62,7 @@ func (bs Bytes) Update(ctx context.Context, tx xio.State) (err error) {
 		err = errRollback
 		return
 	}
-	err = errNext
+	err = errChainNext
 	return
 }
 

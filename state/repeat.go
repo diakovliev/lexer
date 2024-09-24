@@ -57,25 +57,25 @@ func (q Quantifier) makeResult(repeats uint) (err error) {
 		if repeats != q.min {
 			err = errRollback
 		} else {
-			err = errNext
+			err = errChainNext
 		}
 	case q.min < q.max:
 		if repeats < q.min || repeats > q.max {
 			err = errRollback
 		} else {
-			err = errNext
+			err = errChainNext
 		}
 	case q.min == 0:
 		if repeats > q.max {
 			err = errRollback
 		} else {
-			err = errNext
+			err = errChainNext
 		}
 	case q.max == math.MaxUint:
 		if repeats < q.min {
 			err = errRollback
 		} else {
-			err = errNext
+			err = errChainNext
 		}
 	default:
 		panic("unreachable")
@@ -100,7 +100,7 @@ func (r Repeat[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	case r.q.isZero():
 		err = errRollback
 	case r.q.isOne():
-		err = errNext
+		err = errChainNext
 	default:
 		err = makeErrRepeat(r.q)
 	}
@@ -131,7 +131,7 @@ func isZeroMaxRepeat[T any](s Update[T]) (ret bool) {
 }
 
 func isRepeatable[T any](s Update[T]) bool {
-	if isRepeat[T](s) || isEmit[T](s) || isError[T](s) || isOmit[T](s) || isRest[T](s) || isTap[T](s) || isBreak[T](s) {
+	if isRepeat[T](s) || isEmit[T](s) || isError[T](s) || isOmit[T](s) || isRest[T](s) || isTap[T](s) || isBreak[T](s) || isNamed[T](s) {
 		return false
 	}
 	return true
@@ -142,12 +142,12 @@ func (c *Chain[T]) repeat(ctx context.Context, state Update[T], repeat error, io
 	if state == nil {
 		c.logger.Fatal("invalid grammar: repeat without previous state")
 	}
-	q, ok := getQuantifier(repeat)
+	q, ok := getRepeatQuantifier(repeat)
 	if !ok {
 		c.logger.Fatal("not a quantifier: %s", repeat)
 	}
 	if q.max == 1 {
-		err = errNext
+		err = errChainNext
 		return
 	}
 	source := xio.AsSource(ioState)
@@ -166,7 +166,7 @@ loop:
 			}
 			err = q.makeResult(count)
 			break loop
-		case errors.Is(err, errNext), errors.Is(err, errCommit):
+		case errors.Is(err, errChainNext), errors.Is(err, errCommit):
 			if err := tx.Commit(); err != nil {
 				c.logger.Fatal("commit error: %s", err)
 			}

@@ -8,6 +8,7 @@ import (
 	"github.com/diakovliev/lexer/xio"
 )
 
+// Run implements base state machine for lexer.
 type Run[T any] struct {
 	logger   common.Logger
 	builder  Builder[T]
@@ -17,6 +18,7 @@ type Run[T any] struct {
 	current  int
 }
 
+// NewRun creates a new instance of the Run state machine.
 func NewRun[T any](
 	logger common.Logger,
 	builder Builder[T],
@@ -45,34 +47,32 @@ func (r *Run[T]) currentState() Update[T] {
 	return r.states[r.current]
 }
 
-// next moves the lexer to the next state.
+// next moves the lexer state machine to the next state.
 func (r *Run[T]) next() {
 	r.current++
 }
 
-// reset resets the lexer to its first state.
+// reset resets the lexer state machine to its first state.
 func (r *Run[T]) reset() {
 	r.current = 0
 }
 
-func (r *Run[T]) isLast() (ret bool) {
-	return r.current == len(r.states)-1
-}
-
 // update updates the current state of the lexer with the given transaction.
+// It returns the io transaction associated with the state io or and lifecycle error.
 func (r *Run[T]) update(ctx context.Context, source xio.Source) (tx xio.Tx, err error) {
 	state := r.currentState()
 	if state == nil {
 		// no more states to process, we're done
-		err = errNoMoreStates
+		err = errStateNoMoreStates
 		return
 	}
 	ioState := source.Begin().Ref
-	err = state.Update(ctx, ioState)
 	tx = xio.AsTx(ioState)
+	err = state.Update(ctx, ioState)
 	return
 }
 
+// Run runs the lexer state machine on the given source.
 func (r *Run[T]) Run(ctx context.Context, source xio.Source) (err error) {
 	// set state level
 	ctx = WithNextTokenLevel(ctx)
@@ -84,7 +84,7 @@ loop:
 			r.logger.Fatal("unexpected nil")
 		}
 		switch {
-		case errors.Is(err, errNoMoreStates):
+		case errors.Is(err, errStateNoMoreStates):
 			if tx != nil {
 				r.logger.Fatal("unexpected not nil")
 			}
@@ -96,7 +96,7 @@ loop:
 				err = r.eofErr
 			}
 			break loop
-		case errors.Is(err, errRepeat), errors.Is(err, errNext):
+		case errors.Is(err, errChainRepeat), errors.Is(err, errChainNext):
 			if err := tx.Rollback(); err != nil {
 				r.logger.Fatal("rollback error: %s", err)
 			}
@@ -111,7 +111,7 @@ loop:
 				r.logger.Fatal("rollback error: %s", err)
 			}
 			r.next()
-		case errors.Is(err, errBreak):
+		case errors.Is(err, errStateBreak):
 			if err := tx.Commit(); err != nil {
 				r.logger.Fatal("commit error: %s", err)
 			}

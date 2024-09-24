@@ -22,7 +22,6 @@ func (o Omit[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	if err != nil {
 		o.logger.Fatal("data error: %s", err)
 	}
-	// FIXME: do we need this check?
 	if len(data) == 0 {
 		o.logger.Fatal("nothing to omit")
 	}

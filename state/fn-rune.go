@@ -30,7 +30,7 @@ func (fr FnRune[T]) Update(ctx context.Context, tx xio.State) (err error) {
 		err = errRollback
 		return
 	}
-	err = errNext
+	err = errChainNext
 	return
 }
 
