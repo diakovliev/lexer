@@ -121,12 +121,10 @@ loop:
 				if err := tx.Commit(); err != nil {
 					r.logger.Fatal("commit error: %s", err)
 				}
-			case errors.Is(action, ErrRollback):
+			default:
 				if err := tx.Rollback(); err != nil {
 					r.logger.Fatal("rollback error: %s", err)
 				}
-			default:
-				r.logger.Fatal("unknown break action: %s", action)
 			}
 			err = action
 			break loop

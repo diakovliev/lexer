@@ -5,26 +5,48 @@ func AsSlice[T any](v ...T) (ret []T) {
 	return
 }
 
-func byteEqual(sample byte) func(byte) bool {
+func IsByte(sample byte) func(byte) bool {
 	return func(in byte) bool {
 		return sample == in
 	}
 }
 
-func runeEqual(sample rune) func(rune) bool {
+func IsRune(sample rune) func(rune) bool {
 	return func(in rune) bool {
 		return sample == in
 	}
 }
 
-func alwaysTrue[T any]() func(T) bool {
+func True[T any]() func(T) bool {
 	return func(_ T) bool { return true }
 }
 
-// func alwaysFalse[T any]() func(T) bool {
-// 	return func(_ T) bool { return false }
-// }
+func False[T any]() func(T) bool {
+	return func(_ T) bool { return false }
+}
 
-func negatePredicate[T any](positive func(T) bool) (negative func(T) bool) {
-	return func(v T) bool { return !positive(v) }
+func Not[T any](pred func(T) bool) (negative func(T) bool) {
+	return func(v T) bool { return !pred(v) }
+}
+
+func Or[T any](preds ...func(T) bool) func(T) bool {
+	return func(t T) bool {
+		for _, pred := range preds {
+			if pred(t) {
+				return true
+			}
+		}
+		return false
+	}
+}
+
+func And[T any](preds ...func(T) bool) func(T) bool {
+	return func(t T) bool {
+		for _, pred := range preds {
+			if !pred(t) {
+				return false
+			}
+		}
+		return true
+	}
 }

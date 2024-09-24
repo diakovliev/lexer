@@ -79,7 +79,7 @@ func (c *Chain[T]) Update(ctx context.Context, ioState xio.State) (err error) {
 		switch {
 		case errors.Is(err, errChainNext):
 			if next == nil {
-				c.logger.Fatal("invalid grammar: next can't be from last in state")
+				c.logger.Fatal("invalid grammar: next can't be from last in chain")
 			}
 			if next != nil && isZeroMaxRepeat[T](next.state) {
 				err = ErrRollback
@@ -109,10 +109,17 @@ func (c *Chain[T]) Update(ctx context.Context, ioState xio.State) (err error) {
 			err = errChainNext
 		case errors.Is(err, errStateBreak):
 			if next != nil {
-				c.logger.Fatal("invalid grammar: break must be last in state")
+				c.logger.Fatal("invalid grammar: break must be last in chain")
+			}
+			if err := head.receiver.EmitTo(head.Builder.receiver); err != nil {
+				c.logger.Fatal("emit to error: %s", err)
 			}
 			return
+		case errors.Is(err, ErrIncomplete), errors.Is(err, ErrInvalidInput):
+			// pass known errors as is
 		default:
+			// wrap all other errors with state break error
+			err = makeErrBreak(err)
 			return
 		}
 		current = next

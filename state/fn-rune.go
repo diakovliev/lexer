@@ -13,13 +13,15 @@ import (
 type FnRune[T any] struct {
 	logger common.Logger
 	pred   RunePredicate
+	mode   FnMode
 }
 
 // NewFnRune creates a new state that checks if the next rune matches the predicate.
-func newFnRune[T any](logger common.Logger, pred RunePredicate) *FnRune[T] {
+func newFnRune[T any](logger common.Logger, pred RunePredicate, mode FnMode) *FnRune[T] {
 	return &FnRune[T]{
 		logger: logger,
 		pred:   pred,
+		mode:   mode,
 	}
 }
 
@@ -34,15 +36,37 @@ func (fr FnRune[T]) Update(ctx context.Context, tx xio.State) (err error) {
 		err = ErrRollback
 		return
 	}
-	if !fr.pred(r) {
+	result := fr.pred(r)
+	switch fr.mode {
+	case FnAccept:
+		if !result {
+			if _, unreadErr := tx.Unread(); unreadErr != nil {
+				fr.logger.Fatal("unread error: %s", unreadErr)
+			}
+			err = ErrRollback
+			return
+		}
+	case FnLook:
 		if _, unreadErr := tx.Unread(); unreadErr != nil {
 			fr.logger.Fatal("unread error: %s", unreadErr)
 		}
-		err = ErrRollback
-		return
 	}
-	err = errChainNext
+	if result {
+		err = errChainNext
+	} else {
+		err = ErrRollback
+	}
 	return
+}
+
+// isNotRepeatableFnRune returns true if the state is not repeatable
+func isNotRepeatableFnRune[T any](s Update[T]) bool {
+	i, ok := s.(*FnRune[T])
+	if !ok {
+		return false
+	}
+	ok = i.mode == FnLook
+	return ok
 }
 
 // CheckRune is a state that matches rune by the given function.
@@ -50,7 +74,15 @@ func (b Builder[T]) CheckRune(pred RunePredicate) (tail *Chain[T]) {
 	if pred == nil {
 		b.logger.Fatal("invalid grammar: nil predicate")
 	}
-	tail = b.append("FnRune", func() any { return newFnRune[T](b.logger, pred) })
+	tail = b.append("FnRune", func() any { return newFnRune[T](b.logger, pred, FnAccept) })
+	return
+}
+
+func (b Builder[T]) FollowedByCheckRune(pred RunePredicate) (tail *Chain[T]) {
+	if pred == nil {
+		b.logger.Fatal("invalid grammar: nil predicate")
+	}
+	tail = b.append("FollowedByCheckRune", func() any { return newFnRune[T](b.logger, pred, FnLook) })
 	return
 }
 
@@ -59,24 +91,47 @@ func (b Builder[T]) CheckNotRune(pred RunePredicate) (tail *Chain[T]) {
 	if pred == nil {
 		b.logger.Fatal("invalid grammar: nil predicate")
 	}
-	tail = b.append("NotFnRune", func() any { return newFnRune[T](b.logger, negatePredicate(pred)) })
+	tail = b.append("NotFnRune", func() any { return newFnRune[T](b.logger, Not(pred), FnAccept) })
+	return
+}
+
+func (b Builder[T]) FollowedByCheckNotRune(pred RunePredicate) (tail *Chain[T]) {
+	if pred == nil {
+		b.logger.Fatal("invalid grammar: nil predicate")
+	}
+	tail = b.append("FollowedByCheckNotRune", func() any { return newFnRune[T](b.logger, Not(pred), FnLook) })
 	return
 }
 
 // Rune is a state that matches the given rune.
 func (b Builder[T]) Rune(sample rune) (tail *Chain[T]) {
-	tail = b.append("Rune", func() any { return newFnRune[T](b.logger, runeEqual(sample)) })
+	tail = b.append("Rune", func() any { return newFnRune[T](b.logger, IsRune(sample), FnAccept) })
+	return
+}
+
+func (b Builder[T]) FollowedByRune(sample rune) (tail *Chain[T]) {
+	tail = b.append("FollowedByRune", func() any { return newFnRune[T](b.logger, IsRune(sample), FnLook) })
 	return
 }
 
 // NotRune is a state that matches all runes except the given one.
 func (b Builder[T]) NotRune(sample rune) (tail *Chain[T]) {
-	tail = b.append("NotRune", func() any { return newFnRune[T](b.logger, negatePredicate(runeEqual(sample))) })
+	tail = b.append("NotRune", func() any { return newFnRune[T](b.logger, Not(IsRune(sample)), FnAccept) })
+	return
+}
+
+func (b Builder[T]) FollowedByNotRune(sample rune) (tail *Chain[T]) {
+	tail = b.append("FollowedByNotRune", func() any { return newFnRune[T](b.logger, Not(IsRune(sample)), FnLook) })
 	return
 }
 
 // AnyRune is a state that matches any rune.
 func (b Builder[T]) AnyRune() (tail *Chain[T]) {
-	tail = b.append("AnyRune", func() any { return newFnRune[T](b.logger, alwaysTrue[rune]()) })
+	tail = b.append("AnyRune", func() any { return newFnRune[T](b.logger, True[rune](), FnAccept) })
+	return
+}
+
+func (b Builder[T]) FollowedByAnyRune() (tail *Chain[T]) {
+	tail = b.append("FollowedByAnyRune", func() any { return newFnRune[T](b.logger, True[rune](), FnLook) })
 	return
 }

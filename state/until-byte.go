@@ -60,6 +60,6 @@ func (b Builder[T]) UntilByte(pred BytePredicate) (tail *Chain[T]) {
 
 // WhileByte creates a state that reads bytes while the pred returns true.
 func (b Builder[T]) WhileByte(pred BytePredicate) (tail *Chain[T]) {
-	tail = b.append("WhileByte", func() any { return newUntilByte[T](b.logger, negatePredicate(pred)) })
+	tail = b.append("WhileByte", func() any { return newUntilByte[T](b.logger, Not(pred)) })
 	return
 }
