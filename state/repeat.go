@@ -138,7 +138,9 @@ func isRepeatable[T any](s Update[T]) bool {
 		isRest[T](s) ||
 		isTap[T](s) ||
 		isBreak[T](s) ||
-		isNamed[T](s) {
+		isNamed[T](s) ||
+		isNotRepeatableFnRune[T](s) ||
+		isNotRepeatableFnByte[T](s) {
 		return false
 	}
 	return true

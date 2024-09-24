@@ -60,6 +60,10 @@ func (m *XioStateMock) Rollback() error {
 	args := m.Called()
 	return args.Error(0)
 }
+func (m *XioStateMock) Buffer() (ret []byte, offset int64, err error) {
+	args := m.Called()
+	return args.Get(0).([]byte), args.Get(1).(int64), args.Error(2)
+}
 
 func newXioSourceMock(newState func() *XioStateMock) *XioSourceMock {
 	return &XioSourceMock{
@@ -74,4 +78,8 @@ func (m *XioSourceMock) Begin() common.IfaceRef[xio.State] {
 func (m *XioSourceMock) Has() bool {
 	args := m.Called()
 	return args.Bool(0)
+}
+func (m *XioSourceMock) Buffer() (ret []byte, offset int64, err error) {
+	args := m.Called()
+	return args.Get(0).([]byte), args.Get(1).(int64), args.Error(2)
 }

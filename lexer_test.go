@@ -20,6 +20,7 @@ import (
 type Token int
 
 var errUnhandledData = errors.New("unhandled data")
+var errTestError = errors.New("test error")
 
 const (
 	Number Token = iota
@@ -89,7 +90,7 @@ func TestLexer(t *testing.T) {
 				{Level: 0, Type: message.Token, Token: Term, Value: []byte("acd"), Pos: 4, Width: 3},
 				{Level: 0, Type: message.Error, Value: &message.ErrorValue{Err: errUnhandledData, Value: []byte("add")}, Pos: 8, Width: 3},
 			},
-			wantError: io.EOF,
+			wantError: errUnhandledData,
 		},
 		{
 			name:  "BNF a(b/c)?d",
@@ -112,7 +113,7 @@ func TestLexer(t *testing.T) {
 				{Level: 0, Type: message.Token, Token: Term, Value: []byte("acd"), Pos: 3, Width: 3},
 				{Level: 0, Type: message.Error, Value: &message.ErrorValue{Err: errUnhandledData, Value: []byte("ab")}, Pos: 7, Width: 2},
 			},
-			wantError: io.EOF,
+			wantError: errUnhandledData,
 		},
 		{
 			name:  "BNF a(b/c)?d error",
@@ -124,16 +125,16 @@ func TestLexer(t *testing.T) {
 						return state.AsSlice[state.Update[Token]](
 							b.Rune('b').Break(),
 							b.Rune('c').Break(),
-							b.Rest().Error(errors.New("test error")),
+							b.Rest().Error(errTestError),
 						)
 					}).Optional().Rune('d').Emit(Term),
 					b.Rest().Error(errUnhandledData),
 				)
 			},
 			wantMessages: []*message.Message[Token]{
-				{Level: 1, Type: message.Error, Value: &message.ErrorValue{Err: errors.New("test error"), Value: []byte("d acd ab")}, Pos: 1, Width: 8},
+				{Level: 1, Type: message.Error, Value: &message.ErrorValue{Err: errTestError, Value: []byte("ad acd ab")}, Pos: 0, Width: 9},
 			},
-			wantError: state.ErrInvalidInput,
+			wantError: errTestError,
 		},
 		{
 			name:  "simple accept-fn",
@@ -207,7 +208,7 @@ func TestLexer(t *testing.T) {
 			wantMessages: []*message.Message[Token]{
 				{Level: 0, Type: message.Error, Value: &message.ErrorValue{Err: errUnhandledData, Value: []byte("123")}, Pos: 0, Width: 3},
 			},
-			wantError: io.EOF,
+			wantError: errUnhandledData,
 		},
 		{
 			name:  "sub state",
@@ -234,8 +235,9 @@ func TestLexer(t *testing.T) {
 				{Level: 1, Type: message.Token, Token: Number, Value: []byte("123"), Pos: 5, Width: 3},
 				{Level: 1, Type: message.Token, Token: Comma, Value: []byte(","), Pos: 8, Width: 1},
 				{Level: 1, Type: message.Token, Token: Number, Value: []byte("333"), Pos: 10, Width: 3},
+				{Level: 1, Type: message.Error, Value: &message.ErrorValue{Err: errUnhandledData, Value: []byte("(123, 333 ")}, Pos: 4, Width: 10},
 			},
-			wantError: state.ErrInvalidInput,
+			wantError: errUnhandledData,
 		},
 		{
 			name:  "inner sub states",

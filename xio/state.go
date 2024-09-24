@@ -235,3 +235,8 @@ func (s *state) NextRune() (r rune, w int, err error) {
 	s.offset += int64(s.lastN)
 	return
 }
+
+// Buffer returns the buffer and its offset. It does not affect the state.
+func (s state) Buffer() (ret []byte, offset int64, err error) {
+	return s.reader.Buffer()
+}

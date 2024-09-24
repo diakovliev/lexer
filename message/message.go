@@ -1,5 +1,7 @@
 package message
 
+import "fmt"
+
 // Type represents the type of a message. The types are: Error, Token.
 type Type int
 
@@ -9,6 +11,17 @@ const (
 	// Token represents a token
 	Token
 )
+
+func (t Type) String() string {
+	switch t {
+	case Error:
+		return "Error"
+	case Token:
+		return "Token"
+	default:
+		panic("unknown message type")
+	}
+}
 
 type ErrorValue struct {
 	Err   error
@@ -29,4 +42,19 @@ type Message[TokenType any] struct {
 	Pos int
 	// Width
 	Width int
+}
+
+func (m Message[TokenType]) String() string {
+	switch m.Type {
+	case Token:
+		var tokenType any = m.Token
+		if stringer, ok := tokenType.(fmt.Stringer); !ok {
+			return fmt.Sprintf("Token(%s, '%s', %d)", stringer, string(m.Value.([]byte)), m.Pos)
+		} else {
+			return fmt.Sprintf("Token(%v, '%s', %d)", m.Token, string(m.Value.([]byte)), m.Pos)
+		}
+	default:
+		errorValue := m.Value.(*ErrorValue)
+		return fmt.Sprintf("Error(%s, '%s', %d)", errorValue.Err, string(errorValue.Value.([]byte)), m.Pos)
+	}
 }

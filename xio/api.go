@@ -64,6 +64,12 @@ type (
 		Data() (data []byte, pos int64, err error)
 	}
 
+	// Buffer is the interface that groups the methods for IO buffer access.
+	Buffer interface {
+		// Buffer returns the buffer and its offset. It does not affect the state.
+		Buffer() (ret []byte, offset int64, err error)
+	}
+
 	// State is the interface that groups the methods for IO state manipulation.
 	State interface {
 		Read
@@ -72,6 +78,7 @@ type (
 		NextRune
 		Has
 		Data
+		Buffer
 	}
 
 	// Tx is the interface that groups the methods for IO transaction manipulation.
@@ -85,6 +92,7 @@ type (
 	Source interface {
 		Has
 		Begin
+		Buffer
 	}
 )
 

@@ -36,9 +36,9 @@ func (e Error[T]) Update(ctx context.Context, tx xio.State) (err error) {
 		e.logger.Fatal("receiver is not set")
 		return
 	}
-	data, pos, err := tx.Data()
+	data, pos, err := tx.Buffer()
 	if err != nil {
-		e.logger.Fatal("data error: %s", err)
+		e.logger.Fatal("get buffer error: %s", err)
 	}
 	if len(data) == 0 {
 		err = ErrRollback
@@ -56,7 +56,7 @@ func (e Error[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	if err != nil {
 		e.logger.Fatal("receiver error: %s", err)
 	}
-	err = ErrCommit
+	err = makeErrBreak(e.err)
 	return
 }
 
@@ -64,7 +64,7 @@ func (b Builder[T]) Error(err error) (tail *Chain[T]) {
 	if b.last == nil {
 		b.logger.Fatal("invalid grammar: error can't be the first state in chain")
 	}
-	newNode := newError[T](b.logger, b.factory, err)
+	newNode := newError(b.logger, b.factory, err)
 	tail = b.append("Error", func() any { return newNode })
 	// sent all messages to the the first node receiver
 	newNode.setReceiver(tail.Head().receiver)

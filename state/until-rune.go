@@ -60,6 +60,6 @@ func (b Builder[T]) UntilRune(pred RunePredicate) (tail *Chain[T]) {
 
 // WhileRune creates a state that reads runes while the pred returns true.
 func (b Builder[T]) WhileRune(pred RunePredicate) (tail *Chain[T]) {
-	tail = b.append("WhileRune", func() any { return newUntilRune[T](b.logger, negatePredicate(pred)) })
+	tail = b.append("WhileRune", func() any { return newUntilRune[T](b.logger, Not(pred)) })
 	return
 }

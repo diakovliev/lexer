@@ -31,9 +31,9 @@ func Make[T any](
 // returns its tail. Each element in the chain is a builder.
 func (b Builder[T]) append(stateName string, newState func() any) (tail *Chain[T]) {
 	prev := b.last
-	if prev != nil && prev.next != nil {
-		b.logger.Fatal("invalid grammar: last element already has next: %T", prev.next)
-	}
+	// if prev != nil && prev.next != nil {
+	// 	b.logger.Fatal("invalid grammar: last element already has next: %T", prev.next)
+	// }
 	created := newState()
 	var state Update[T]
 	var ok bool

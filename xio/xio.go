@@ -157,3 +157,10 @@ func (r Xio) ReadAt(pos int64, out []byte) (n int, err error) {
 	}
 	return
 }
+
+// Buffer returns the buffer and its offset. It does not affect the state.
+func (r Xio) Buffer() (ret []byte, offset int64, err error) {
+	offset = r.offset
+	ret = r.buffer.Bytes()
+	return
+}
