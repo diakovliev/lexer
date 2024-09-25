@@ -33,7 +33,9 @@ type (
 
 // NewVM creates new virtual machine with given code.
 func NewVM(code []VMCode) (vm *VM) {
-	vm = &VM{}
+	vm = &VM{
+		stack: makeStack[VMCode](len(code)),
+	}
 	for _, token := range code {
 		vm.stack = vm.stack.Push(token)
 	}

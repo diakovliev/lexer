@@ -60,12 +60,20 @@ func (o Operators) IsLeftAssociative(t Token) (ok bool) {
 
 // ShuntingYard implements the Shunting-yard algorithm for converting an infix expression to a postfix one.
 func ShuntingYard(tokens []Token) (output []Token) {
-	var stack stack[Token]
+	stack := makeStack[Token](100)
+	output = make([]Token, 0, len(tokens))
 	for _, token := range tokens {
 		switch {
 		case Ops.Has(token):
-			// TODO: add right associative operators support
-			for !stack.Empty() && Ops.Has(stack.Peek()) && Ops.Precedence(token) <= Ops.Precedence(stack.Peek()) {
+			var precedence int
+			// Check if the operator is right-associative and adjust the precedence comparison accordingly
+			if Ops.IsLeftAssociative(token) {
+				precedence = Ops.Precedence(token)
+			} else {
+				precedence = Ops.Precedence(token) - 1
+			}
+			// Check if the stack is empty or if the top of the stack has a lower precedence than the current operator
+			for !stack.Empty() && Ops.Has(stack.Peek()) && precedence <= Ops.Precedence(stack.Peek()) {
 				var token Token
 				stack, token = stack.Pop()
 				output = append(output, token)
