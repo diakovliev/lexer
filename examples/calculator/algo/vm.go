@@ -2,104 +2,138 @@ package algo
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/diakovliev/lexer/examples/calculator/grammar"
 )
 
 var (
-	ErrVmComplete   = errors.New("vm complete")
-	ErrVmStackEmpty = errors.New("vm stack is empty")
+	// ErrVMHalt is returned when the VM halted (stack is empty)
+	ErrVMHalt = errors.New("halt")
+	// ErrVMNonOperation is returned when the VM received non operation token when it was expected to receive operation token.
+	ErrVMNonOperation = errors.New("non operation")
+	// ErrVMUnknownOperation is returned when the VM received unknown operation token.
+	ErrVMUnknownOperation = errors.New("unknown operation")
+	// ErrVMStackEmpty is returned by vm.Pop() when the VM stack is empty.
+	ErrVMStackEmpty = errors.New("stack is empty")
 )
 
-// Simple stack virtual machine
-type Vm struct {
-	stack stack[VmData]
-}
+type (
+	// VM is a simple stack virtual machine
+	VM struct {
+		stack stack[VMCode]
+	}
 
-func NewVm(code []VmData) (vm *Vm) {
-	vm = &Vm{}
+	// VMCode is a code of the virtual machine. It contains token and its value.
+	VMCode struct {
+		Token grammar.Token
+		Value int
+	}
+)
+
+// NewVM creates new virtual machine with given code.
+func NewVM(code []VMCode) (vm *VM) {
+	vm = &VM{}
 	for _, token := range code {
 		vm.stack = vm.stack.Push(token)
 	}
 	return
 }
 
-func (vm *Vm) Push(t VmData) {
+// Push pushes new token to the stack of virtual machine.
+func (vm *VM) Push(t VMCode) {
 	vm.stack = vm.stack.Push(t)
 }
 
-func (vm *Vm) Pop() (value VmData) {
-	vm.stack, value = vm.stack.Pop()
-	return value
-}
-
-func (vm *Vm) getOperand() (oper VmData, err error) {
+// Pop pops token from the stack of virtual machine and returns it.
+// If there is no tokens in the stack, then error will be returned.
+func (vm *VM) Pop() (value VMCode, err error) {
 	if vm.stack.Empty() {
-		err = ErrVmComplete
+		err = ErrVMStackEmpty
 		return
 	}
-	vm.stack, oper = vm.stack.Pop()
-	if Ops.HasToken(oper.Token) {
-		vm.stack = vm.stack.Push(oper)
-		if err = vm.step(); err != nil && !errors.Is(err, ErrVmComplete) {
+	vm.stack, value = vm.stack.Pop()
+	return
+}
+
+func (vm *VM) fetchCommand() (cmd VMCode, err error) {
+	if vm.stack.Empty() {
+		err = ErrVMStackEmpty
+		return
+	}
+	vm.stack, cmd = vm.stack.Pop()
+	if !Ops.HasToken(cmd.Token) {
+		err = ErrVMNonOperation
+	}
+	return
+}
+
+func (vm *VM) fetch() (token VMCode, err error) {
+	if vm.stack.Empty() {
+		err = ErrVMStackEmpty
+		return
+	}
+	vm.stack, token = vm.stack.Pop()
+	if Ops.HasToken(token.Token) {
+		vm.stack = vm.stack.Push(token)
+		if err = vm.step(); err != nil && !errors.Is(err, ErrVMHalt) {
 			return
 		}
-		vm.stack, oper = vm.stack.Pop()
+		vm.stack, token = vm.stack.Pop()
 		err = nil
 	}
 	return
 }
 
-func (vm *Vm) step() (err error) {
-	if vm.stack.Empty() {
-		err = ErrVmComplete
+func (vm *VM) execute(cmd VMCode) (err error) {
+	// TODO: how many operands is needed?
+	var left, right VMCode
+	if right, err = vm.fetch(); err != nil {
 		return
 	}
-	// pop operator
-	var token VmData
-	vm.stack, token = vm.stack.Pop()
-	if !Ops.HasToken(token.Token) {
-		err = errors.New("unexpected token")
+	if left, err = vm.fetch(); err != nil {
 		return
 	}
-	var operL, operR VmData
-	if operR, err = vm.getOperand(); err != nil {
-		return
-	}
-	if operL, err = vm.getOperand(); err != nil {
-		return
-	}
-	// calculate
 	var result int
-	switch token.Token {
+	switch cmd.Token {
 	case grammar.Plus:
-		result = operL.Value + operR.Value
+		result = left.Value + right.Value
 	case grammar.Minus:
-		result = operL.Value - operR.Value
+		result = left.Value - right.Value
 	case grammar.Mul:
-		result = operL.Value * operR.Value
+		result = left.Value * right.Value
 	case grammar.Div:
-		result = operL.Value / operR.Value
+		result = left.Value / right.Value
 	default:
-		err = errors.New("unexpected token")
+		err = fmt.Errorf("%w: %d", ErrVMUnknownOperation, cmd)
 	}
 	if vm.stack.Empty() {
-		err = ErrVmComplete
+		err = ErrVMHalt
 	}
 	// push result
-	vm.stack = vm.stack.Push(VmData{
+	vm.stack = vm.stack.Push(VMCode{
 		Token: grammar.Number,
 		Value: result,
 	})
 	return
 }
 
-func (vm *Vm) Execute() (err error) {
-	for err = vm.step(); err == nil; {
+func (vm *VM) step() (err error) {
+	if vm.stack.Empty() {
+		err = ErrVMStackEmpty
+		return
 	}
+	cmd, err := vm.fetchCommand()
+	if err != nil {
+		return
+	}
+	err = vm.execute(cmd)
 	return
 }
 
-func (vm *Vm) Empty() bool {
-	return vm.stack.Empty()
+// Run the VM, return ErrVMHalt when finished.
+func (vm *VM) Run() (err error) {
+	for err = vm.step(); err == nil; {
+	}
+	return
 }

@@ -6,14 +6,20 @@ import (
 )
 
 type (
-	Token     = *message.Message[grammar.Token]
+	// Token is a lexer token.
+	Token = *message.Message[grammar.Token]
+
+	// Operators is a map of operators and their properties.
 	Operators map[grammar.Token]Op
-	Op        struct {
+
+	// Op is a operator properties.
+	Op struct {
 		Precedence int
 		IsLeft     bool
 	}
 )
 
+// Ops is a map of operators and their properties.
 var Ops = Operators{
 	grammar.Plus:  Op{Precedence: 0, IsLeft: true},
 	grammar.Minus: Op{Precedence: 0, IsLeft: true},
@@ -21,16 +27,19 @@ var Ops = Operators{
 	grammar.Div:   Op{Precedence: 5, IsLeft: true},
 }
 
+// Has checks if the token is an operator.
 func (o Operators) Has(t Token) (ok bool) {
 	_, ok = o[t.Token]
 	return
 }
 
+// Has checks if the token is an operator.
 func (o Operators) HasToken(t grammar.Token) (ok bool) {
 	_, ok = o[t]
 	return
 }
 
+// Precedence returns the precedence of an operator.
 func (o Operators) Precedence(t Token) (p int) {
 	op, ok := o[t.Token]
 	if !ok {
@@ -40,6 +49,7 @@ func (o Operators) Precedence(t Token) (p int) {
 	return
 }
 
+// IsLeftAssociative checks if the operator is left associative.
 func (o Operators) IsLeftAssociative(t Token) (ok bool) {
 	op, ok := o[t.Token]
 	if !ok {
@@ -48,11 +58,13 @@ func (o Operators) IsLeftAssociative(t Token) (ok bool) {
 	return op.IsLeft
 }
 
+// ShuntingYard implements the Shunting-yard algorithm for converting an infix expression to a postfix one.
 func ShuntingYard(tokens []Token) (output []Token) {
 	var stack stack[Token]
 	for _, token := range tokens {
 		switch {
 		case Ops.Has(token):
+			// TODO: add right associative operators support
 			for !stack.Empty() && Ops.Has(stack.Peek()) && Ops.Precedence(token) <= Ops.Precedence(stack.Peek()) {
 				var token Token
 				stack, token = stack.Pop()
