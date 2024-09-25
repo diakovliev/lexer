@@ -7,12 +7,8 @@ import (
 	"github.com/diakovliev/lexer/message"
 )
 
-type VmData struct {
-	Token grammar.Token
-	Value int
-}
-
-func Parse(Token []Token) (data []VmData, err error) {
+// Parse - parse tokens to VMCode
+func Parse(Token []Token) (data []VMCode, err error) {
 	for _, token := range Token {
 		if token.Type == message.Error {
 			err = token.Value.(*message.ErrorValue).Err
@@ -25,13 +21,13 @@ func Parse(Token []Token) (data []VmData, err error) {
 				err = atoiErr
 				return
 			}
-			data = append(data, VmData{
+			data = append(data, VMCode{
 				Token: token.Token,
 				Value: value,
 			})
 			continue
 		default:
-			data = append(data, VmData{
+			data = append(data, VMCode{
 				Token: token.Token,
 			})
 		}

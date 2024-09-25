@@ -1,5 +1,6 @@
 package algo
 
+// stack implements a simple LIFO data structure.
 type stack[T any] []T
 
 func (s stack[T]) Push(v T) stack[T] {
