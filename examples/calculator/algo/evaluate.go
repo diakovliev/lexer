@@ -6,11 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 
-	"github.com/diakovliev/lexer"
 	"github.com/diakovliev/lexer/examples/calculator/grammar"
-	"github.com/diakovliev/lexer/logger"
 	"github.com/diakovliev/lexer/message"
 )
 
@@ -27,16 +24,7 @@ var (
 
 func Evaluate(input string) (result string, err error) {
 	receiver := message.Slice[grammar.Token]()
-	lexer := lexer.New(
-		logger.New(
-			logger.WithLevel(logger.Trace),
-			logger.WithWriter(os.Stderr),
-		),
-		bytes.NewBufferString(input),
-		message.DefaultFactory[grammar.Token](),
-		receiver,
-		lexer.WithHistoryDepth[grammar.Token](1),
-	).With(grammar.New(true))
+	lexer := grammar.New(bytes.NewBufferString(input), receiver)
 	if err = lexer.Run(context.TODO()); !errors.Is(err, io.EOF) {
 		err = fmt.Errorf("%w: %s", ErrLexerError, err)
 		return

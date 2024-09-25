@@ -70,57 +70,28 @@ func TestGrammarRandomTestCases(t *testing.T) {
 // To run:
 // go test -v -run=XXX -bench=BenchmarkGrammar
 func BenchmarkGrammar(b *testing.B) {
-	type testCase struct {
-		name         string
-		opsCount     uint
-		randomSpaces bool
-		randomScopes bool
+	tests := []*RandomTestCase{}
+
+	opsCounts := []uint{1e2, 1e3, 1e4, 1e5, 1e6}
+	for _, testsOpsCount := range opsCounts {
+		tests = append(tests, NewRandomTestCase(testsOpsCount, true, true))
+		tests = append(tests, NewRandomTestCase(testsOpsCount, false, true))
+		tests = append(tests, NewRandomTestCase(testsOpsCount, true, false))
+		tests = append(tests, NewRandomTestCase(testsOpsCount, false, false))
 	}
-	tests := []testCase{
-		{
-			name:         "1e2 ops with random spaces and random scopes",
-			opsCount:     1e2,
-			randomSpaces: true,
-			randomScopes: true,
-		},
-		{
-			name:         "1e3 ops with random spaces and random scopes",
-			opsCount:     1e3,
-			randomSpaces: true,
-			randomScopes: true,
-		},
-		{
-			name:         "1e4 ops with random spaces and random scopes",
-			opsCount:     1e4,
-			randomSpaces: true,
-			randomScopes: true,
-		},
-		{
-			name:         "1e5 ops with random spaces and random scopes",
-			opsCount:     1e5,
-			randomSpaces: true,
-			randomScopes: false,
-		},
-		{
-			name:         "1e6 ops with random spaces and random scopes",
-			opsCount:     1e6,
-			randomSpaces: true,
-			randomScopes: false,
-		},
-	}
+
 	for _, tc := range tests {
-		rtc := NewRandomTestCase(tc.opsCount, tc.randomSpaces, tc.randomScopes)
-		lexer := createBenchmarkLexer(rtc.Input())
-		b.Run(tc.name, func(b *testing.B) {
+		lexer := createBenchmarkLexer(tc.Input())
+		b.Run(tc.Name(), func(b *testing.B) {
 			if err := lexer.Run(context.TODO()); !errors.Is(err, io.EOF) {
 				b.Fatal("unexpected error")
 			}
 			b.StopTimer()
 			elapsed := b.Elapsed().Seconds()
 			tmUnit := "s"
-			b.Logf("%s complete in %f%s", tc.name, elapsed, tmUnit)
-			b.Logf("\t- %d tokens in %f%s (%f token/%s)", rtc.Tokens(), elapsed, tmUnit, float64(rtc.Tokens())/float64(elapsed), tmUnit)
-			b.Logf("\t- %d bytes in %f%s (%f bytes/%s)", rtc.Size(), elapsed, tmUnit, float64(rtc.Size())/float64(elapsed), tmUnit)
+			b.Logf("%s: %f%s", tc.Name(), elapsed, tmUnit)
+			b.Logf("\t- %f token/%s", float64(tc.Tokens())/float64(elapsed), tmUnit)
+			b.Logf("\t- %f bytes/%s", float64(tc.Size())/float64(elapsed), tmUnit)
 		})
 	}
 }

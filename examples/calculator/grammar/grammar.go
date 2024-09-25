@@ -15,66 +15,60 @@ var (
 	ErrUnhandledInput = errors.New("unhandled input")
 	// ErrInvalidNumber is returned when the lexer encounters an invalid number.
 	ErrInvalidNumber = errors.New("invalid number")
+	// ErrUnexpectedBra is returned when the lexer encounters an unexpected '(' character. It means
+	// that expression is reached max scopes depth.
+	ErrUnexpectedBra = errors.New("unexpected '('")
 	// ErrUnexpectedKet is returned when the lexer encounters an unexpected ')' character.
 	ErrUnexpectedKet = errors.New("unexpected ')'")
 )
 
-// Token is a lexer token.
-type Token uint
+var (
+	plusMinus = state.Or(
+		state.IsRune('+'),
+		state.IsRune('-'),
+	)
 
-const (
-	// Number is a number token.
-	Number Token = iota
-	// Plus is a plus token.
-	Plus
-	// Minus is a minus token.
-	Minus
-	// Mul is a multiplication token.
-	Mul
-	// Div is a division token.
-	Div
-	// Bra is an opening bracket token.
-	Bra
-	// Ket is a closing bracket token.
-	Ket
+	allTerms = state.Or(
+		unicode.IsSpace,
+		state.IsRune('+'),
+		state.IsRune('-'),
+		state.IsRune('*'),
+		state.IsRune('/'),
+		state.IsRune(')'),
+		state.IsRune('('),
+	)
 )
 
-// String returns the string representation of a token.
-func (t Token) String() string {
-	switch t {
-	case Number:
-		return "Number"
-	case Plus:
-		return "Plus"
-	case Minus:
-		return "Minus"
-	case Mul:
-		return "Mul"
-	case Div:
-		return "Div"
-	case Bra:
-		return "Bra"
-	case Ket:
-		return "Ket"
-	default:
-		panic("unreachable")
+func ketState(root bool) (ket func(b state.Builder[Token]) *state.Chain[Token]) {
+	return func(b state.Builder[Token]) *state.Chain[Token] {
+		base := b.Named("Ket").Rune(')')
+		if root {
+			return base.Error(ErrUnexpectedKet)
+		}
+		return base.Emit(Ket).Break()
 	}
 }
 
-var plusMinus = state.Or(
-	state.IsRune('+'),
-	state.IsRune('-'),
-)
+func braState(depth uint) func(b state.Builder[Token]) *state.Chain[Token] {
+	return func(b state.Builder[Token]) *state.Chain[Token] {
+		base := b.Named("Bra").Rune('(')
+		if depth > 0 {
+			return base.Emit(Bra).State(b, newState(false, depth-1))
+		}
+		return base.Error(ErrUnexpectedBra)
+	}
+}
 
-var allTerms = state.Or(
-	unicode.IsSpace,
-	state.IsRune('+'),
-	state.IsRune('-'),
-	state.IsRune('*'),
-	state.IsRune('/'),
-	state.IsRune(')'),
-	state.IsRune('('),
-)
+func signedNumberGuard(ctx context.Context, _ xio.State) (err error) {
+	history := state.GetHistory[Token](ctx).Get()
+	if len(history) == 0 {
+		return
+	}
+	if history[len(history)-1].Token == Number {
+		err = state.ErrRollback
+	}
+	return
+}
 
 func numberSubState(b state.Builder[Token]) []state.Update[Token] {
 	// consume all digits
@@ -90,42 +84,29 @@ func numberSubState(b state.Builder[Token]) []state.Update[Token] {
 	)
 }
 
-func signedNumberGuard(ctx context.Context, _ xio.State) (err error) {
-	history := state.GetHistory[Token](ctx).Get()
-	if len(history) == 0 {
+func numberState(name string, signed bool) (number func(b state.Builder[Token]) *state.Chain[Token]) {
+	return func(b state.Builder[Token]) (state *state.Chain[Token]) {
+		state = b.Named(name)
+		if signed {
+			state = state.CheckRune(plusMinus).Optional().Tap(signedNumberGuard)
+		}
+		state = state.CheckRune(unicode.IsDigit).State(b, numberSubState).Optional().Emit(Number)
 		return
 	}
-	if history[len(history)-1].Token == Number {
-		err = state.ErrRollback
-	}
-	return
 }
 
-// New returns a new state machine for parsing tokens from the input string.
-func New(root bool) func(b state.Builder[Token]) []state.Update[Token] {
-	var ket func(b state.Builder[Token]) *state.Chain[Token]
-	if root {
-		ket = func(b state.Builder[Token]) *state.Chain[Token] {
-			return b.Named("Ket").Rune(')').Error(ErrUnexpectedKet)
-		}
-	} else {
-		ket = func(b state.Builder[Token]) *state.Chain[Token] {
-			return b.Named("Ket").Rune(')').Emit(Ket).Break()
-		}
-	}
+// newState returns a new state machine for parsing tokens from the input string.
+func newState(root bool, maxScopesDepth uint) func(b state.Builder[Token]) []state.Update[Token] {
 	return func(b state.Builder[Token]) []state.Update[Token] {
 		return state.AsSlice[state.Update[Token]](
 			// Spaces and tabs are omitted.
 			b.Named("OmitSpaces").CheckRune(unicode.IsSpace).Repeat(state.CountBetween(1, math.MaxUint)).Omit(),
-			// Parens
-			ket(b),
-			b.Named("Bra").Rune('(').Emit(Bra).State(b, New(false)),
+			// Parens with max depth
+			ketState(root)(b),
+			braState(maxScopesDepth-1)(b),
 			// Operands
-			b.Named("SignedNumber").
-				CheckRune(plusMinus).Optional().Tap(signedNumberGuard).
-				CheckRune(unicode.IsDigit).State(b, numberSubState).Optional().Emit(Number),
-			b.Named("UnsignedNumber").
-				CheckRune(unicode.IsDigit).State(b, numberSubState).Optional().Emit(Number),
+			numberState("SignedNumber", true)(b),
+			numberState("UnsignedNumber", false)(b),
 			// Operators
 			b.Named("Plus").Rune('+').Emit(Plus),
 			b.Named("Minus").Rune('-').Emit(Minus),
