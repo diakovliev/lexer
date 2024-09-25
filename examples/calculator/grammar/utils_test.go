@@ -4,40 +4,20 @@ import (
 	"bytes"
 	"io"
 	"math/rand"
-	"os"
 	"strconv"
 
 	"github.com/diakovliev/lexer"
-	"github.com/diakovliev/lexer/logger"
 	"github.com/diakovliev/lexer/message"
 )
 
 func createTestLexer(reader io.Reader) (lex *lexer.Lexer[Token], receiver *message.SliceReceiver[Token]) {
 	receiver = message.Slice[Token]()
-	lex = lexer.New(
-		logger.New(
-			logger.WithLevel(logger.Trace),
-			logger.WithWriter(os.Stderr),
-		),
-		reader,
-		message.DefaultFactory[Token](),
-		receiver,
-		lexer.WithHistoryDepth[Token](1),
-	).With(New(true))
+	lex = New(reader, receiver)
 	return
 }
 
 func createBenchmarkLexer(reader io.Reader) (lex *lexer.Lexer[Token]) {
-	lex = lexer.New(
-		logger.New(
-			logger.WithLevel(logger.Trace),
-			logger.WithWriter(os.Stderr),
-		),
-		reader,
-		message.DefaultFactory[Token](),
-		message.Dispose[Token](),
-		lexer.WithHistoryDepth[Token](1),
-	).With(New(true))
+	lex = New(reader, message.Dispose[Token]())
 	return
 }
 
@@ -71,7 +51,6 @@ func GenerateRandomInput(
 	opsCount uint,
 	enableRandomSpaces bool,
 	enableRandomScopes bool,
-	maxDepth uint,
 ) (reader *bytes.Buffer, size int, tokens int) {
 	ops := []string{"+", "-", "*", "/"}
 	buffer := bytes.NewBuffer(nil)
@@ -83,7 +62,7 @@ func GenerateRandomInput(
 	generateRandomSpaces(buffer, 10, enableRandomSpaces)
 	for i := uint(0); i < opsCount-1; i++ {
 		// randomly open or close scope
-		if scopes < maxDepth && randomScopeOpen(buffer, enableRandomScopes) {
+		if scopes < maxScopesDepth && randomScopeOpen(buffer, enableRandomScopes) {
 			tokens++
 			scopes++
 		} else if scopes > 0 && rand.Intn(2) == 0 {
