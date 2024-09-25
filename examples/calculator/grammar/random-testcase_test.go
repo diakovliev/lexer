@@ -6,22 +6,24 @@ import (
 )
 
 type RandomTestCase struct {
-	name    string
-	content string
-	input   io.Reader
-	tokens  int
+	name     string
+	content  string
+	input    io.Reader
+	tokens   int
+	maxDepth uint
 }
 
-func NewRandomTestCase(opsCount uint, randomSpaces bool, randomScopes bool) (ret *RandomTestCase) {
-	reader, size, tokens := GenerateRandomInput(opsCount, randomSpaces, randomScopes)
+func NewRandomTestCase(opsCount uint, randomSpaces bool, randomScopes bool, maxDepth uint) (ret *RandomTestCase) {
+	reader, size, tokens := GenerateRandomInput(opsCount, randomSpaces, randomScopes, maxDepth)
 	ret = &RandomTestCase{
 		name: fmt.Sprintf(
-			"%d ops spaces: %t scopes %t size: %d tokens: %d",
-			opsCount, randomSpaces, randomScopes, size, tokens,
+			"%d ops spaces: %t scopes %t depth: %d size: %d tokens: %d",
+			opsCount, randomSpaces, randomScopes, maxDepth, size, tokens,
 		),
-		input:   reader,
-		tokens:  tokens,
-		content: reader.String(),
+		input:    reader,
+		tokens:   tokens,
+		content:  reader.String(),
+		maxDepth: maxDepth,
 	}
 	return ret
 }
@@ -44,4 +46,8 @@ func (rtc RandomTestCase) Content() string {
 
 func (rtc RandomTestCase) Size() int {
 	return len(rtc.content)
+}
+
+func (rtc RandomTestCase) MaxDepth() uint {
+	return rtc.maxDepth
 }

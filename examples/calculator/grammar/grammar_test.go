@@ -40,18 +40,19 @@ func TestGrammarRandomTestCases(t *testing.T) {
 
 	testsOpsCount := uint(10)
 	testsCount := 10
+	maxDepth := uint(5)
 
 	for i := 0; i < testsCount; i++ {
-		tests = append(tests, NewRandomTestCase(testsOpsCount, true, true))
+		tests = append(tests, NewRandomTestCase(testsOpsCount, true, true, maxDepth))
 	}
 	for i := 0; i < testsCount; i++ {
-		tests = append(tests, NewRandomTestCase(testsOpsCount, false, true))
+		tests = append(tests, NewRandomTestCase(testsOpsCount, false, true, maxDepth))
 	}
 	for i := 0; i < testsCount; i++ {
-		tests = append(tests, NewRandomTestCase(testsOpsCount, true, false))
+		tests = append(tests, NewRandomTestCase(testsOpsCount, true, false, maxDepth))
 	}
 	for i := 0; i < testsCount; i++ {
-		tests = append(tests, NewRandomTestCase(testsOpsCount, false, false))
+		tests = append(tests, NewRandomTestCase(testsOpsCount, false, false, maxDepth))
 	}
 
 	for _, tc := range tests {
@@ -71,54 +72,54 @@ func TestGrammarRandomTestCases(t *testing.T) {
 // go test -v -run=XXX -bench=BenchmarkGrammar
 func BenchmarkGrammar(b *testing.B) {
 	type testCase struct {
-		name         string
 		opsCount     uint
 		randomSpaces bool
 		randomScopes bool
+		maxDepth     uint
 	}
 	tests := []testCase{
 		{
-			name:         "1e2 ops with random spaces and random scopes",
 			opsCount:     1e2,
 			randomSpaces: true,
 			randomScopes: true,
+			maxDepth:     1e2 / 2,
 		},
 		{
-			name:         "1e3 ops with random spaces and random scopes",
 			opsCount:     1e3,
 			randomSpaces: true,
 			randomScopes: true,
+			maxDepth:     1e3 / 2,
 		},
 		{
-			name:         "1e4 ops with random spaces and random scopes",
 			opsCount:     1e4,
 			randomSpaces: true,
 			randomScopes: true,
+			maxDepth:     1e4 / 2,
 		},
 		{
-			name:         "1e5 ops with random spaces and random scopes",
 			opsCount:     1e5,
 			randomSpaces: true,
-			randomScopes: false,
+			randomScopes: true,
+			maxDepth:     100,
 		},
 		{
-			name:         "1e6 ops with random spaces and random scopes",
 			opsCount:     1e6,
 			randomSpaces: true,
-			randomScopes: false,
+			randomScopes: true,
+			maxDepth:     10,
 		},
 	}
 	for _, tc := range tests {
-		rtc := NewRandomTestCase(tc.opsCount, tc.randomSpaces, tc.randomScopes)
+		rtc := NewRandomTestCase(tc.opsCount, tc.randomSpaces, tc.randomScopes, tc.maxDepth)
 		lexer := createBenchmarkLexer(rtc.Input())
-		b.Run(tc.name, func(b *testing.B) {
+		b.Run(rtc.Name(), func(b *testing.B) {
 			if err := lexer.Run(context.TODO()); !errors.Is(err, io.EOF) {
 				b.Fatal("unexpected error")
 			}
 			b.StopTimer()
 			elapsed := b.Elapsed().Seconds()
 			tmUnit := "s"
-			b.Logf("%s complete in %f%s", tc.name, elapsed, tmUnit)
+			b.Logf("%s complete in %f%s", rtc.Name(), elapsed, tmUnit)
 			b.Logf("\t- %d tokens in %f%s (%f token/%s)", rtc.Tokens(), elapsed, tmUnit, float64(rtc.Tokens())/float64(elapsed), tmUnit)
 			b.Logf("\t- %d bytes in %f%s (%f bytes/%s)", rtc.Size(), elapsed, tmUnit, float64(rtc.Size())/float64(elapsed), tmUnit)
 		})

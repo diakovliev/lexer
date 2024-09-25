@@ -67,7 +67,12 @@ func scopeClose(dest *bytes.Buffer) {
 	dest.WriteRune(')')
 }
 
-func GenerateRandomInput(opsCount uint, enableRandomSpaces bool, enableRandomScopes bool) (reader *bytes.Buffer, size int, tokens int) {
+func GenerateRandomInput(
+	opsCount uint,
+	enableRandomSpaces bool,
+	enableRandomScopes bool,
+	maxDepth uint,
+) (reader *bytes.Buffer, size int, tokens int) {
 	ops := []string{"+", "-", "*", "/"}
 	buffer := bytes.NewBuffer(nil)
 	// preallocate some space
@@ -78,7 +83,7 @@ func GenerateRandomInput(opsCount uint, enableRandomSpaces bool, enableRandomSco
 	generateRandomSpaces(buffer, 10, enableRandomSpaces)
 	for i := uint(0); i < opsCount-1; i++ {
 		// randomly open or close scope
-		if randomScopeOpen(buffer, enableRandomScopes) {
+		if scopes < maxDepth && randomScopeOpen(buffer, enableRandomScopes) {
 			tokens++
 			scopes++
 		} else if scopes > 0 && rand.Intn(2) == 0 {
