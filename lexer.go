@@ -13,10 +13,12 @@ import (
 type (
 	// Lexer is a lexical analyzer that reads input data and produces tokens.
 	Lexer[T any] struct {
-		logger   common.Logger
-		source   xio.Source
-		builder  state.Builder[T]
-		provider state.Provider[T]
+		logger       common.Logger
+		source       xio.Source
+		builder      state.Builder[T]
+		provider     state.Provider[T]
+		historyDepth int
+		history      message.History[T]
 	}
 )
 
@@ -26,16 +28,26 @@ func New[T any](
 	reader io.Reader,
 	factory message.Factory[T],
 	receiver message.Receiver[T],
+	opts ...Option[T],
 ) (ret *Lexer[T]) {
 	ret = &Lexer[T]{
-		builder: state.Make(
-			logger,
-			factory,
-			receiver,
-		),
-		logger: logger,
-		source: xio.New(logger, reader),
+		logger:       logger,
+		source:       xio.New(logger, reader),
+		historyDepth: 0,
 	}
+	for _, opt := range opts {
+		opt(ret)
+	}
+	if ret.historyDepth <= 0 {
+		ret.history = message.Forget(receiver)
+	} else {
+		ret.history = message.Remember(receiver, ret.historyDepth)
+	}
+	ret.builder = state.Make(
+		logger,
+		factory,
+		ret.history,
+	)
 	return ret
 }
 
@@ -47,6 +59,7 @@ func (l *Lexer[T]) With(fn state.Provider[T]) *Lexer[T] {
 
 // Run runs the lexer until it is done or an error occurs.
 func (l *Lexer[T]) Run(ctx context.Context) (err error) {
-	err = state.NewRun(l.logger, l.builder, l.provider, io.EOF).Run(ctx, l.source)
+	err = state.NewRun(l.logger, l.builder, l.provider, io.EOF).
+		Run(state.WithHistory(ctx, l.history), l.source)
 	return
 }

@@ -103,7 +103,8 @@ func New(root bool) func(b state.Builder[Token]) []state.Update[Token] {
 			ket(b),
 			b.Named("Bra").Rune('(').Emit(Bra).State(b, New(false)),
 			// Operands
-			b.Named("NegativeNumber").Rune('-').Optional().CheckRune(unicode.IsDigit).State(b, numberSubState).Optional().Emit(Number),
+			// b.Named("Number").Rune('-').Optional().CheckRune(unicode.IsDigit).State(b, numberSubState).Optional().Emit(Number),
+			b.Named("Number").CheckRune(unicode.IsDigit).State(b, numberSubState).Optional().Emit(Number),
 			// Operators
 			b.Named("Plus").Rune('+').Emit(Plus),
 			b.Named("Minus").Rune('-').Emit(Minus),

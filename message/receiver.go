@@ -22,15 +22,15 @@ func (DisposeReceiver[T]) Receive(*Message[T]) (err error) {
 
 func Slice[T any]() *SliceReceiver[T] {
 	return &SliceReceiver[T]{
-		// Slice: make([]*Message[T], 0, preallocateCount),
+		Slice: make([]*Message[T], 0, preallocateCount),
 	}
 }
 
 func (sr *SliceReceiver[T]) Receive(m *Message[T]) (err error) {
-	// if cap(sr.Slice)-len(sr.Slice) == 0 {
-	// 	// panic("oops")
-	// 	// sr.Slice = growSlice(sr.Slice, preallocateCount)
-	// }
+	newLen := len(sr.Slice) + 1
+	if newLen > cap(sr.Slice) {
+		sr.Slice = growSlice(sr.Slice, newLen)
+	}
 	sr.Slice = append(sr.Slice, m)
 	return
 }

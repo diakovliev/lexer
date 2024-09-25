@@ -42,11 +42,11 @@ func (b Builder[T]) append(stateName string, newState func() any) (tail *Chain[T
 	}
 	var node *Chain[T]
 	if prev == nil {
-		tail = newChain(b, stateName, state)
+		tail = newChain(b, stateName, state, true)
 		tail.Builder.last = tail
 		return
 	}
-	node = newChain(prev.Builder, prev.name+"."+stateName, state)
+	node = newChain(prev.Builder, prev.name+"."+stateName, state, false)
 	node.Builder.last = node
 	node.prev = prev
 	prev.next = node

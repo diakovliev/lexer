@@ -142,7 +142,8 @@ func TestRepeat(t *testing.T) {
 			state: func(b Builder[Token]) *Chain[Token] {
 				return b.String("foo").Repeat(Count(3)).Emit(Token1)
 			},
-			wantError: ErrRollback,
+			wantError:    ErrRollback,
+			wantMessages: []*message.Message[Token]{},
 		},
 		{
 			name:  `foofoofo 'foo'.Count(2)`,

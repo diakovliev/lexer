@@ -13,24 +13,21 @@ type (
 
 	// State is a combined state
 	State[T any] struct {
-		logger   common.Logger
-		builder  Builder[T]
-		provider Provider[T]
+		run *Run[T]
 	}
 )
 
 // newState creates a new instance of State
 func newState[T any](logger common.Logger, builder Builder[T], provider Provider[T]) *State[T] {
 	return &State[T]{
-		logger:   logger,
-		builder:  builder,
-		provider: provider,
+		run: NewRun(logger, builder, provider, ErrInvalidInput),
 	}
 }
 
 // Update implements State interface. It updates the current state of the lexer with the given transaction.
-func (s State[T]) Update(ctx context.Context, tx xio.State) (err error) {
-	err = NewRun(s.logger, s.builder, s.provider, ErrInvalidInput).Run(ctx, xio.AsSource(tx))
+func (s *State[T]) Update(ctx context.Context, tx xio.State) (err error) {
+	err = s.run.Run(ctx, xio.AsSource(tx))
+	defer s.run.Reset()
 	return
 }
 

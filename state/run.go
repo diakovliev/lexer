@@ -52,8 +52,8 @@ func (r *Run[T]) next() {
 	r.current++
 }
 
-// reset resets the lexer state machine to its first state.
-func (r *Run[T]) reset() {
+// Reset resets the lexer state machine to its first state.
+func (r *Run[T]) Reset() {
 	r.current = 0
 }
 
@@ -105,7 +105,7 @@ loop:
 			if err := tx.Commit(); err != nil {
 				r.logger.Fatal("commit error: %s", err)
 			}
-			r.reset()
+			r.Reset()
 		case errors.Is(err, ErrRollback):
 			if err := tx.Rollback(); err != nil {
 				r.logger.Fatal("rollback error: %s", err)
