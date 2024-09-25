@@ -22,6 +22,7 @@ func createTestLexer(reader io.Reader) (lex *lexer.Lexer[Token], receiver *messa
 		reader,
 		message.DefaultFactory[Token](),
 		receiver,
+		lexer.WithHistoryDepth[Token](1),
 	).With(New(true))
 	return
 }
@@ -35,6 +36,7 @@ func createBenchmarkLexer(reader io.Reader) (lex *lexer.Lexer[Token]) {
 		reader,
 		message.DefaultFactory[Token](),
 		message.Dispose[Token](),
+		lexer.WithHistoryDepth[Token](1),
 	).With(New(true))
 	return
 }

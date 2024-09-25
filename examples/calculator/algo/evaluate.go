@@ -35,6 +35,7 @@ func Evaluate(input string) (result string, err error) {
 		bytes.NewBufferString(input),
 		message.DefaultFactory[grammar.Token](),
 		receiver,
+		lexer.WithHistoryDepth[grammar.Token](1),
 	).With(grammar.New(true))
 	if err = lexer.Run(context.TODO()); !errors.Is(err, io.EOF) {
 		err = fmt.Errorf("%w: %s", ErrLexerError, err)

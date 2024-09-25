@@ -1,11 +1,13 @@
 package grammar
 
 import (
+	"context"
 	"errors"
 	"math"
 	"unicode"
 
 	"github.com/diakovliev/lexer/state"
+	"github.com/diakovliev/lexer/xio"
 )
 
 var (
@@ -59,6 +61,11 @@ func (t Token) String() string {
 	}
 }
 
+var plusMinus = state.Or(
+	state.IsRune('+'),
+	state.IsRune('-'),
+)
+
 var allTerms = state.Or(
 	unicode.IsSpace,
 	state.IsRune('+'),
@@ -83,6 +90,17 @@ func numberSubState(b state.Builder[Token]) []state.Update[Token] {
 	)
 }
 
+func signedNumberGuard(ctx context.Context, _ xio.State) (err error) {
+	history := state.GetHistory[Token](ctx).Get()
+	if len(history) == 0 {
+		return
+	}
+	if history[len(history)-1].Token == Number {
+		err = state.ErrRollback
+	}
+	return
+}
+
 // New returns a new state machine for parsing tokens from the input string.
 func New(root bool) func(b state.Builder[Token]) []state.Update[Token] {
 	var ket func(b state.Builder[Token]) *state.Chain[Token]
@@ -103,8 +121,11 @@ func New(root bool) func(b state.Builder[Token]) []state.Update[Token] {
 			ket(b),
 			b.Named("Bra").Rune('(').Emit(Bra).State(b, New(false)),
 			// Operands
-			// b.Named("Number").Rune('-').Optional().CheckRune(unicode.IsDigit).State(b, numberSubState).Optional().Emit(Number),
-			b.Named("Number").CheckRune(unicode.IsDigit).State(b, numberSubState).Optional().Emit(Number),
+			b.Named("SignedNumber").
+				CheckRune(plusMinus).Optional().Tap(signedNumberGuard).
+				CheckRune(unicode.IsDigit).State(b, numberSubState).Optional().Emit(Number),
+			b.Named("UnsignedNumber").
+				CheckRune(unicode.IsDigit).State(b, numberSubState).Optional().Emit(Number),
 			// Operators
 			b.Named("Plus").Rune('+').Emit(Plus),
 			b.Named("Minus").Rune('-').Emit(Minus),

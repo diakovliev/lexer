@@ -110,7 +110,7 @@ func BenchmarkGrammar(b *testing.B) {
 	}
 	for _, tc := range tests {
 		rtc := NewRandomTestCase(tc.opsCount, tc.randomSpaces, tc.randomScopes)
-		lexer, _ := createTestLexer(rtc.Input())
+		lexer := createBenchmarkLexer(rtc.Input())
 		b.Run(tc.name, func(b *testing.B) {
 			if err := lexer.Run(context.TODO()); !errors.Is(err, io.EOF) {
 				b.Fatal("unexpected error")
