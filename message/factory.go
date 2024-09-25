@@ -11,35 +11,60 @@ type (
 		Error(ctx context.Context, level int, err error, value any, pos int, width int) (*Message[T], error)
 	}
 
-	DefaultFactoryImpl[T any] struct{}
+	DefaultFactoryImpl[T any] struct {
+		preallocatedMessages []Message[T]
+		preallocatedErrors   []ErrorValue
+	}
 )
 
 func DefaultFactory[T any]() *DefaultFactoryImpl[T] {
-	return &DefaultFactoryImpl[T]{}
+	return &DefaultFactoryImpl[T]{
+		// preallocatedMessages: preallocate[Message[T]](preallocateCount),
+		// preallocatedErrors:   preallocate[ErrorValue](preallocateCount),
+	}
+}
+
+func (f *DefaultFactoryImpl[T]) getPreallocatedMessage() *Message[T] {
+	if len(f.preallocatedMessages) == 0 {
+		f.preallocatedMessages = preallocate[Message[T]](preallocateCount)
+	}
+	msg := f.preallocatedMessages[len(f.preallocatedMessages)-1]
+	f.preallocatedMessages = f.preallocatedMessages[:len(f.preallocatedMessages)-1]
+	return &msg
+}
+
+func (f *DefaultFactoryImpl[T]) getPreallocatedError() *ErrorValue {
+	if len(f.preallocatedErrors) == 0 {
+		f.preallocatedErrors = preallocate[ErrorValue](preallocateCount)
+	}
+	errorValue := f.preallocatedErrors[len(f.preallocatedErrors)-1]
+	f.preallocatedErrors = f.preallocatedErrors[:len(f.preallocatedErrors)-1]
+	return &errorValue
 }
 
 func (f DefaultFactoryImpl[T]) Token(ctx context.Context, level int, token T, value any, pos int, width int) (msg *Message[T], err error) {
-	msg = &Message[T]{
-		Level: level,
-		Type:  Token,
-		Token: token,
-		Value: value,
-		Pos:   pos,
-		Width: width,
-	}
+	msg = &Message[T]{}
+	// msg = f.getPreallocatedMessage()
+	msg.Level = level
+	msg.Type = Token
+	msg.Token = token
+	msg.Pos = pos
+	msg.Width = width
+	msg.Value = value
 	return
 }
 
 func (f DefaultFactoryImpl[T]) Error(ctx context.Context, level int, userErr error, value any, pos int, width int) (msg *Message[T], err error) {
-	msg = &Message[T]{
-		Level: level,
-		Type:  Error,
-		Value: &ErrorValue{
-			Err:   userErr,
-			Value: value,
-		},
-		Pos:   pos,
-		Width: width,
-	}
+	msg = &Message[T]{}
+	// msg = f.getPreallocatedMessage()
+	msg.Level = level
+	msg.Type = Error
+	msg.Pos = pos
+	msg.Width = width
+	// errorValue := f.getPreallocatedError()
+	errorValue := &ErrorValue{}
+	errorValue.Err = userErr
+	errorValue.Value = value
+	msg.Value = errorValue
 	return
 }

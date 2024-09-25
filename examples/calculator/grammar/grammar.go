@@ -102,13 +102,13 @@ func New(root bool) func(b state.Builder[Token]) []state.Update[Token] {
 			// Parens
 			ket(b),
 			b.Named("Bra").Rune('(').Emit(Bra).State(b, New(false)),
+			// Operands
+			b.Named("NegativeNumber").Rune('-').Optional().CheckRune(unicode.IsDigit).State(b, numberSubState).Optional().Emit(Number),
 			// Operators
 			b.Named("Plus").Rune('+').Emit(Plus),
 			b.Named("Minus").Rune('-').Emit(Minus),
 			b.Named("Mul").Rune('*').Emit(Mul),
 			b.Named("Div").Rune('/').Emit(Div),
-			// Operands
-			b.Named("Number").CheckRune(unicode.IsDigit).State(b, numberSubState).Optional().Emit(Number),
 			// Error
 			b.Named("UnhandledInput").Rest().Error(ErrUnhandledInput),
 		)
