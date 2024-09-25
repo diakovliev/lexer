@@ -1,13 +1,29 @@
 package state
 
-import "context"
+import (
+	"context"
+
+	"github.com/diakovliev/lexer/message"
+)
 
 type keyType string
 
 const (
 	tokenLevelKey keyType = "token-level"
 	stateNameKey  keyType = "state-name"
+	historyKey    keyType = "history"
 )
+
+func WithHistory[T any](ctx context.Context, history message.History[T]) context.Context {
+	return context.WithValue(ctx, historyKey, history)
+}
+
+func GetHistory[T any](ctx context.Context) message.History[T] {
+	if v := ctx.Value(historyKey); v != nil {
+		return v.(message.History[T])
+	}
+	return nil
+}
 
 func WithTokenLevel(ctx context.Context, level int) context.Context {
 	return context.WithValue(ctx, tokenLevelKey, level)

@@ -8,8 +8,9 @@ import (
 )
 
 // Parse - parse tokens to VMCode
-func Parse(Token []Token) (data []VMCode, err error) {
-	for _, token := range Token {
+func Parse(tokens []Token) (data []VMCode, err error) {
+	data = make([]VMCode, 0, len(tokens))
+	for _, token := range tokens {
 		if token.Type == message.Error {
 			err = token.Value.(*message.ErrorValue).Err
 			return
@@ -21,15 +22,10 @@ func Parse(Token []Token) (data []VMCode, err error) {
 				err = atoiErr
 				return
 			}
-			data = append(data, VMCode{
-				Token: token.Token,
-				Value: value,
-			})
+			data = append(data, VMCode{Token: token.Token, Value: value})
 			continue
 		default:
-			data = append(data, VMCode{
-				Token: token.Token,
-			})
+			data = append(data, VMCode{Token: token.Token})
 		}
 	}
 	return

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"testing"
 
@@ -36,60 +35,23 @@ func TestGrammar(t *testing.T) {
 	}
 }
 
-type randomTestCase struct {
-	name    string
-	content string
-	input   io.Reader
-	tokens  int
-}
-
-func newRandomTestCase(opsCount uint, randomSpaces bool, randomScopes bool) (ret *randomTestCase) {
-	reader, size, tokens := generateRandomInput(opsCount, randomSpaces, randomScopes)
-	ret = &randomTestCase{
-		name: fmt.Sprintf(
-			"%d ops spaces: %t scopes %t size: %d tokens: %d",
-			opsCount, randomSpaces, randomScopes, size, tokens,
-		),
-		input:   reader,
-		tokens:  tokens,
-		content: reader.String(),
-	}
-	return ret
-}
-
-func (rtc randomTestCase) Name() string {
-	return rtc.name
-}
-
-func (rtc randomTestCase) Input() io.Reader {
-	return rtc.input
-}
-
-func (rtc randomTestCase) Tokens() int {
-	return rtc.tokens
-}
-
-func (rtc randomTestCase) Content() string {
-	return rtc.content
-}
-
 func TestGrammarRandomTestCases(t *testing.T) {
-	tests := []*randomTestCase{}
+	tests := []*RandomTestCase{}
 
 	testsOpsCount := uint(10)
 	testsCount := 10
 
 	for i := 0; i < testsCount; i++ {
-		tests = append(tests, newRandomTestCase(testsOpsCount, true, true))
+		tests = append(tests, NewRandomTestCase(testsOpsCount, true, true))
 	}
 	for i := 0; i < testsCount; i++ {
-		tests = append(tests, newRandomTestCase(testsOpsCount, false, true))
+		tests = append(tests, NewRandomTestCase(testsOpsCount, false, true))
 	}
 	for i := 0; i < testsCount; i++ {
-		tests = append(tests, newRandomTestCase(testsOpsCount, true, false))
+		tests = append(tests, NewRandomTestCase(testsOpsCount, true, false))
 	}
 	for i := 0; i < testsCount; i++ {
-		tests = append(tests, newRandomTestCase(testsOpsCount, false, false))
+		tests = append(tests, NewRandomTestCase(testsOpsCount, false, false))
 	}
 
 	for _, tc := range tests {
@@ -147,8 +109,8 @@ func BenchmarkGrammar(b *testing.B) {
 		},
 	}
 	for _, tc := range tests {
-		reader, size, tokens := generateRandomInput(tc.opsCount, tc.randomSpaces, tc.randomScopes)
-		lexer := createBenchmarkLexer(reader)
+		rtc := NewRandomTestCase(tc.opsCount, tc.randomSpaces, tc.randomScopes)
+		lexer := createBenchmarkLexer(rtc.Input())
 		b.Run(tc.name, func(b *testing.B) {
 			if err := lexer.Run(context.TODO()); !errors.Is(err, io.EOF) {
 				b.Fatal("unexpected error")
@@ -157,8 +119,8 @@ func BenchmarkGrammar(b *testing.B) {
 			elapsed := b.Elapsed().Seconds()
 			tmUnit := "s"
 			b.Logf("%s complete in %f%s", tc.name, elapsed, tmUnit)
-			b.Logf("\t- %d tokens in %f%s (%f token/%s)", tokens, elapsed, tmUnit, float64(tokens)/float64(elapsed), tmUnit)
-			b.Logf("\t- %d bytes in %f%s (%f bytes/%s)", size, elapsed, tmUnit, float64(size)/float64(elapsed), tmUnit)
+			b.Logf("\t- %d tokens in %f%s (%f token/%s)", rtc.Tokens(), elapsed, tmUnit, float64(rtc.Tokens())/float64(elapsed), tmUnit)
+			b.Logf("\t- %d bytes in %f%s (%f bytes/%s)", rtc.Size(), elapsed, tmUnit, float64(rtc.Size())/float64(elapsed), tmUnit)
 		})
 	}
 }

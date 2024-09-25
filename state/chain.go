@@ -23,14 +23,17 @@ type (
 
 // newChain creates a new instance of Node struct. It takes logger and name as parameters.
 // The name parameter is used for logging purposes.
-func newChain[T any](builder Builder[T], name string, state Update[T]) *Chain[T] {
-	return &Chain[T]{
-		Builder:  builder,
-		name:     name,
-		receiver: message.Slice[T](),
-		logger:   builder.logger,
-		state:    state,
+func newChain[T any](builder Builder[T], name string, state Update[T], createReceiver bool) (ret *Chain[T]) {
+	ret = &Chain[T]{
+		Builder: builder,
+		name:    name,
+		logger:  builder.logger,
+		state:   state,
 	}
+	if createReceiver {
+		ret.receiver = message.Slice[T]()
+	}
+	return
 }
 
 // Next returns the next state in the chain of nodes. If there is no next nodes, it returns an nil.

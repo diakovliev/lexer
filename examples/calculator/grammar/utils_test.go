@@ -22,6 +22,7 @@ func createTestLexer(reader io.Reader) (lex *lexer.Lexer[Token], receiver *messa
 		reader,
 		message.DefaultFactory[Token](),
 		receiver,
+		lexer.WithHistoryDepth[Token](1),
 	).With(New(true))
 	return
 }
@@ -35,6 +36,7 @@ func createBenchmarkLexer(reader io.Reader) (lex *lexer.Lexer[Token]) {
 		reader,
 		message.DefaultFactory[Token](),
 		message.Dispose[Token](),
+		lexer.WithHistoryDepth[Token](1),
 	).With(New(true))
 	return
 }
@@ -65,7 +67,7 @@ func scopeClose(dest *bytes.Buffer) {
 	dest.WriteRune(')')
 }
 
-func generateRandomInput(opsCount uint, enableRandomSpaces bool, enableRandomScopes bool) (reader *bytes.Buffer, size int, tokens int) {
+func GenerateRandomInput(opsCount uint, enableRandomSpaces bool, enableRandomScopes bool) (reader *bytes.Buffer, size int, tokens int) {
 	ops := []string{"+", "-", "*", "/"}
 	buffer := bytes.NewBuffer(nil)
 	// preallocate some space
