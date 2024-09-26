@@ -94,7 +94,7 @@ loop:
 			break loop
 		case errors.Is(err, errChainRepeat), errors.Is(err, errChainNext):
 			common.AssertNoError(tx.Rollback(), "rollback error")
-			common.AssertTrue(false, "invalid grammar: repeat and next allowed only inside chain")
+			common.AssertUnreachable("invalid grammar: repeat and next allowed only inside chain")
 		case errors.Is(err, ErrCommit):
 			common.AssertNoError(tx.Commit(), "commit error")
 			r.Reset()
