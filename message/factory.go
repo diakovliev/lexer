@@ -17,6 +17,7 @@ type (
 	}
 )
 
+// DefaultFactory creates a default message factory instance.
 func DefaultFactory[T any]() *DefaultFactoryImpl[T] {
 	return &DefaultFactoryImpl[T]{
 		// preallocatedMessages: preallocate[Message[T]](preallocateCount),
@@ -46,6 +47,7 @@ func (f *DefaultFactoryImpl[T]) getPreallocatedError() *ErrorValue {
 	// return &errorValue
 }
 
+// Token implements Factory interface.
 func (f DefaultFactoryImpl[T]) Token(ctx context.Context, level int, token T, value any, pos int, width int) (msg *Message[T], err error) {
 	msg = f.getPreallocatedMessage()
 	msg.Level = level
@@ -57,6 +59,7 @@ func (f DefaultFactoryImpl[T]) Token(ctx context.Context, level int, token T, va
 	return
 }
 
+// Error implements Factory interface.
 func (f DefaultFactoryImpl[T]) Error(ctx context.Context, level int, userErr error, value any, pos int, width int) (msg *Message[T], err error) {
 	msg = f.getPreallocatedMessage()
 	msg.Level = level

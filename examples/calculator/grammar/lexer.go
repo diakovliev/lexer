@@ -10,10 +10,9 @@ import (
 )
 
 const (
-	// maxScopesDepth is a scpes max depth.
-	// We are not lisp so we don't need infinite depth here
-	// If you are crazy, you can replace by math.MaxUint
-	// const maxScopesDepth = math.MaxUint
+	// The maxScopesDepth is maximum allowed depth of the scopes.
+	// We are not lisp so we don't need infinite depth here.
+	// If you are crazy, you can replace it by math.MaxUint.
 	maxScopesDepth = 30
 
 	// historyDepth is a lexer history depth.

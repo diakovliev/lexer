@@ -13,11 +13,11 @@ import (
 type FnByte[T any] struct {
 	logger common.Logger
 	pred   BytePredicate
-	mode   FnMode
+	mode   fnMode
 }
 
 // newFnRune creates a new state that checks if the next rune matches the predicate.
-func newFnByte[T any](logger common.Logger, pred BytePredicate, mode FnMode) *FnByte[T] {
+func newFnByte[T any](logger common.Logger, pred BytePredicate, mode fnMode) *FnByte[T] {
 	return &FnByte[T]{
 		logger: logger,
 		pred:   pred,
@@ -38,7 +38,7 @@ func (fb FnByte[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	}
 	result := fb.pred(b)
 	switch fb.mode {
-	case FnAccept:
+	case fnAccept:
 		if !result {
 			if _, unreadErr := tx.Unread(); unreadErr != nil {
 				fb.logger.Fatal("unread error: %s", unreadErr)
@@ -46,7 +46,7 @@ func (fb FnByte[T]) Update(ctx context.Context, tx xio.State) (err error) {
 			err = ErrRollback
 			return
 		}
-	case FnLook:
+	case fnLook:
 		if _, unreadErr := tx.Unread(); unreadErr != nil {
 			fb.logger.Fatal("unread error: %s", unreadErr)
 		}
@@ -65,7 +65,7 @@ func isNotRepeatableFnByte[T any](s Update[T]) bool {
 	if !ok {
 		return false
 	}
-	ok = i.mode == FnLook
+	ok = i.mode == fnLook
 	return ok
 }
 
@@ -74,15 +74,16 @@ func (b Builder[T]) CheckByte(pred BytePredicate) (tail *Chain[T]) {
 	if pred == nil {
 		b.logger.Fatal("invalid grammar: nil predicate")
 	}
-	tail = b.append("FnByte", func() Update[T] { return newFnByte[T](b.logger, pred, FnAccept) })
+	tail = b.append("CheckByte", func() Update[T] { return newFnByte[T](b.logger, pred, fnAccept) })
 	return
 }
 
+// FollowedByCheckByte adds a state that checks if the next rune matches the predicate to the chain, and rolls back if it does not match.
 func (b Builder[T]) FollowedByCheckByte(pred BytePredicate) (tail *Chain[T]) {
 	if pred == nil {
 		b.logger.Fatal("invalid grammar: nil predicate")
 	}
-	tail = b.append("FollowedByCheckByte", func() Update[T] { return newFnByte[T](b.logger, pred, FnLook) })
+	tail = b.append("FollowedByCheckByte", func() Update[T] { return newFnByte[T](b.logger, pred, fnLook) })
 	return
 }
 
@@ -91,47 +92,51 @@ func (b Builder[T]) CheckNotByte(pred BytePredicate) (tail *Chain[T]) {
 	if pred == nil {
 		b.logger.Fatal("invalid grammar: nil predicate")
 	}
-	tail = b.append("NotFnByte", func() Update[T] { return newFnByte[T](b.logger, Not(pred), FnAccept) })
+	tail = b.append("CheckNotByte", func() Update[T] { return newFnByte[T](b.logger, Not(pred), fnAccept) })
 	return
 }
 
+// FollowedByCheckNotByte adds a state that checks if the next rune doesn't match the predicate to the chain.
 func (b Builder[T]) FollowedByCheckNotByte(pred BytePredicate) (tail *Chain[T]) {
 	if pred == nil {
 		b.logger.Fatal("invalid grammar: nil predicate")
 	}
-	tail = b.append("FollowedByCheckNotByte", func() Update[T] { return newFnByte[T](b.logger, Not(pred), FnLook) })
+	tail = b.append("FollowedByCheckNotByte", func() Update[T] { return newFnByte[T](b.logger, Not(pred), fnLook) })
 	return
 }
 
 // Byte adds a state that checks if the next rune matches the sample to the chain.
 func (b Builder[T]) Byte(sample byte) (tail *Chain[T]) {
-	tail = b.append("Byte", func() Update[T] { return newFnByte[T](b.logger, IsByte(sample), FnAccept) })
+	tail = b.append("Byte", func() Update[T] { return newFnByte[T](b.logger, IsByte(sample), fnAccept) })
 	return
 }
 
+// FollowedByByte adds a state that checks if the next rune matches the sample to the chain.
 func (b Builder[T]) FollowedByByte(sample byte) (tail *Chain[T]) {
-	tail = b.append("FollowedByByte", func() Update[T] { return newFnByte[T](b.logger, IsByte(sample), FnLook) })
+	tail = b.append("FollowedByByte", func() Update[T] { return newFnByte[T](b.logger, IsByte(sample), fnLook) })
 	return
 }
 
 // NotByte adds a state that checks if the next rune doesn't match the sample to the chain.
 func (b Builder[T]) NotByte(sample byte) (tail *Chain[T]) {
-	tail = b.append("NotByte", func() Update[T] { return newFnByte[T](b.logger, Not(IsByte(sample)), FnAccept) })
+	tail = b.append("NotByte", func() Update[T] { return newFnByte[T](b.logger, Not(IsByte(sample)), fnAccept) })
 	return
 }
 
+// FollowedByNotByte adds a state that checks if the next rune doesn't match the sample to the chain.
 func (b Builder[T]) FollowedByNotByte(sample byte) (tail *Chain[T]) {
-	tail = b.append("FollowedByNotByte", func() Update[T] { return newFnByte[T](b.logger, Not(IsByte(sample)), FnLook) })
+	tail = b.append("FollowedByNotByte", func() Update[T] { return newFnByte[T](b.logger, Not(IsByte(sample)), fnLook) })
 	return
 }
 
-// ByteRange adds a state that checks if the next rune matches the range to the chain.
+// AnyByte adds a state that accepts any byte to the chain.
 func (b Builder[T]) AnyByte() (tail *Chain[T]) {
-	tail = b.append("AnyByte", func() Update[T] { return newFnByte[T](b.logger, True[byte](), FnAccept) })
+	tail = b.append("AnyByte", func() Update[T] { return newFnByte[T](b.logger, True[byte](), fnAccept) })
 	return
 }
 
+// FollowedByAnyByte adds a state that checks if the next rune matches any byte to the chain.
 func (b Builder[T]) FollowedByAnyByte() (tail *Chain[T]) {
-	tail = b.append("FollowedByAnyByte", func() Update[T] { return newFnByte[T](b.logger, True[byte](), FnLook) })
+	tail = b.append("FollowedByAnyByte", func() Update[T] { return newFnByte[T](b.logger, True[byte](), fnLook) })
 	return
 }

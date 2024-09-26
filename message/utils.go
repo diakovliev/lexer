@@ -9,6 +9,6 @@ func growSlice[T any](slice []T, delta int) []T {
 	return newSlice
 }
 
-func preallocate[T any](n int) []T {
-	return make([]T, n)
-}
+// func preallocate[T any](n int) []T {
+// 	return make([]T, n)
+// }
