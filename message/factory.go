@@ -8,7 +8,7 @@ type (
 		// Token creates a token message
 		Token(ctx context.Context, level int, token T, value []byte, pos int, width int) (*Message[T], error)
 		// Error creates an error message
-		Error(ctx context.Context, level int, err error, value []byte, pos int, width int) (*Message[T], error)
+		Error(ctx context.Context, level int, err error, buffer []byte, pos int, width int) (*Message[T], error)
 	}
 
 	// DefaultFactoryImpl is the default message factory implementation
@@ -33,7 +33,7 @@ func (f DefaultFactoryImpl[T]) Token(ctx context.Context, level int, token T, va
 }
 
 // Error implements Factory interface.
-func (f DefaultFactoryImpl[T]) Error(ctx context.Context, level int, userErr error, value []byte, pos int, width int) (msg *Message[T], err error) {
+func (f DefaultFactoryImpl[T]) Error(ctx context.Context, level int, userErr error, buffer []byte, pos int, width int) (msg *Message[T], err error) {
 	msg = &Message[T]{}
 	msg.Level = level
 	msg.Type = Error
@@ -41,7 +41,7 @@ func (f DefaultFactoryImpl[T]) Error(ctx context.Context, level int, userErr err
 	msg.Width = width
 	errorValue := &ErrorValue{}
 	errorValue.Err = userErr
-	errorValue.Value = value
+	errorValue.Value = buffer
 	msg.Value = errorValue
 	return
 }
