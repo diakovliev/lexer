@@ -29,27 +29,17 @@ func Make[T any](
 // append creates a new node in chain of states and returns the tail of the chain.
 // if builder is not yet associated with any chain then it creates the new one and
 // returns its tail. Each element in the chain is a builder.
-func (b Builder[T]) append(stateName string, newState func() any) (tail *Chain[T]) {
-	prev := b.last
-	if prev != nil && prev.next != nil {
-		b.logger.Fatal("invalid grammar: last element already has next: %T", prev.next)
-	}
-	created := newState()
-	var state Update[T]
-	var ok bool
-	if state, ok = created.(Update[T]); !ok {
-		b.logger.Fatal("not a state: %T", created)
-	}
-	var node *Chain[T]
-	if prev == nil {
-		tail = newChain(b, stateName, state, true)
-		tail.Builder.last = tail
+func (b Builder[T]) append(name string, newState func() Update[T]) (tail *Chain[T]) {
+	state := newState()
+	if b.last == nil {
+		// new chain
+		tail = newChain(b, name, state, b.last)
 		return
 	}
-	node = newChain(prev.Builder, prev.name+"."+stateName, state, false)
-	node.Builder.last = node
-	node.prev = prev
-	prev.next = node
-	tail = node
+	// append to existing chain
+	if b.last.next() != nil {
+		b.logger.Fatal("invalid grammar: last element %T already has next: %T", b.last.deref(), b.last.next().deref())
+	}
+	tail = newChain(b.last.Builder, b.last.name()+"."+name, state, b.last)
 	return
 }

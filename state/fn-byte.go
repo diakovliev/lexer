@@ -74,7 +74,7 @@ func (b Builder[T]) CheckByte(pred BytePredicate) (tail *Chain[T]) {
 	if pred == nil {
 		b.logger.Fatal("invalid grammar: nil predicate")
 	}
-	tail = b.append("FnByte", func() any { return newFnByte[T](b.logger, pred, FnAccept) })
+	tail = b.append("FnByte", func() Update[T] { return newFnByte[T](b.logger, pred, FnAccept) })
 	return
 }
 
@@ -82,7 +82,7 @@ func (b Builder[T]) FollowedByCheckByte(pred BytePredicate) (tail *Chain[T]) {
 	if pred == nil {
 		b.logger.Fatal("invalid grammar: nil predicate")
 	}
-	tail = b.append("FollowedByCheckByte", func() any { return newFnByte[T](b.logger, pred, FnLook) })
+	tail = b.append("FollowedByCheckByte", func() Update[T] { return newFnByte[T](b.logger, pred, FnLook) })
 	return
 }
 
@@ -91,7 +91,7 @@ func (b Builder[T]) CheckNotByte(pred BytePredicate) (tail *Chain[T]) {
 	if pred == nil {
 		b.logger.Fatal("invalid grammar: nil predicate")
 	}
-	tail = b.append("NotFnByte", func() any { return newFnByte[T](b.logger, Not(pred), FnAccept) })
+	tail = b.append("NotFnByte", func() Update[T] { return newFnByte[T](b.logger, Not(pred), FnAccept) })
 	return
 }
 
@@ -99,39 +99,39 @@ func (b Builder[T]) FollowedByCheckNotByte(pred BytePredicate) (tail *Chain[T]) 
 	if pred == nil {
 		b.logger.Fatal("invalid grammar: nil predicate")
 	}
-	tail = b.append("FollowedByCheckNotByte", func() any { return newFnByte[T](b.logger, Not(pred), FnLook) })
+	tail = b.append("FollowedByCheckNotByte", func() Update[T] { return newFnByte[T](b.logger, Not(pred), FnLook) })
 	return
 }
 
 // Byte adds a state that checks if the next rune matches the sample to the chain.
 func (b Builder[T]) Byte(sample byte) (tail *Chain[T]) {
-	tail = b.append("Byte", func() any { return newFnByte[T](b.logger, IsByte(sample), FnAccept) })
+	tail = b.append("Byte", func() Update[T] { return newFnByte[T](b.logger, IsByte(sample), FnAccept) })
 	return
 }
 
 func (b Builder[T]) FollowedByByte(sample byte) (tail *Chain[T]) {
-	tail = b.append("FollowedByByte", func() any { return newFnByte[T](b.logger, IsByte(sample), FnLook) })
+	tail = b.append("FollowedByByte", func() Update[T] { return newFnByte[T](b.logger, IsByte(sample), FnLook) })
 	return
 }
 
 // NotByte adds a state that checks if the next rune doesn't match the sample to the chain.
 func (b Builder[T]) NotByte(sample byte) (tail *Chain[T]) {
-	tail = b.append("NotByte", func() any { return newFnByte[T](b.logger, Not(IsByte(sample)), FnAccept) })
+	tail = b.append("NotByte", func() Update[T] { return newFnByte[T](b.logger, Not(IsByte(sample)), FnAccept) })
 	return
 }
 
 func (b Builder[T]) FollowedByNotByte(sample byte) (tail *Chain[T]) {
-	tail = b.append("FollowedByNotByte", func() any { return newFnByte[T](b.logger, Not(IsByte(sample)), FnLook) })
+	tail = b.append("FollowedByNotByte", func() Update[T] { return newFnByte[T](b.logger, Not(IsByte(sample)), FnLook) })
 	return
 }
 
 // ByteRange adds a state that checks if the next rune matches the range to the chain.
 func (b Builder[T]) AnyByte() (tail *Chain[T]) {
-	tail = b.append("AnyByte", func() any { return newFnByte[T](b.logger, True[byte](), FnAccept) })
+	tail = b.append("AnyByte", func() Update[T] { return newFnByte[T](b.logger, True[byte](), FnAccept) })
 	return
 }
 
 func (b Builder[T]) FollowedByAnyByte() (tail *Chain[T]) {
-	tail = b.append("FollowedByAnyByte", func() any { return newFnByte[T](b.logger, True[byte](), FnLook) })
+	tail = b.append("FollowedByAnyByte", func() Update[T] { return newFnByte[T](b.logger, True[byte](), FnLook) })
 	return
 }

@@ -41,7 +41,7 @@ func (b Builder[T]) Tap(fn TapFn) (tail *Chain[T]) {
 	if fn == nil {
 		b.logger.Fatal("invalid grammar: nil tap function")
 	}
-	tail = b.append("Tap", func() any { return newTap[T](b.logger, fn) })
+	tail = b.append("Tap", func() Update[T] { return newTap[T](b.logger, fn) })
 	return
 }
 

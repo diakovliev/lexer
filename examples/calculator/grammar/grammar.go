@@ -39,9 +39,9 @@ var (
 	)
 )
 
-func ketState(root bool) (ket func(b state.Builder[Token]) *state.Chain[Token]) {
+func ketState(name string, root bool) (ket func(b state.Builder[Token]) *state.Chain[Token]) {
 	return func(b state.Builder[Token]) *state.Chain[Token] {
-		base := b.Named("Ket").Rune(')')
+		base := b.Named(name).Rune(')')
 		if root {
 			return base.Error(ErrUnexpectedKet)
 		}
@@ -49,9 +49,9 @@ func ketState(root bool) (ket func(b state.Builder[Token]) *state.Chain[Token]) 
 	}
 }
 
-func braState(depth uint) func(b state.Builder[Token]) *state.Chain[Token] {
+func braState(name string, depth uint) func(b state.Builder[Token]) *state.Chain[Token] {
 	return func(b state.Builder[Token]) *state.Chain[Token] {
-		base := b.Named("Bra").Rune('(')
+		base := b.Named(name).Rune('(')
 		if depth > 0 {
 			return base.Emit(Bra).State(b, newState(false, depth-1))
 		}
@@ -102,8 +102,8 @@ func newState(root bool, maxScopesDepth uint) func(b state.Builder[Token]) []sta
 			// Spaces and tabs are omitted.
 			b.Named("OmitSpaces").CheckRune(unicode.IsSpace).Repeat(state.CountBetween(1, math.MaxUint)).Omit(),
 			// Parens with max depth
-			ketState(root)(b),
-			braState(maxScopesDepth-1)(b),
+			braState("Bra", maxScopesDepth-1)(b),
+			ketState("Ket", root)(b),
 			// Operands
 			numberState("SignedNumber", true)(b),
 			numberState("UnsignedNumber", false)(b),

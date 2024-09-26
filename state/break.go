@@ -54,7 +54,7 @@ func (b Builder[T]) Break(actions ...error) (tail *Chain[T]) {
 			b.logger.Fatal("invalid grammar: too many actions for break")
 		}
 	}
-	tail = b.append("Break", func() any { return newBreak[T](b.logger, action) })
+	tail = b.append("Break", func() Update[T] { return newBreak[T](b.logger, action) })
 	return
 }
 

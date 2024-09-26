@@ -10,16 +10,16 @@ import (
 func TestNamed(t *testing.T) {
 	b := makeTestDisposeBuilder()
 	named := b.Named("test")
-	assert.Equal(t, "test", named.name)
+	assert.Equal(t, "test", named.nodeName)
 
-	err := named.state.Update(context.Background(), nil)
+	err := named.deref().Update(context.Background(), nil)
 	assert.ErrorIs(t, err, errChainNext)
 
 	s0 := named.append("s0", newFakeState)
-	assert.Equal(t, "test.s0", s0.name)
+	assert.Equal(t, "test.s0", s0.nodeName)
 
 	s1 := s0.append("s1", newFakeState)
-	assert.Equal(t, "test.s0.s1", s1.name)
+	assert.Equal(t, "test.s0.s1", s1.nodeName)
 
 	assert.Panics(t, func() {
 		s1.Named("bad")

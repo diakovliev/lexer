@@ -107,7 +107,7 @@ func bytesNotMatches(in []byte, samples [][]byte) bool {
 }
 
 func (b Builder[T]) bytesState(name string, provider BytesSamplesProvider, pred BytesPredicate) (tail *Chain[T]) {
-	tail = b.append(name, func() any { return newBytes[T](b.logger, provider, pred) })
+	tail = b.append(name, func() Update[T] { return newBytes[T](b.logger, provider, pred) })
 	return
 }
 

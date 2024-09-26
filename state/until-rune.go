@@ -54,12 +54,12 @@ func (ur UntilRune[T]) Update(ctx context.Context, tx xio.State) (err error) {
 
 // UntilRune creates a state that reads runes until the pred returns true.
 func (b Builder[T]) UntilRune(pred RunePredicate) (tail *Chain[T]) {
-	tail = b.append("UntilRune", func() any { return newUntilRune[T](b.logger, pred) })
+	tail = b.append("UntilRune", func() Update[T] { return newUntilRune[T](b.logger, pred) })
 	return
 }
 
 // WhileRune creates a state that reads runes while the pred returns true.
 func (b Builder[T]) WhileRune(pred RunePredicate) (tail *Chain[T]) {
-	tail = b.append("WhileRune", func() any { return newUntilRune[T](b.logger, Not(pred)) })
+	tail = b.append("WhileRune", func() Update[T] { return newUntilRune[T](b.logger, Not(pred)) })
 	return
 }
