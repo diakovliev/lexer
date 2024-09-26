@@ -3,6 +3,7 @@ package state
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/diakovliev/lexer/common"
 	"github.com/diakovliev/lexer/message"
@@ -62,10 +63,18 @@ func (c *Chain[T]) Head() *Chain[T] {
 	return current
 }
 
+// ForwardMessages forwards messages from the head to final receiver.
+func (c *Chain[T]) ForwardMessages() (err error) {
+	head := c.Head()
+	if err = head.receiver.ForwardTo(head.Builder.receiver); err != nil {
+		err = fmt.Errorf("%s: %w", head.name, err)
+	}
+	return
+}
+
 // Update implements State interface
 func (c *Chain[T]) Update(ctx context.Context, ioState xio.State) (err error) {
-	head := c.Head()
-	current := head
+	current := c.Head()
 	for current != nil {
 		next := current.Next()
 		if err = current.state.Update(withStateName(ctx, current.name), ioState); err == nil {
@@ -93,8 +102,8 @@ func (c *Chain[T]) Update(ctx context.Context, ioState xio.State) (err error) {
 				err = ErrRollback
 				return
 			}
-			if err := head.receiver.EmitTo(head.Builder.receiver); err != nil {
-				c.logger.Fatal("emit to error: %s", err)
+			if err := c.ForwardMessages(); err != nil {
+				c.logger.Fatal("forward messages error: %s", err)
 			}
 			if next == nil {
 				return
@@ -114,8 +123,8 @@ func (c *Chain[T]) Update(ctx context.Context, ioState xio.State) (err error) {
 			if next != nil {
 				c.logger.Fatal("invalid grammar: break must be last in chain")
 			}
-			if err := head.receiver.EmitTo(head.Builder.receiver); err != nil {
-				c.logger.Fatal("emit to error: %s", err)
+			if err := c.ForwardMessages(); err != nil {
+				c.logger.Fatal("forward messages error: %s", err)
 			}
 			return
 		case errors.Is(err, ErrIncomplete), errors.Is(err, ErrInvalidInput):

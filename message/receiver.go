@@ -39,9 +39,9 @@ func (sr *SliceReceiver[T]) Reset() {
 	sr.Slice = sr.Slice[:0]
 }
 
-func (sr *SliceReceiver[T]) EmitTo(r Receiver[T]) (err error) {
+func (sr *SliceReceiver[T]) ForwardTo(target Receiver[T]) (err error) {
 	for _, m := range sr.Slice {
-		if err = r.Receive(m); err != nil {
+		if err = target.Receive(m); err != nil {
 			return err
 		}
 	}

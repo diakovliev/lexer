@@ -84,7 +84,7 @@ func TestBuilder_append(t *testing.T) {
 	assert.Equal(t, s2, s0.Tail())
 	assert.Equal(t, s2, s1.Tail())
 
-	// assert.Panics(t, func() {
-	// 	s1.append("s3", newFakeState)
-	// })
+	assert.Panics(t, func() {
+		s1.append("s3", newFakeState)
+	})
 }
