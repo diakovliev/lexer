@@ -92,7 +92,7 @@ loop:
 				err = r.eofErr
 			}
 			break loop
-		case errors.Is(err, errChainRepeat), errors.Is(err, errChainNext):
+		case errors.Is(err, ErrChainRepeat), errors.Is(err, ErrChainNext):
 			common.AssertNoError(tx.Rollback(), "rollback error")
 			common.AssertUnreachable("invalid grammar: repeat and next allowed only inside chain")
 		case errors.Is(err, ErrCommit):

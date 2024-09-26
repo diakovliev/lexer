@@ -39,14 +39,14 @@ func (e Error[T]) Update(ctx context.Context, tx xio.State) (err error) {
 		err = ErrRollback
 		return
 	}
-
 	level, ok := GetTokenLevel(ctx)
 	common.AssertTrue(ok, "no token level in context")
 	msg, err := e.factory.Error(ctx, level, e.err, data, int(pos), len(data))
 	common.AssertNoError(err, "messages factory error")
 	err = e.receiver.Receive(msg)
 	common.AssertNoError(err, "send message error")
-	err = makeErrBreak(e.err)
+	err, _ = msg.ValueAsError()
+	err = MakeErrBreak(err)
 	return
 }
 

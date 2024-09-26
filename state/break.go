@@ -32,7 +32,7 @@ func (br Break[T]) Update(_ context.Context, ioState xio.State) (err error) {
 	default:
 		common.AssertUnreachable("unknown action: %s", br.action)
 	}
-	err = makeErrBreak(br.action)
+	err = MakeErrBreak(br.action)
 	return
 }
 

@@ -9,6 +9,12 @@ func growSlice[T any](slice []T, delta int) []T {
 	return newSlice
 }
 
-// func preallocate[T any](n int) []T {
-// 	return make([]T, n)
-// }
+// GetUserErrors returns all errors messages from the messages slice.
+func GetUserErrors[T any](slice []*Message[T]) (errs []*Message[T]) {
+	for _, m := range slice {
+		if m.Type == Error {
+			errs = append(errs, m)
+		}
+	}
+	return
+}

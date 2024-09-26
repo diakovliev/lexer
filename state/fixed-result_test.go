@@ -13,7 +13,7 @@ func TestNamed(t *testing.T) {
 	assert.Equal(t, "test", named.nodeName)
 
 	err := named.deref().Update(context.Background(), nil)
-	assert.ErrorIs(t, err, errChainNext)
+	assert.ErrorIs(t, err, ErrChainNext)
 
 	s0 := named.append("s0", newFakeState)
 	assert.Equal(t, "test.s0", s0.nodeName)

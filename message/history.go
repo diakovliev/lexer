@@ -15,12 +15,6 @@ type (
 		messages  []*Message[T]
 		keepCount int
 	}
-
-	// ForgetImpl is an implementation of History.
-	// It forgets the last messages.
-	ForgetImpl[T any] struct {
-		receiver Receiver[T]
-	}
 )
 
 // Remember returns a message history.
@@ -50,22 +44,4 @@ func (h *RememberImpl[T]) Receive(m *Message[T]) (err error) {
 // Get implements the History interface
 func (h *RememberImpl[T]) Get() []*Message[T] {
 	return h.messages
-}
-
-// Forget returns a message history.
-// It forgets the last messages.
-func Forget[T any](receiver Receiver[T]) *ForgetImpl[T] {
-	return &ForgetImpl[T]{
-		receiver: receiver,
-	}
-}
-
-// Receive implements the Receiver interface
-func (h *ForgetImpl[T]) Receive(m *Message[T]) (err error) {
-	return h.receiver.Receive(m)
-}
-
-// Get implements the History interface
-func (h *ForgetImpl[T]) Get() []*Message[T] {
-	return nil
 }

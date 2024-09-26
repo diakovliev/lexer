@@ -16,10 +16,10 @@ var (
 	// ErrRollback indicates that the state should be rolled back
 	ErrRollback = errors.New("rollback")
 
-	// errChainNext indicates that the next state inside the chain should be processed
-	errChainNext = errors.New("next")
-	// errChainRepeat indicates that the previous state should be repeated
-	errChainRepeat = errors.New("repeat")
+	// ErrChainNext indicates that the next state inside the chain should be processed
+	ErrChainNext = errors.New("next")
+	// ErrChainRepeat indicates that the previous state should be repeated
+	ErrChainRepeat = errors.New("repeat")
 
 	// errStateBreak indicates that the combined state is done
 	errStateBreak = errors.New("break")
@@ -48,12 +48,12 @@ func makeErrRepeat(q Quantifier) error {
 
 // Error implements the error interface
 func (errRepeatImpl) Error() string {
-	return errChainRepeat.Error()
+	return ErrChainRepeat.Error()
 }
 
 // Unwrap implements the error interface
 func (err errRepeatImpl) Unwrap() error {
-	return errChainRepeat
+	return ErrChainRepeat
 }
 
 // getRepeatQuantifier returns the quantifier from an error if it is a *errRepeat
@@ -70,7 +70,7 @@ func getRepeatQuantifier(err error) (q Quantifier, ret bool) {
 	return
 }
 
-func makeErrBreak(action error) error {
+func MakeErrBreak(action error) error {
 	return &errBreakImpl{
 		action: action,
 	}

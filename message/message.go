@@ -1,6 +1,10 @@
 package message
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/diakovliev/lexer/common"
+)
 
 // Type represents the type of a message. The types are: Error, Token.
 type Type int
@@ -33,34 +37,75 @@ type ErrorValue struct {
 	Value any
 }
 
+// Error implements error interface.
+func (ev ErrorValue) Error() string {
+	if ev.Value == nil {
+		return ev.Err.Error()
+	}
+	bytes, ok := ev.Value.([]byte)
+	if ok {
+		return fmt.Sprintf("%s: '%s'", ev.Err, string(bytes))
+	}
+	return fmt.Sprintf("%s: %#v", ev.Err, ev.Value)
+}
+
+// Unwrap implements error interface.
+func (ev ErrorValue) Unwrap() error {
+	return ev.Err
+}
+
 // Message is the lexer's output type. It contains information about the lexeme and its type.
 type Message[TokenType any] struct {
-	// State level
+	// State level. It can be useful if you want to build full AST tree from the messages.
 	Level int
 	// Type represents the message type. See MessageType for more details.
 	Type Type
 	// Token is only used when the message's type is Token. It contains the user-defined type of the lexeme.
 	Token TokenType
-	// Value represents the value of the lexeme.
+	// Value represents the value of the lexeme. If you are using
+	// default factory implementation, then this value will be either an error or a []byte in
+	// dependence on the message's type.
 	Value any
-	// Pos
+	// Pos is the position of the lexeme in the input.
 	Pos int
-	// Width
+	// Width is the width of the lexeme.
 	Width int
 }
 
 // String implements fmt.Stringer interface. It returns a string representation of the message.
-func (m Message[TokenType]) String() string {
+func (m Message[TokenType]) String() (ret string) {
 	switch m.Type {
 	case Token:
 		var tokenType any = m.Token
-		if stringer, ok := tokenType.(fmt.Stringer); !ok {
-			return fmt.Sprintf("Token(%s, '%s', %d)", stringer, string(m.Value.([]byte)), m.Pos)
+		if stringer, ok := tokenType.(fmt.Stringer); ok {
+			ret = fmt.Sprintf("Token(%s, %d, %d)", stringer, m.Pos, m.Width)
 		} else {
-			return fmt.Sprintf("Token(%v, '%s', %d)", m.Token, string(m.Value.([]byte)), m.Pos)
+			ret = fmt.Sprintf("Token(%v, %d, %d)", m.Token, m.Pos, m.Width)
+		}
+	case Error:
+		if err, ok := m.Value.(*ErrorValue); ok {
+			ret = fmt.Sprintf("Error(%s, %d, %d)", err, m.Pos, m.Width)
+		} else {
+			ret = fmt.Sprintf("Error(%v, %d, %d)", m.Value, m.Pos, m.Width)
 		}
 	default:
-		errorValue := m.Value.(*ErrorValue)
-		return fmt.Sprintf("Error(%s, '%s', %d)", errorValue.Err, string(errorValue.Value.([]byte)), m.Pos)
+		common.AssertUnreachable("invalid message type: %d", m.Type)
 	}
+	return
+}
+
+// ValueAsBytes returns the value of the message as a []byte. It panics if the message's type is not Token.
+// It can return nil, false if the message's value is not []bytes.
+func (m Message[TokenType]) ValueAsBytes() (value []byte, ok bool) {
+	common.AssertTrue(m.Type == Token, "invalid message type: %s", m.Type)
+	value, ok = m.Value.([]byte)
+	return
+}
+
+// ValueAsError returns the value of the message as an error. It panics if the message's type is not Error.
+// It can return nil, false if the message's value is not an error.
+func (m Message[TokenType]) ValueAsError() (value *ErrorValue, ok bool) {
+	common.AssertTrue(m.Type == Error, "invalid message type: %s", m.Type)
+	value, ok = m.Value.(*ErrorValue)
+	return
 }

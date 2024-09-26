@@ -58,3 +58,9 @@ func (sr *SliceReceiver[T]) ForwardTo(target Receiver[T]) (err error) {
 	sr.Reset()
 	return
 }
+
+// UserErrors returns all errors messages from the slice receiver.
+func (sr *SliceReceiver[T]) UserErrors() (errs []*Message[T]) {
+	errs = GetUserErrors[T](sr.Slice)
+	return
+}
