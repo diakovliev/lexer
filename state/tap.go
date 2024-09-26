@@ -37,11 +37,9 @@ func (t Tap[T]) Update(ctx context.Context, tx xio.State) (err error) {
 }
 
 // Tap adds a tap state to the chain. It calls the given function on Update.
-func (b Builder[T]) Tap(fn TapFn) (tail *Chain[T]) {
-	if fn == nil {
-		b.logger.Fatal("invalid grammar: nil tap function")
-	}
-	tail = b.append("Tap", func() Update[T] { return newTap[T](b.logger, fn) })
+func (b Builder[T]) Tap(callback TapFn) (tail *Chain[T]) {
+	common.AssertNotNil(callback, "invalid grammar: nil callback")
+	tail = b.append("Tap", func() Update[T] { return newTap[T](b.logger, callback) })
 	return
 }
 

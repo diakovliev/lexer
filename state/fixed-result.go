@@ -43,9 +43,7 @@ func newNamed[T any](logger common.Logger) *Named[T] {
 
 // Named creates a named chain. It must be the first state in the chain.
 func (b Builder[T]) Named(name string) (tail *Chain[T]) {
-	if b.last != nil {
-		b.logger.Fatal("invalid grammar: named must be the first state in the chain")
-	}
+	common.AssertNilPtr(b.last, "invalid grammar: named must be the first state in the chain")
 	tail = b.append(name, func() Update[T] { return newNamed[T](b.logger) })
 	return
 }

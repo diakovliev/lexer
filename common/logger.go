@@ -12,8 +12,4 @@ type Logger interface {
 	Debug(format string, args ...any)
 	// Trace logs a message using TRACE as log level.
 	Trace(format string, args ...any)
-	// Print logs a message.
-	Print(format string, args ...any)
-	// Fatal logs a message using FATAL as log level and panics.
-	Fatal(format string, args ...any)
 }

@@ -36,9 +36,8 @@ func (ur UntilRune[T]) Update(ctx context.Context, tx xio.State) (err error) {
 			break
 		}
 		if ur.pred(r) {
-			if _, unreadErr := tx.Unread(); unreadErr != nil {
-				ur.logger.Fatal("unread error: %s", unreadErr)
-			}
+			_, err = tx.Unread()
+			common.AssertNoError(err, "unread error")
 			break
 		}
 		count++

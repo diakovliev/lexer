@@ -22,12 +22,8 @@ func newOmit[T any](logger common.Logger) *Omit[T] {
 // Update implements Update interface
 func (o Omit[T]) Update(ctx context.Context, ioState xio.State) (err error) {
 	data, _, err := ioState.Data()
-	if err != nil {
-		o.logger.Fatal("data error: %s", err)
-	}
-	if len(data) == 0 {
-		o.logger.Fatal("nothing to omit")
-	}
+	common.AssertNoError(err, "data error")
+	common.AssertFalse(len(data) == 0, "nothing to omit")
 	err = ErrCommit
 	return
 }
@@ -36,9 +32,7 @@ func (o Omit[T]) Update(ctx context.Context, ioState xio.State) (err error) {
 // It omits current input data, without producing message.
 // If there are no input data, it panics.
 func (b Builder[T]) Omit() (tail *Chain[T]) {
-	if b.last == nil {
-		b.logger.Fatal("invalid grammar: omit can't be the first state in chain")
-	}
+	common.AssertNotNilPtr(b.last, "invalid grammar: omit can't be the first state in chain")
 	tail = b.append("Omit", func() Update[T] { return newOmit[T](b.logger) })
 	return
 }

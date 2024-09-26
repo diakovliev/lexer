@@ -65,11 +65,11 @@ func (m *XioStateMock) Buffer() (ret []byte, offset int64, err error) {
 	return args.Get(0).([]byte), args.Get(1).(int64), args.Error(2)
 }
 
-func newXioSourceMock(newState func() *XioStateMock) *XioSourceMock {
-	return &XioSourceMock{
-		newState: newState,
-	}
-}
+// func newXioSourceMock(newState func() *XioStateMock) *XioSourceMock {
+// 	return &XioSourceMock{
+// 		newState: newState,
+// 	}
+// }
 
 func (m *XioSourceMock) Begin() common.IfaceRef[xio.State] {
 	m.Called()

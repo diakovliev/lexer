@@ -40,16 +40,14 @@ func (fb FnByte[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	switch fb.mode {
 	case fnAccept:
 		if !result {
-			if _, unreadErr := tx.Unread(); unreadErr != nil {
-				fb.logger.Fatal("unread error: %s", unreadErr)
-			}
+			_, err = tx.Unread()
+			common.AssertNoError(err, "unread error")
 			err = ErrRollback
 			return
 		}
 	case fnLook:
-		if _, unreadErr := tx.Unread(); unreadErr != nil {
-			fb.logger.Fatal("unread error: %s", unreadErr)
-		}
+		_, err = tx.Unread()
+		common.AssertNoError(err, "unread error")
 	}
 	if result {
 		err = errChainNext
@@ -71,36 +69,28 @@ func isNotRepeatableFnByte[T any](s Update[T]) bool {
 
 // CheckByte adds a state that checks if the next rune matches the predicate to the chain.
 func (b Builder[T]) CheckByte(pred BytePredicate) (tail *Chain[T]) {
-	if pred == nil {
-		b.logger.Fatal("invalid grammar: nil predicate")
-	}
+	common.AssertNotNil(pred, "invalid grammar: nil predicate")
 	tail = b.append("CheckByte", func() Update[T] { return newFnByte[T](b.logger, pred, fnAccept) })
 	return
 }
 
 // FollowedByCheckByte adds a state that checks if the next rune matches the predicate to the chain, and rolls back if it does not match.
 func (b Builder[T]) FollowedByCheckByte(pred BytePredicate) (tail *Chain[T]) {
-	if pred == nil {
-		b.logger.Fatal("invalid grammar: nil predicate")
-	}
+	common.AssertNotNil(pred, "invalid grammar: nil predicate")
 	tail = b.append("FollowedByCheckByte", func() Update[T] { return newFnByte[T](b.logger, pred, fnLook) })
 	return
 }
 
 // CheckNotByte adds a state that checks if the next rune doesn't match the predicate to the chain.
 func (b Builder[T]) CheckNotByte(pred BytePredicate) (tail *Chain[T]) {
-	if pred == nil {
-		b.logger.Fatal("invalid grammar: nil predicate")
-	}
+	common.AssertNotNil(pred, "invalid grammar: nil predicate")
 	tail = b.append("CheckNotByte", func() Update[T] { return newFnByte[T](b.logger, Not(pred), fnAccept) })
 	return
 }
 
 // FollowedByCheckNotByte adds a state that checks if the next rune doesn't match the predicate to the chain.
 func (b Builder[T]) FollowedByCheckNotByte(pred BytePredicate) (tail *Chain[T]) {
-	if pred == nil {
-		b.logger.Fatal("invalid grammar: nil predicate")
-	}
+	common.AssertNotNil(pred, "invalid grammar: nil predicate")
 	tail = b.append("FollowedByCheckNotByte", func() Update[T] { return newFnByte[T](b.logger, Not(pred), fnLook) })
 	return
 }

@@ -31,15 +31,14 @@ func Make[T any](
 // returns its tail. Each element in the chain is a builder.
 func (b Builder[T]) append(name string, newState func() Update[T]) (tail *Chain[T]) {
 	state := newState()
+	common.AssertNotNil(state, "nil state")
 	if b.last == nil {
 		// new chain
 		tail = newChain(b, name, state, b.last)
 		return
 	}
 	// append to existing chain
-	if b.last.next() != nil {
-		b.logger.Fatal("invalid grammar: last element %T already has next: %T", b.last.deref(), b.last.next().deref())
-	}
+	common.AssertNilPtr(b.last.next(), "invalid grammar: last element already has next")
 	tail = newChain(b.last.Builder, b.last.name()+"."+name, state, b.last)
 	return
 }
