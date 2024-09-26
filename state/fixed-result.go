@@ -46,7 +46,7 @@ func (b Builder[T]) Named(name string) (tail *Chain[T]) {
 	if b.last != nil {
 		b.logger.Fatal("invalid grammar: named must be the first state in the chain")
 	}
-	tail = b.append(name, func() any { return newNamed[T](b.logger) })
+	tail = b.append(name, func() Update[T] { return newNamed[T](b.logger) })
 	return
 }
 

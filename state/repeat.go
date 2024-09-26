@@ -202,10 +202,10 @@ func (b Builder[T]) repeat(name string, q Quantifier) (tail *Chain[T]) {
 	if b.last == nil {
 		b.logger.Fatal("invalid grammar: repeat can't be the first state in chain")
 	}
-	if !isRepeatable[T](b.last.state) {
-		b.logger.Fatal("invalid grammar: previous state '%s' is not repeatable", b.last.name)
+	if !isRepeatable[T](b.last.deref()) {
+		b.logger.Fatal("invalid grammar: previous state '%s' is not repeatable", b.last.name())
 	}
-	tail = b.append(name, func() any { return newRepeat[T](b.logger, q) })
+	tail = b.append(name, func() Update[T] { return newRepeat[T](b.logger, q) })
 	return
 }
 

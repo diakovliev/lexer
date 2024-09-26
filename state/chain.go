@@ -3,6 +3,7 @@ package state
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/diakovliev/lexer/common"
 	"github.com/diakovliev/lexer/message"
@@ -10,91 +11,124 @@ import (
 )
 
 type (
+	// Chain is a struct that represents a chain of states.
+	// It contains a pointer to the previous and next nodes in the chain.
+	// Each element in a the chain is a Builder.
 	Chain[T any] struct {
 		Builder[T]
+		p        *Chain[T]
+		n        *Chain[T]
 		logger   common.Logger
-		name     string
-		prev     *Chain[T]
-		next     *Chain[T]
-		state    Update[T]
+		nodeName string
+		ref      Update[T]
 		receiver *message.SliceReceiver[T]
 	}
 )
 
 // newChain creates a new instance of Node struct. It takes logger and name as parameters.
-// The name parameter is used for logging purposes.
-func newChain[T any](builder Builder[T], name string, state Update[T], createReceiver bool) (ret *Chain[T]) {
+func newChain[T any](
+	builder Builder[T],
+	name string,
+	state Update[T],
+	prev *Chain[T],
+) (ret *Chain[T]) {
 	ret = &Chain[T]{
-		Builder: builder,
-		name:    name,
-		logger:  builder.logger,
-		state:   state,
+		Builder:  builder,
+		logger:   builder.logger,
+		nodeName: name,
+		ref:      state,
+		p:        prev,
 	}
-	if createReceiver {
+	if ret.p == nil {
+		// new chain, create receiver for messages.
 		ret.receiver = message.Slice[T]()
+	}
+	ret.Builder.last = ret
+	if ret.p != nil {
+		ret.p.n = ret
 	}
 	return
 }
 
-// Next returns the next state in the chain of nodes. If there is no next nodes, it returns an nil.
-func (c *Chain[T]) Next() *Chain[T] {
-	return c.next
+// name returns a name of the node in chain.
+func (c *Chain[T]) name() string {
+	return c.nodeName
 }
 
-func (c *Chain[T]) Prev() *Chain[T] {
-	return c.prev
+// defer returns underlying state.
+func (c *Chain[T]) deref() Update[T] {
+	return c.ref
 }
 
-// Tail returns the last state in the chain of nodes. If there is no next node, it returns current node.
-func (c *Chain[T]) Tail() *Chain[T] {
+// next returns the next state in the chain of nodes. If there is no next nodes, it returns an nil.
+func (c *Chain[T]) next() *Chain[T] {
+	return c.n
+}
+
+// prev returns the previous state in the chain of nodes. If there is no previous node, it returns an nil.
+func (c *Chain[T]) prev() *Chain[T] {
+	return c.p
+}
+
+// tail returns the last state in the chain of nodes. If there is no next node, it returns current node.
+func (c *Chain[T]) tail() *Chain[T] {
 	current := c
-	for current.Next() != nil {
-		current = current.Next()
+	for current.next() != nil {
+		current = current.next()
 	}
 	return current
 }
 
-func (c *Chain[T]) Head() *Chain[T] {
+// head returns the first state in the chain of nodes. If there is no previous node, it returns current node.
+func (c *Chain[T]) head() *Chain[T] {
 	current := c
-	for current.Prev() != nil {
-		current = current.Prev()
+	for current.prev() != nil {
+		current = current.prev()
 	}
 	return current
+}
+
+// forwardMessages forwards messages from the head to final receiver.
+func (c *Chain[T]) forwardMessages() (err error) {
+	head := c.head()
+	if err = head.receiver.ForwardTo(head.Builder.receiver); err != nil {
+		err = fmt.Errorf("%s: %w", head.nodeName, err)
+	}
+	return
 }
 
 // Update implements State interface
 func (c *Chain[T]) Update(ctx context.Context, ioState xio.State) (err error) {
-	head := c.Head()
-	current := head
+	current := c.head()
 	for current != nil {
-		next := current.Next()
-		if err = current.state.Update(withStateName(ctx, current.name), ioState); err == nil {
+		next := current.next()
+		if err = current.deref().Update(withStateName(ctx, current.name()), ioState); err == nil {
 			c.logger.Fatal("unexpected nil")
 		}
 		if errors.Is(err, errChainRepeat) {
-			prev := current.Prev()
+			prev := current.prev()
 			if prev == nil {
 				c.logger.Fatal("unexpected nil")
 				return
 			}
-			err = c.repeat(withStateName(ctx, prev.name), prev.state, err, ioState)
+			err = c.repeat(withStateName(ctx, prev.name()), prev.deref(), err, ioState)
 		}
 		switch {
 		case errors.Is(err, errChainNext):
 			if next == nil {
 				c.logger.Fatal("invalid grammar: next can't be from last in chain")
 			}
-			if next != nil && isZeroMaxRepeat[T](next.state) {
+			if next != nil && isZeroMaxRepeat[T](next.deref()) {
 				err = ErrRollback
 				return
 			}
 		case errors.Is(err, ErrCommit):
-			if next != nil && isZeroMaxRepeat[T](next.state) {
+			if next != nil && isZeroMaxRepeat[T](next.deref()) {
 				err = ErrRollback
 				return
 			}
-			if err := head.receiver.EmitTo(head.Builder.receiver); err != nil {
-				c.logger.Fatal("emit to error: %s", err)
+			if err := c.forwardMessages(); err != nil {
+				c.logger.Fatal("forward messages error: %s", err)
 			}
 			if next == nil {
 				return
@@ -103,10 +137,10 @@ func (c *Chain[T]) Update(ctx context.Context, ioState xio.State) (err error) {
 			if next == nil {
 				return
 			}
-			if !isZeroMinRepeat[T](next.state) {
+			if !isZeroMinRepeat[T](next.deref()) {
 				return
 			}
-			if isRepeat[T](current.state) {
+			if isRepeat[T](current.deref()) {
 				return
 			}
 			err = errChainNext
@@ -114,8 +148,8 @@ func (c *Chain[T]) Update(ctx context.Context, ioState xio.State) (err error) {
 			if next != nil {
 				c.logger.Fatal("invalid grammar: break must be last in chain")
 			}
-			if err := head.receiver.EmitTo(head.Builder.receiver); err != nil {
-				c.logger.Fatal("emit to error: %s", err)
+			if err := c.forwardMessages(); err != nil {
+				c.logger.Fatal("forward messages error: %s", err)
 			}
 			return
 		case errors.Is(err, ErrIncomplete), errors.Is(err, ErrInvalidInput):

@@ -30,7 +30,7 @@ func (r *Rest[T]) Update(ctx context.Context, ioState xio.State) (err error) {
 
 // Rest adds a Rest state to the chain. It consumes all the remaining input from the io state.
 func (b Builder[T]) Rest() (tail *Chain[T]) {
-	tail = b.append("Rest", func() any { return newRest[T](b.logger) })
+	tail = b.append("Rest", func() Update[T] { return newRest[T](b.logger) })
 	return
 }
 

@@ -39,7 +39,7 @@ func (b Builder[T]) Omit() (tail *Chain[T]) {
 	if b.last == nil {
 		b.logger.Fatal("invalid grammar: omit can't be the first state in chain")
 	}
-	tail = b.append("Omit", func() any { return newOmit[T](b.logger) })
+	tail = b.append("Omit", func() Update[T] { return newOmit[T](b.logger) })
 	return
 }
 

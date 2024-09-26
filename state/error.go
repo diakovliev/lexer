@@ -65,9 +65,9 @@ func (b Builder[T]) Error(err error) (tail *Chain[T]) {
 		b.logger.Fatal("invalid grammar: error can't be the first state in chain")
 	}
 	newNode := newError(b.logger, b.factory, err)
-	tail = b.append("Error", func() any { return newNode })
+	tail = b.append("Error", func() Update[T] { return newNode })
 	// sent all messages to the the first node receiver
-	newNode.setReceiver(tail.Head().receiver)
+	newNode.setReceiver(tail.head().receiver)
 	return
 }
 

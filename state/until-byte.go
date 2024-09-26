@@ -54,12 +54,12 @@ func (ub UntilByte[T]) Update(ctx context.Context, tx xio.State) (err error) {
 
 // UntilRune creates a state that reads bytes until the pred returns true.
 func (b Builder[T]) UntilByte(pred BytePredicate) (tail *Chain[T]) {
-	tail = b.append("UntilByte", func() any { return newUntilByte[T](b.logger, pred) })
+	tail = b.append("UntilByte", func() Update[T] { return newUntilByte[T](b.logger, pred) })
 	return
 }
 
 // WhileByte creates a state that reads bytes while the pred returns true.
 func (b Builder[T]) WhileByte(pred BytePredicate) (tail *Chain[T]) {
-	tail = b.append("WhileByte", func() any { return newUntilByte[T](b.logger, Not(pred)) })
+	tail = b.append("WhileByte", func() Update[T] { return newUntilByte[T](b.logger, Not(pred)) })
 	return
 }
