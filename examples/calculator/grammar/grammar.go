@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	// ErrUnhandledInput is returned when the lexer encounters an unhandled input.
-	ErrUnhandledInput = errors.New("unhandled input")
+	// ErrInvalidExpression is returned when the lexer encounters an invalid expression.
+	ErrInvalidExpression = errors.New("invalid expression")
 	// ErrInvalidNumber is returned when the lexer encounters an invalid number.
 	ErrInvalidNumber = errors.New("invalid number")
 	// ErrUnexpectedBra is returned when the lexer encounters an unexpected '(' character. It means
@@ -113,7 +113,7 @@ func newState(root bool, maxScopesDepth uint) func(b state.Builder[Token]) []sta
 			b.Named("Mul").Rune('*').Emit(Mul),
 			b.Named("Div").Rune('/').Emit(Div),
 			// Error
-			b.Named("UnhandledInput").Rest().Error(ErrUnhandledInput),
+			b.Named("UnhandledInput").Rest().Error(ErrInvalidExpression),
 		)
 	}
 }

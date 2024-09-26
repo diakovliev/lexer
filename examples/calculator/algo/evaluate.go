@@ -25,7 +25,7 @@ var (
 func Evaluate(input string) (result string, err error) {
 	receiver := message.Slice[grammar.Token]()
 	lexer := grammar.New(bytes.NewBufferString(input), receiver)
-	if err = lexer.Run(context.TODO()); !errors.Is(err, io.EOF) {
+	if err = lexer.Run(context.Background()); !errors.Is(err, io.EOF) {
 		err = fmt.Errorf("%w: %s", ErrLexerError, err)
 		return
 	}

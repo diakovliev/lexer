@@ -12,7 +12,7 @@ func Parse(tokens []Token) (data []VMCode, err error) {
 	data = make([]VMCode, 0, len(tokens))
 	for _, token := range tokens {
 		if token.Type == message.Error {
-			err = token.Value.(*message.ErrorValue).Err
+			err = token.Value.(error)
 			return
 		}
 		switch token.Token {
