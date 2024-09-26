@@ -75,11 +75,11 @@ func (r Xio) Range(from, to int) (out []byte, err error) {
 	common.AssertFalse(start < 0 || start > r.buffer.Len(), "out of bounds")
 	if math.MaxInt == to {
 		out = r.buffer.Bytes()[start:]
-	} else {
-		end := to - int(r.pos)
-		common.AssertFalse(end < 0 || end > r.buffer.Len() || end < start, "out of bounds")
-		out = r.buffer.Bytes()[start:end]
+		return
 	}
+	end := to - int(r.pos)
+	common.AssertFalse(end < 0 || end > r.buffer.Len() || end < start, "out of bounds")
+	out = r.buffer.Bytes()[start:end]
 	return
 }
 
@@ -93,10 +93,10 @@ func (r *Xio) Truncate(pos int64) (err error) {
 	if pos <= r.pos {
 		return
 	}
-	// Do not truncate not "commit" by transaction data.
+	// Do not truncate the data what are "commit" by transaction.
 	// This is protection against incorrect position update
 	// inside transaction implementation. Transaction
-	// must update its position before calling truncate.
+	// must update reader position before Truncate call.
 	common.AssertFalse(pos > r.offset, "out of bounds")
 	data, err := r.Range(int(pos), math.MaxInt)
 	common.AssertNoError(err, "data range error")

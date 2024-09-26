@@ -24,6 +24,14 @@ func TestReader(t *testing.T) {
 
 	r := New(logger, bytes.NewBufferString(testString))
 
+	assert.True(t, r.Has())
+	n, err := r.Fetch(-1)
+	assert.NoError(t, err)
+	assert.Zero(t, n)
+	n, err = r.Fetch(0)
+	assert.NoError(t, err)
+	assert.Zero(t, n)
+
 	for pos := startPos; pos < len(testString); pos += 1 {
 		end := pos + bufferSize
 		if end > len(testStringData) {
@@ -44,6 +52,10 @@ func TestReader(t *testing.T) {
 			},
 		)
 	}
+
+	buffer, _, err := r.Buffer()
+	assert.NoError(t, err)
+	assert.True(t, len(buffer) > 0)
 
 	for pos := startPos; pos < len(testString); pos += 1 {
 		end := pos + bufferSize

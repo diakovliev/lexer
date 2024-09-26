@@ -11,7 +11,9 @@ const (
 
 // AssertionError represents an error that occurs when an assertion fails. It contains a message and an optional underlying cause.
 type AssertionError struct {
-	Cause   error
+	// Cause is the optional underlying cause of this AssertionError. This may be another error or a string. If not nil, it will be included in the returned message.
+	Cause error
+	// Message is the message of this AssertionError. This should describe what failed and why.
 	Message string
 }
 
@@ -26,9 +28,9 @@ func newAssertionError(message string, err error) *AssertionError {
 // Error implements the error interface. It returns a string describing the assertion error. If there is an underlying cause, it will be included in the returned message.
 func (e *AssertionError) Error() string {
 	if e.Cause == nil {
-		return fmt.Sprintf("%s: message: '%s'", assertionError, e.Message)
+		return fmt.Sprintf("%s: %s", assertionError, e.Message)
 	}
-	return fmt.Sprintf("%s: cause: '%v' message: '%s'", assertionError, e.Cause, e.Message)
+	return fmt.Sprintf("%s[%v]: %s", assertionError, e.Cause, e.Message)
 }
 
 // Unwrap implements the errors.Unwrap interface. It allows to access the underlying cause of the error.
