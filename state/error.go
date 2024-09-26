@@ -46,7 +46,7 @@ func (e Error[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	err = e.receiver.Receive(msg)
 	common.AssertNoError(err, "send message error")
 	err, _ = msg.ValueAsError()
-	err = makeErrBreak(err)
+	err = MakeErrBreak(err)
 	return
 }
 

@@ -14,17 +14,18 @@ const (
 	historyKey    keyType = "history"
 )
 
-// WithHistory sets the history to the context.
-func WithHistory[T any](ctx context.Context, history message.History[T]) context.Context {
+// WithHistoryProvider sets the history provider to the context.
+func WithHistoryProvider[T any](ctx context.Context, history message.History[T]) context.Context {
 	return context.WithValue(ctx, historyKey, history)
 }
 
-// GetHistory returns the history from the context. If there is no history in the context, it will return nil.
-func GetHistory[T any](ctx context.Context) message.History[T] {
+// GetHistoryProvider returns the history provider from the context. If there is no history in the context,
+// it will return nil, false.
+func GetHistoryProvider[T any](ctx context.Context) (message.History[T], bool) {
 	if v := ctx.Value(historyKey); v != nil {
-		return v.(message.History[T])
+		return v.(message.History[T]), true
 	}
-	return nil
+	return nil, false
 }
 
 // WithTokenLevel sets the token level to the context.

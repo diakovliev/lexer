@@ -38,16 +38,20 @@ func New[T any](
 	for _, opt := range opts {
 		opt(ret)
 	}
-	if ret.historyDepth <= 0 {
-		ret.history = message.Forget(receiver)
-	} else {
+	if ret.historyDepth > 0 {
 		ret.history = message.Remember(receiver, ret.historyDepth)
+		ret.builder = state.Make(
+			logger,
+			factory,
+			ret.history,
+		)
+	} else {
+		ret.builder = state.Make(
+			logger,
+			factory,
+			receiver,
+		)
 	}
-	ret.builder = state.Make(
-		logger,
-		factory,
-		ret.history,
-	)
 	return ret
 }
 
@@ -59,7 +63,10 @@ func (l *Lexer[T]) With(fn state.Provider[T]) *Lexer[T] {
 
 // Run runs the lexer until it is done or an error occurs.
 func (l *Lexer[T]) Run(ctx context.Context) (err error) {
+	if l.history != nil {
+		ctx = state.WithHistoryProvider(ctx, l.history)
+	}
 	err = state.NewRun(l.logger, l.builder, l.provider, io.EOF).
-		Run(state.WithHistory(ctx, l.history), l.source)
+		Run(ctx, l.source)
 	return
 }

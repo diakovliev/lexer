@@ -141,7 +141,7 @@ func (c *Chain[T]) Update(ctx context.Context, ioState xio.State) (err error) {
 			// pass known errors as is
 		default:
 			// wrap all other errors with state break error
-			err = makeErrBreak(err)
+			err = MakeErrBreak(err)
 			return
 		}
 		current = next

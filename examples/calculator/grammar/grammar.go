@@ -20,6 +20,8 @@ var (
 	ErrUnexpectedBra = errors.New("unexpected '('")
 	// ErrUnexpectedKet is returned when the lexer encounters an unexpected ')' character.
 	ErrUnexpectedKet = errors.New("unexpected ')'")
+	// ErrDisabledHistory is returned when the lexer tries to use history and it's disabled.
+	ErrDisabledHistory = errors.New("history disabled")
 )
 
 var (
@@ -60,7 +62,13 @@ func braState(name string, depth uint) func(b state.Builder[Token]) *state.Chain
 }
 
 func signedNumberGuard(ctx context.Context, _ xio.State) (err error) {
-	history := state.GetHistory[Token](ctx).Get()
+	provider, ok := state.GetHistoryProvider[Token](ctx)
+	if !ok {
+		// history is not enabled
+		err = state.MakeErrBreak(ErrDisabledHistory)
+		return
+	}
+	history := provider.Get()
 	if len(history) == 0 {
 		return
 	}

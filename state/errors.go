@@ -70,7 +70,7 @@ func getRepeatQuantifier(err error) (q Quantifier, ret bool) {
 	return
 }
 
-func makeErrBreak(action error) error {
+func MakeErrBreak(action error) error {
 	return &errBreakImpl{
 		action: action,
 	}
