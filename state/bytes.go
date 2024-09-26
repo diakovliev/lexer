@@ -61,7 +61,7 @@ func (bs Bytes) Update(ctx context.Context, tx xio.State) (err error) {
 		err = ErrRollback
 		return
 	}
-	err = errChainNext
+	err = ErrChainNext
 	return
 }
 

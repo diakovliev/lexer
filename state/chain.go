@@ -101,13 +101,13 @@ func (c *Chain[T]) Update(ctx context.Context, ioState xio.State) (err error) {
 		next := current.next()
 		err = current.deref().Update(withStateName(ctx, current.name()), ioState)
 		common.AssertError(err, "unexpected no error")
-		if errors.Is(err, errChainRepeat) {
+		if errors.Is(err, ErrChainRepeat) {
 			prev := current.prev()
 			common.AssertNotNilPtr(prev, "no previous state")
 			err = c.repeat(withStateName(ctx, prev.name()), prev.deref(), err, ioState)
 		}
 		switch {
-		case errors.Is(err, errChainNext):
+		case errors.Is(err, ErrChainNext):
 			common.AssertNotNilPtr(next, "invalid grammar: next can't be from last in chain")
 			if next != nil && isZeroMaxRepeat[T](next.deref()) {
 				err = ErrRollback
@@ -132,7 +132,7 @@ func (c *Chain[T]) Update(ctx context.Context, ioState xio.State) (err error) {
 			if isRepeat[T](current.deref()) {
 				return
 			}
-			err = errChainNext
+			err = ErrChainNext
 		case errors.Is(err, errStateBreak):
 			common.AssertNilPtr(next, "invalid grammar: next can't be from last in chain")
 			c.forwardMessages()

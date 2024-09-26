@@ -50,7 +50,7 @@ func (fb FnByte[T]) Update(ctx context.Context, tx xio.State) (err error) {
 		common.AssertNoError(err, "unread error")
 	}
 	if result {
-		err = errChainNext
+		err = ErrChainNext
 	} else {
 		err = ErrRollback
 	}

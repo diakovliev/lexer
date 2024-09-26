@@ -65,25 +65,25 @@ func (q Quantifier) makeResult(repeats uint) (err error) {
 		if repeats != q.min {
 			err = ErrRollback
 		} else {
-			err = errChainNext
+			err = ErrChainNext
 		}
 	case q.min < q.max:
 		if repeats < q.min || repeats > q.max {
 			err = ErrRollback
 		} else {
-			err = errChainNext
+			err = ErrChainNext
 		}
 	case q.min == 0:
 		if repeats > q.max {
 			err = ErrRollback
 		} else {
-			err = errChainNext
+			err = ErrChainNext
 		}
 	case q.max == math.MaxUint:
 		if repeats < q.min {
 			err = ErrRollback
 		} else {
-			err = errChainNext
+			err = ErrChainNext
 		}
 	default:
 		common.AssertUnreachable("unreachable")
@@ -105,7 +105,7 @@ func (r Repeat[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	case r.q.isZero():
 		err = ErrRollback
 	case r.q.isOne():
-		err = errChainNext
+		err = ErrChainNext
 	default:
 		err = makeErrRepeat(r.q)
 	}
@@ -157,7 +157,7 @@ func (c *Chain[T]) repeat(ctx context.Context, state Update[T], repeat error, io
 	q, ok := getRepeatQuantifier(repeat)
 	common.AssertTrue(ok, "not a quantifier: %v", repeat)
 	if q.max == 1 {
-		err = errChainNext
+		err = ErrChainNext
 		return
 	}
 	source := xio.AsSource(ioState)
@@ -173,7 +173,7 @@ loop:
 			common.AssertNoError(tx.Rollback(), "rollback error")
 			err = q.makeResult(count)
 			break loop
-		case errors.Is(err, errChainNext), errors.Is(err, ErrCommit):
+		case errors.Is(err, ErrChainNext), errors.Is(err, ErrCommit):
 			common.AssertNoError(tx.Commit(), "commit error")
 			nextCount := count + 1
 			if nextCount < q.max {

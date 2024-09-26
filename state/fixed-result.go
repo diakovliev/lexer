@@ -37,7 +37,7 @@ func (fr FixedResult[T]) Update(_ context.Context, _ xio.State) (err error) {
 // newNamed creates a new instance of the named state.
 func newNamed[T any](logger common.Logger) *Named[T] {
 	return &Named[T]{
-		FixedResult: newFixedResult[T](logger, errChainNext),
+		FixedResult: newFixedResult[T](logger, ErrChainNext),
 	}
 }
 
