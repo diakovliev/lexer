@@ -72,10 +72,7 @@ func (s *state) Commit() (err error) {
 	} else {
 		// update reader position directly if no parent transaction exists
 		s.reader.Update(s.offset)
-		common.AssertNoError(
-			s.reader.Truncate(s.offset),
-			"truncate error",
-		)
+		common.AssertNoError(s.reader.Truncate(s.offset), "truncate error")
 		s.reader.resetTx()
 	}
 	s.reset()

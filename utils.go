@@ -25,12 +25,16 @@ func Runes(input string) func(r rune) bool {
 	}
 }
 
+// EscapeCondition is a condition that checks if the input rune is escaped by another rune.
+// It is designed to be used in While state to parse strings with escape characters.
 type EscapeCondition struct {
 	escape  func(r rune) bool
 	cond    func(r rune) bool
 	escaped bool
 }
 
+// Escape returns a function that checks if the input rune is escaped by another rune.
+// It is designed to be used in While state to parse strings with escape characters.
 func Escape(escape func(r rune) bool, cond func(r rune) bool) *EscapeCondition {
 	return &EscapeCondition{
 		escape:  escape,
@@ -39,6 +43,7 @@ func Escape(escape func(r rune) bool, cond func(r rune) bool) *EscapeCondition {
 	}
 }
 
+// Accept is a predicate that checks if the input rune is escaped by another rune.
 func (e *EscapeCondition) Accept(r rune) (ret bool) {
 	isEscape := e.escape(r)
 	isCond := e.cond(r)
