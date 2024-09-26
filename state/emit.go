@@ -8,6 +8,7 @@ import (
 	"github.com/diakovliev/lexer/xio"
 )
 
+// Emit is a state what emits message.
 type Emit[T any] struct {
 	logger   common.Logger
 	token    T
@@ -15,6 +16,7 @@ type Emit[T any] struct {
 	receiver message.Receiver[T]
 }
 
+// newEmit creates new instance of Emit state.
 func newEmit[T any](
 	logger common.Logger,
 	factory message.Factory[T],
@@ -31,6 +33,7 @@ func (e *Emit[T]) setReceiver(receiver message.Receiver[T]) {
 	e.receiver = receiver
 }
 
+// Update implements Update interface.
 func (e Emit[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	if e.receiver == nil {
 		e.logger.Fatal("receiver is not set")
@@ -59,6 +62,7 @@ func (e Emit[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	return
 }
 
+// Emit adds Emit state to the chain.
 func (b Builder[T]) Emit(token T) (tail *Chain[T]) {
 	if b.last == nil {
 		b.logger.Fatal("invalid grammar: emit can't be the first state in chain")
@@ -70,6 +74,7 @@ func (b Builder[T]) Emit(token T) (tail *Chain[T]) {
 	return
 }
 
+// isEmit checks if the state is Emit.
 func isEmit[T any](s Update[T]) (ret bool) {
 	_, ret = s.(*Emit[T])
 	return

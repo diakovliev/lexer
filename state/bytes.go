@@ -14,20 +14,21 @@ type (
 	// Bytes is a state that matches the given bytes.
 	Bytes struct {
 		logger   common.Logger
-		provider BytesSamplesProvider
-		pred     BytesPredicate
+		provider bytesSamplesProvider
+		pred     bytesPredicate
 	}
 
-	// BytesSamplesProvider is a function that returns the slice of a sample bytes to match.
-	BytesSamplesProvider func() [][]byte
-	// BytesPredicate is a function that checks if the given bytes matches the samples.
-	BytesPredicate func(in []byte, samples [][]byte) bool
+	// bytesSamplesProvider is a function that returns the slice of a sample bytes to match.
+	bytesSamplesProvider func() [][]byte
+
+	// bytesPredicate is a function that checks if the given bytes matches the samples.
+	bytesPredicate func(in []byte, samples [][]byte) bool
 )
 
 func newBytes[T any](
 	logger common.Logger,
-	provider BytesSamplesProvider,
-	pred BytesPredicate,
+	provider bytesSamplesProvider,
+	pred bytesPredicate,
 ) *Bytes {
 	return &Bytes{
 		logger:   logger,
@@ -69,7 +70,7 @@ func (bs Bytes) Update(ctx context.Context, tx xio.State) (err error) {
 	return
 }
 
-func providerFromBytes(logger common.Logger, samples [][]byte) BytesSamplesProvider {
+func providerFromBytes(logger common.Logger, samples [][]byte) bytesSamplesProvider {
 	return func() (ret [][]byte) {
 		for _, s := range samples {
 			if len(s) == 0 {
@@ -81,7 +82,7 @@ func providerFromBytes(logger common.Logger, samples [][]byte) BytesSamplesProvi
 	}
 }
 
-func providerFromStrings(logger common.Logger, samples []string) BytesSamplesProvider {
+func providerFromStrings(logger common.Logger, samples []string) bytesSamplesProvider {
 	return func() (ret [][]byte) {
 		for _, s := range samples {
 			if len(s) == 0 {
@@ -106,30 +107,30 @@ func bytesNotMatches(in []byte, samples [][]byte) bool {
 	return !bytesMatches(in, samples)
 }
 
-func (b Builder[T]) bytesState(name string, provider BytesSamplesProvider, pred BytesPredicate) (tail *Chain[T]) {
+func (b Builder[T]) bytesState(name string, provider bytesSamplesProvider, pred bytesPredicate) (tail *Chain[T]) {
 	tail = b.append(name, func() Update[T] { return newBytes[T](b.logger, provider, pred) })
 	return
 }
 
+// Bytes matches any sample from given samples.
 func (b Builder[T]) Bytes(samples ...[]byte) (tail *Chain[T]) {
 	tail = b.bytesState("Bytes", providerFromBytes(b.logger, samples), bytesMatches)
 	return
 }
 
+// BytesNot matches any byte sequence with maximum sample len except for the given samples.
 func (b Builder[T]) NotBytes(samples ...[]byte) (tail *Chain[T]) {
 	tail = b.bytesState("NotBytes", providerFromBytes(b.logger, samples), bytesNotMatches)
 	return
 }
 
-// String is a state that compares the given samples with state input.
-// It will has positive result if any sample is equal to state input.
+// String matches any sample from given samples.
 func (b Builder[T]) String(samples ...string) (tail *Chain[T]) {
 	tail = b.bytesState("String", providerFromStrings(b.logger, samples), bytesMatches)
 	return
 }
 
-// NotString is a state that compares the given samples with state input.
-// It will has positive result if nothing from samples is equal to state input.
+// NotString matches any string with maximum sample len except for the given samples.
 func (b Builder[T]) NotString(samples ...string) (tail *Chain[T]) {
 	tail = b.bytesState("NotString", providerFromStrings(b.logger, samples), bytesNotMatches)
 	return

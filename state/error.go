@@ -60,6 +60,7 @@ func (e Error[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	return
 }
 
+// Error adds Error state to the chain.
 func (b Builder[T]) Error(err error) (tail *Chain[T]) {
 	if b.last == nil {
 		b.logger.Fatal("invalid grammar: error can't be the first state in chain")
@@ -71,6 +72,7 @@ func (b Builder[T]) Error(err error) (tail *Chain[T]) {
 	return
 }
 
+// isError returns true if the state is Error.
 func isError[T any](s Update[T]) (ret bool) {
 	_, ret = s.(*Error[T])
 	return

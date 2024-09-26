@@ -12,6 +12,7 @@ const (
 	Token
 )
 
+// String implements fmt.Stringer interface.
 func (t Type) String() string {
 	switch t {
 	case Error:
@@ -23,6 +24,10 @@ func (t Type) String() string {
 	}
 }
 
+// ErrorValue is a struct that contains an error and its associated value. This is useful for errors that are not fatal,
+// but still need to be reported. For example, when a lexer encounters an invalid character, it can return an ErrorValue
+// with the error and the invalid character as values. The lexer will then continue parsing, but the user will be able
+// to see the error in the output.
 type ErrorValue struct {
 	Err   error
 	Value any
@@ -44,6 +49,7 @@ type Message[TokenType any] struct {
 	Width int
 }
 
+// String implements fmt.Stringer interface. It returns a string representation of the message.
 func (m Message[TokenType]) String() string {
 	switch m.Type {
 	case Token:

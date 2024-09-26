@@ -10,11 +10,19 @@ import (
 	"github.com/diakovliev/lexer/xio"
 )
 
-// Quantifier is a Count state quantifier.
-type Quantifier struct {
-	min uint
-	max uint
-}
+type (
+	// Quantifier is a Count state quantifier.
+	Quantifier struct {
+		min uint
+		max uint
+	}
+
+	// Repeat repeats a state a certain number of times.
+	Repeat[T any] struct {
+		logger common.Logger
+		q      Quantifier
+	}
+)
 
 // CountBetween returns a new Quantifier with min and max runes to match.
 // Cases:
@@ -83,11 +91,7 @@ func (q Quantifier) makeResult(repeats uint) (err error) {
 	return
 }
 
-type Repeat[T any] struct {
-	logger common.Logger
-	q      Quantifier
-}
-
+// newRepeat creates a new Repeat state.
 func newRepeat[T any](logger common.Logger, q Quantifier) *Repeat[T] {
 	return &Repeat[T]{
 		logger: logger,
@@ -95,6 +99,7 @@ func newRepeat[T any](logger common.Logger, q Quantifier) *Repeat[T] {
 	}
 }
 
+// Update implements the Update interface.
 func (r Repeat[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	switch {
 	case r.q.isZero():
