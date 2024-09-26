@@ -28,4 +28,4 @@ A state machine is driven by a set of rules (states), and by the input stream. A
 
 The matching rules itself are combined from primitive rules, such as: is last byte in range 0x30..0x39 (is digit), or is last byte equal to 0x2E (is dot), etc. Primitive rules are combined in chains, and at the end of the chain there is an action. The actions can be: emit token, or emit error.
 
-See examples/[calculator/grammar.go](examples/calculator/grammar.go) for example.
+See examples/[calculator/grammar/grammar.go](examples/calculator/grammar/grammar.go) for example.
