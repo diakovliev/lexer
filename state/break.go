@@ -3,7 +3,6 @@ package state
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/diakovliev/lexer/common"
 	"github.com/diakovliev/lexer/xio"
@@ -31,7 +30,7 @@ func (br Break[T]) Update(_ context.Context, ioState xio.State) (err error) {
 		common.AssertNoError(err, "data error")
 	case errors.Is(br.action, ErrRollback):
 	default:
-		common.AssertTrue(false, fmt.Sprintf("unknown action: %s", br.action))
+		common.AssertUnreachable("unknown action: %s", br.action)
 	}
 	err = makeErrBreak(br.action)
 	return
@@ -42,7 +41,7 @@ func (b Builder[T]) Break(actions ...error) (tail *Chain[T]) {
 	action := ErrCommit
 	if len(actions) == 1 {
 		action = actions[0]
-		common.AssertErrorIsAnyFrom(action, []error{ErrCommit, ErrRollback}, fmt.Sprintf("invalid grammar: unsupported break action: %s", action))
+		common.AssertErrorIsAnyFrom(action, []error{ErrCommit, ErrRollback}, "invalid grammar: unsupported break action: %s", action)
 	} else {
 		common.AssertFalse(len(actions) > 1, "invalid grammar: too many actions for break")
 	}
