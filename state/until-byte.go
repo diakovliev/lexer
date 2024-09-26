@@ -36,9 +36,8 @@ func (ub UntilByte[T]) Update(ctx context.Context, tx xio.State) (err error) {
 			break
 		}
 		if ub.pred(b) {
-			if _, unreadErr := tx.Unread(); unreadErr != nil {
-				ub.logger.Fatal("unread error: %s", unreadErr)
-			}
+			_, err = tx.Unread()
+			common.AssertNoError(err, "unread error")
 			break
 		}
 		count++

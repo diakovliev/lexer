@@ -34,9 +34,7 @@ func newState(logger common.Logger, reader *Xio, pos int64) (ret *state) {
 
 // Begin starts a child transaction.
 func (s *state) Begin() (ret common.IfaceRef[State]) {
-	if s.tx != nil {
-		s.logger.Fatal("too many transactions, Tx supports only one active child transaction")
-	}
+	common.AssertNilPtr(s.tx, "too many transactions, Tx supports only one active child transaction")
 	s.tx = &state{
 		logger: s.logger,
 		reader: s.reader,
@@ -65,13 +63,8 @@ func (s *state) reset() {
 // Commit commits the transaction and returns the number of bytes read during the transaction.
 // Commit will fail if any of the child transactions are not committed or rolled back.
 func (s *state) Commit() (err error) {
-	if s.offset == -1 {
-		s.logger.Fatal("transaction already complete")
-	}
-	// all children must be completed before committing the parent
-	if s.tx != nil && s.tx.offset != -1 {
-		s.logger.Fatal("child transaction is not complete")
-	}
+	common.AssertFalse(s.offset == -1, "transaction already complete")
+	common.AssertFalse(s.tx != nil && s.tx.offset != -1, "child transaction is not complete")
 	if s.parent != nil {
 		// update parent transaction position
 		s.parent.update(s.offset)
@@ -79,9 +72,10 @@ func (s *state) Commit() (err error) {
 	} else {
 		// update reader position directly if no parent transaction exists
 		s.reader.Update(s.offset)
-		if err = s.reader.Truncate(s.offset); err != nil {
-			s.logger.Fatal("truncate error: %s", err)
-		}
+		common.AssertNoError(
+			s.reader.Truncate(s.offset),
+			"truncate error",
+		)
 		s.reader.resetTx()
 	}
 	s.reset()
@@ -91,14 +85,9 @@ func (s *state) Commit() (err error) {
 // Rollback rolls back the transaction and returns an error if it was already committed or rolled back.
 // Rollback will rollback all non completed children transactions if any.
 func (s *state) Rollback() (err error) {
-	if s.offset == -1 {
-		s.logger.Fatal("transaction already complete")
-		return
-	}
+	common.AssertFalse(s.offset == -1, "transaction already complete")
+	common.AssertFalse(s.tx != nil && s.tx.offset != -1, "child transaction is not complete")
 	// rollback child transactions first
-	if s.tx != nil && s.tx.offset != -1 {
-		s.logger.Fatal("child transaction is not complete")
-	}
 	if s.parent != nil {
 		s.parent.resetTx()
 	} else {
@@ -110,10 +99,7 @@ func (s *state) Rollback() (err error) {
 
 // Read reads data from the transaction reader into a byte slice.
 func (s *state) Read(out []byte) (n int, err error) {
-	if s.offset == -1 {
-		s.logger.Fatal("transaction already complete")
-		return
-	}
+	common.AssertFalse(s.offset == -1, "transaction already complete")
 	n, err = s.reader.ReadAt(s.offset, out)
 	if err != nil && !errors.Is(err, io.EOF) {
 		s.logger.Error("read error: %s", err)
@@ -128,9 +114,7 @@ func (s *state) Read(out []byte) (n int, err error) {
 // it was at before the last Read call. If the transaction has already been committed or
 // rolled back, this function has no effect.
 func (s *state) Unread() (n int, err error) {
-	if s.offset == -1 {
-		s.logger.Fatal("transaction already complete")
-	}
+	common.AssertFalse(s.offset == -1, "transaction already complete")
 	oldPos := s.offset
 	newPos := oldPos - int64(s.lastN)
 	s.offset = newPos
@@ -141,9 +125,7 @@ func (s *state) Unread() (n int, err error) {
 // Data returns transaction data (reader data from offset to pos), updates pos and
 // returns data position.
 func (s *state) Data() (data []byte, pos int64, err error) {
-	if s.offset == -1 {
-		s.logger.Fatal("transaction already complete")
-	}
+	common.AssertFalse(s.offset == -1, "transaction already complete")
 	pos = s.pos
 	data = make([]byte, s.offset-pos)
 	n, err := s.reader.ReadAt(pos, data)
@@ -151,42 +133,31 @@ func (s *state) Data() (data []byte, pos int64, err error) {
 		data = nil
 		return
 	}
-	if n != len(data) {
-		s.logger.Fatal("data len error")
-	}
+	common.AssertTrue(n == len(data), "data len error")
 	s.pos = s.offset
 	return
 }
 
 // Has returns true if the transaction has data at pos.
 func (s *state) Has() (ret bool) {
-	if s.offset == -1 {
-		s.logger.Fatal("transaction already complete")
-	}
+	common.AssertFalse(s.offset == -1, "transaction already complete")
 	data := make([]byte, 1)
 	_, err := s.Read(data)
-	if err != nil && !errors.Is(err, io.EOF) {
-		s.logger.Fatal("read error: %s", err)
-	}
+	common.AssertNoErrorOrIs(err, io.EOF, "unexpected read error")
 	ret = !errors.Is(err, io.EOF)
 	if ret {
-		if _, err = s.Unread(); err != nil {
-			s.logger.Fatal("unread error: %s", err)
-		}
+		_, err = s.Unread()
+		common.AssertNoError(err, "unread error")
 	}
 	return
 }
 
 func (s *state) nextBytes(size int) (data []byte, err error) {
-	if s.offset == -1 {
-		s.logger.Fatal("transaction already complete")
-	}
+	common.AssertFalse(s.offset == -1, "transaction already complete")
 	_, _ = s.reader.Fetch(utf8.UTFMax)
 	data = make([]byte, size)
 	n, err := s.Read(data)
-	if err != nil && !errors.Is(err, io.EOF) {
-		s.logger.Fatal("read error: %s", err)
-	}
+	common.AssertNoErrorOrIs(err, io.EOF, "unexpected read error")
 	data = data[:n]
 	// lastN is set by nextBytes.
 	return
@@ -204,10 +175,7 @@ func (s *state) NextByte() (b byte, err error) {
 
 // NextRune implements NextRune interface.
 func (s *state) NextRune() (r rune, w int, err error) {
-	if s.offset == -1 {
-		s.logger.Fatal("transaction already complete")
-		return
-	}
+	common.AssertFalse(s.offset == -1, "transaction already complete")
 	_, _ = s.reader.Fetch(utf8.UTFMax)
 	data := make([]byte, utf8.UTFMax+1)
 	offset := s.offset
@@ -223,9 +191,8 @@ func (s *state) NextRune() (r rune, w int, err error) {
 			w = 0
 			return
 		}
-		if r, w = utf8.DecodeRune(data[:i]); w != i {
-			s.logger.Fatal("unexpected decoded rune width")
-		}
+		r, w = utf8.DecodeRune(data[:i])
+		common.AssertTrue(w == i, "unexpected decoded rune width")
 		if w != utf8.RuneError {
 			break
 		}

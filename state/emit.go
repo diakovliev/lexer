@@ -35,38 +35,23 @@ func (e *Emit[T]) setReceiver(receiver message.Receiver[T]) {
 
 // Update implements Update interface.
 func (e Emit[T]) Update(ctx context.Context, tx xio.State) (err error) {
-	if e.receiver == nil {
-		e.logger.Fatal("receiver is not set")
-		return
-	}
+	common.AssertNotNil(e.receiver, "receiver is not set")
 	data, pos, err := tx.Data()
-	if err != nil {
-		e.logger.Fatal("data error: %s", err)
-	}
-	if len(data) == 0 {
-		e.logger.Fatal("nothing to emit")
-	}
+	common.AssertNoError(err, "data error")
+	common.AssertFalse(len(data) == 0, "nothing to emit")
 	level, ok := GetTokenLevel(ctx)
-	if !ok {
-		e.logger.Fatal("no token level in context")
-	}
+	common.AssertTrue(ok, "no token level in context")
 	msg, err := e.factory.Token(ctx, level, e.token, data, int(pos), len(data))
-	if err != nil {
-		e.logger.Fatal("messages factory error: %s", err)
-	}
+	common.AssertNoError(err, "messages factory error")
 	err = e.receiver.Receive(msg)
-	if err != nil {
-		e.logger.Fatal("receiver error: %s", err)
-	}
+	common.AssertNoError(err, "send message error")
 	err = ErrCommit
 	return
 }
 
 // Emit adds Emit state to the chain.
 func (b Builder[T]) Emit(token T) (tail *Chain[T]) {
-	if b.last == nil {
-		b.logger.Fatal("invalid grammar: emit can't be the first state in chain")
-	}
+	common.AssertNotNilPtr(b.last, "invalid grammar: emit can't be the first state in chain")
 	newNode := newEmit(b.logger, b.factory, token)
 	tail = b.append("Emit", func() Update[T] { return newNode })
 	// sent all messages to the the first node receiver

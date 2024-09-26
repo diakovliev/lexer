@@ -40,16 +40,14 @@ func (fr FnRune[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	switch fr.mode {
 	case fnAccept:
 		if !result {
-			if _, unreadErr := tx.Unread(); unreadErr != nil {
-				fr.logger.Fatal("unread error: %s", unreadErr)
-			}
+			_, err = tx.Unread()
+			common.AssertNoError(err, "unread error")
 			err = ErrRollback
 			return
 		}
 	case fnLook:
-		if _, unreadErr := tx.Unread(); unreadErr != nil {
-			fr.logger.Fatal("unread error: %s", unreadErr)
-		}
+		_, err = tx.Unread()
+		common.AssertNoError(err, "unread error")
 	}
 	if result {
 		err = errChainNext
@@ -71,36 +69,28 @@ func isNotRepeatableFnRune[T any](s Update[T]) bool {
 
 // CheckRune is a state that matches rune by the given function.
 func (b Builder[T]) CheckRune(pred RunePredicate) (tail *Chain[T]) {
-	if pred == nil {
-		b.logger.Fatal("invalid grammar: nil predicate")
-	}
+	common.AssertNotNil(pred, "invalid grammar: nil predicate")
 	tail = b.append("CheckRune", func() Update[T] { return newFnRune[T](b.logger, pred, fnAccept) })
 	return
 }
 
 // FollowedByCheckRune is a state that matches rune by the given function and then rollbacks if it fails.
 func (b Builder[T]) FollowedByCheckRune(pred RunePredicate) (tail *Chain[T]) {
-	if pred == nil {
-		b.logger.Fatal("invalid grammar: nil predicate")
-	}
+	common.AssertNotNil(pred, "invalid grammar: nil predicate")
 	tail = b.append("FollowedByCheckRune", func() Update[T] { return newFnRune[T](b.logger, pred, fnLook) })
 	return
 }
 
 // CheckNotRune is a state that matches rune by the given function and returns an error if it does match.
 func (b Builder[T]) CheckNotRune(pred RunePredicate) (tail *Chain[T]) {
-	if pred == nil {
-		b.logger.Fatal("invalid grammar: nil predicate")
-	}
+	common.AssertNotNil(pred, "invalid grammar: nil predicate")
 	tail = b.append("CheckNotRune", func() Update[T] { return newFnRune[T](b.logger, Not(pred), fnAccept) })
 	return
 }
 
 // FollowedByCheckNotRune is a state that matches rune by the given function and rollbacks if it does match.
 func (b Builder[T]) FollowedByCheckNotRune(pred RunePredicate) (tail *Chain[T]) {
-	if pred == nil {
-		b.logger.Fatal("invalid grammar: nil predicate")
-	}
+	common.AssertNotNil(pred, "invalid grammar: nil predicate")
 	tail = b.append("FollowedByCheckNotRune", func() Update[T] { return newFnRune[T](b.logger, Not(pred), fnLook) })
 	return
 }

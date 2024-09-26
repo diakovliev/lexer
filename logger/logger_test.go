@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/diakovliev/lexer/logger"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestLogger(t *testing.T) {
@@ -14,13 +13,10 @@ func TestLogger(t *testing.T) {
 		logger.WithWriter(os.Stdout),
 	)
 
-	logger.Print("test")
 	logger.Info("test message %s", "123")
 	logger.Warn("test")
 
 	logger.Error("test")
 	logger.Debug("test")
 	logger.Trace("test")
-	// logger.Fatal("test")
-	assert.Panics(t, func() { logger.Fatal("test") })
 }

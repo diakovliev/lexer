@@ -86,7 +86,7 @@ func (q Quantifier) makeResult(repeats uint) (err error) {
 			err = errChainNext
 		}
 	default:
-		panic("unreachable")
+		common.AssertTrue(false, "unreachable")
 	}
 	return
 }
@@ -153,13 +153,9 @@ func isRepeatable[T any](s Update[T]) bool {
 
 // repeat implements repeat sub state.
 func (c *Chain[T]) repeat(ctx context.Context, state Update[T], repeat error, ioState xio.State) (err error) {
-	if state == nil {
-		c.logger.Fatal("invalid grammar: repeat without previous state")
-	}
+	common.AssertNotNil(state, "invalid grammar: repeat without previous state")
 	q, ok := getRepeatQuantifier(repeat)
-	if !ok {
-		c.logger.Fatal("not a quantifier: %s", repeat)
-	}
+	common.AssertTrue(ok, fmt.Sprintf("not a quantifier: %v", repeat))
 	if q.max == 1 {
 		err = errChainNext
 		return
@@ -169,21 +165,16 @@ func (c *Chain[T]) repeat(ctx context.Context, state Update[T], repeat error, io
 loop:
 	for ; count < q.max; count++ {
 		ioState := source.Begin().Ref
-		if err = state.Update(ctx, ioState); err == nil {
-			c.logger.Fatal("unexpected nil")
-		}
+		err = state.Update(ctx, ioState)
+		common.AssertError(err, "unexpected no error")
 		tx := xio.AsTx(ioState)
 		switch {
 		case errors.Is(err, ErrRollback):
-			if err := tx.Rollback(); err != nil {
-				c.logger.Fatal("rollback error: %s", err)
-			}
+			common.AssertNoError(tx.Rollback(), "rollback error")
 			err = q.makeResult(count)
 			break loop
 		case errors.Is(err, errChainNext), errors.Is(err, ErrCommit):
-			if err := tx.Commit(); err != nil {
-				c.logger.Fatal("commit error: %s", err)
-			}
+			common.AssertNoError(tx.Commit(), "commit error")
 			nextCount := count + 1
 			if nextCount < q.max {
 				continue
@@ -191,25 +182,17 @@ loop:
 			err = q.makeResult(nextCount)
 			break loop
 		default:
-			if err := tx.Rollback(); err != nil {
-				c.logger.Fatal("rollback error: %s", err)
-			}
-			c.logger.Fatal("unexpected error: %s", err)
+			common.AssertNoError(tx.Rollback(), "rollback error")
+			common.AssertNoError(err, "unexpected error")
 		}
 	}
 	return
 }
 
 func (b Builder[T]) repeat(name string, q Quantifier) (tail *Chain[T]) {
-	if !q.isValid() {
-		b.logger.Fatal("invalid grammar: invalid quantifier: %s", q)
-	}
-	if b.last == nil {
-		b.logger.Fatal("invalid grammar: repeat can't be the first state in chain")
-	}
-	if !isRepeatable[T](b.last.deref()) {
-		b.logger.Fatal("invalid grammar: previous state '%s' is not repeatable", b.last.name())
-	}
+	common.AssertTrue(q.isValid(), fmt.Sprintf("invalid grammar: invalid quantifier: %s", q))
+	common.AssertNotNilPtr(b.last, "invalid grammar: repeat can't be the first state in chain")
+	common.AssertTrue(isRepeatable[T](b.last.deref()), fmt.Sprintf("invalid grammar: previous state '%s' is not repeatable", b.last.name()))
 	tail = b.append(name, func() Update[T] { return newRepeat[T](b.logger, q) })
 	return
 }

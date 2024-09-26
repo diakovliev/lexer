@@ -3,7 +3,6 @@ package state
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/diakovliev/lexer/common"
 	"github.com/diakovliev/lexer/message"
@@ -89,12 +88,10 @@ func (c *Chain[T]) head() *Chain[T] {
 }
 
 // forwardMessages forwards messages from the head to final receiver.
-func (c *Chain[T]) forwardMessages() (err error) {
+func (c *Chain[T]) forwardMessages() {
 	head := c.head()
-	if err = head.receiver.ForwardTo(head.Builder.receiver); err != nil {
-		err = fmt.Errorf("%s: %w", head.nodeName, err)
-	}
-	return
+	err := head.receiver.ForwardTo(head.Builder.receiver)
+	common.AssertNoError(err, "forward messages error")
 }
 
 // Update implements State interface
@@ -102,22 +99,16 @@ func (c *Chain[T]) Update(ctx context.Context, ioState xio.State) (err error) {
 	current := c.head()
 	for current != nil {
 		next := current.next()
-		if err = current.deref().Update(withStateName(ctx, current.name()), ioState); err == nil {
-			c.logger.Fatal("unexpected nil")
-		}
+		err = current.deref().Update(withStateName(ctx, current.name()), ioState)
+		common.AssertError(err, "unexpected no error")
 		if errors.Is(err, errChainRepeat) {
 			prev := current.prev()
-			if prev == nil {
-				c.logger.Fatal("unexpected nil")
-				return
-			}
+			common.AssertNotNilPtr(prev, "no previous state")
 			err = c.repeat(withStateName(ctx, prev.name()), prev.deref(), err, ioState)
 		}
 		switch {
 		case errors.Is(err, errChainNext):
-			if next == nil {
-				c.logger.Fatal("invalid grammar: next can't be from last in chain")
-			}
+			common.AssertNotNilPtr(next, "invalid grammar: next can't be from last in chain")
 			if next != nil && isZeroMaxRepeat[T](next.deref()) {
 				err = ErrRollback
 				return
@@ -127,9 +118,7 @@ func (c *Chain[T]) Update(ctx context.Context, ioState xio.State) (err error) {
 				err = ErrRollback
 				return
 			}
-			if err := c.forwardMessages(); err != nil {
-				c.logger.Fatal("forward messages error: %s", err)
-			}
+			c.forwardMessages()
 			if next == nil {
 				return
 			}
@@ -145,12 +134,8 @@ func (c *Chain[T]) Update(ctx context.Context, ioState xio.State) (err error) {
 			}
 			err = errChainNext
 		case errors.Is(err, errStateBreak):
-			if next != nil {
-				c.logger.Fatal("invalid grammar: break must be last in chain")
-			}
-			if err := c.forwardMessages(); err != nil {
-				c.logger.Fatal("forward messages error: %s", err)
-			}
+			common.AssertNilPtr(next, "invalid grammar: next can't be from last in chain")
+			c.forwardMessages()
 			return
 		case errors.Is(err, ErrIncomplete), errors.Is(err, ErrInvalidInput):
 			// pass known errors as is

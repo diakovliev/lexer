@@ -43,16 +43,12 @@ func (bs Bytes) Update(ctx context.Context, tx xio.State) (err error) {
 	maxLen := 0
 	for _, sample := range samples {
 		l := len(sample)
-		switch {
-		case l == 0:
-			bs.logger.Fatal("invalid grammar: empty sample")
-		case len(sample) > maxLen:
+		common.AssertFalse(l == 0, "invalid grammar: empty sample")
+		if len(sample) > maxLen {
 			maxLen = len(sample)
 		}
 	}
-	if maxLen == 0 {
-		bs.logger.Fatal("invalid grammar: max sample len is zero")
-	}
+	common.AssertFalse(maxLen == 0, "invalid grammar: max sample len is zero")
 	buffer := make([]byte, maxLen)
 	n, err := tx.Read(buffer)
 	if err != nil && !errors.Is(err, io.EOF) {
@@ -60,9 +56,8 @@ func (bs Bytes) Update(ctx context.Context, tx xio.State) (err error) {
 	}
 	in := buffer[:n]
 	if !bs.pred(in, samples) {
-		if _, unreadErr := tx.Unread(); unreadErr != nil {
-			bs.logger.Fatal("unread error: %s", unreadErr)
-		}
+		_, err = tx.Unread()
+		common.AssertNoError(err, "unread error")
 		err = ErrRollback
 		return
 	}
@@ -70,24 +65,20 @@ func (bs Bytes) Update(ctx context.Context, tx xio.State) (err error) {
 	return
 }
 
-func providerFromBytes(logger common.Logger, samples [][]byte) bytesSamplesProvider {
+func providerFromBytes(samples [][]byte) bytesSamplesProvider {
 	return func() (ret [][]byte) {
 		for _, s := range samples {
-			if len(s) == 0 {
-				logger.Fatal("invalid grammar: empty sample")
-			}
+			common.AssertFalse(len(s) == 0, "invalid grammar: empty sample")
 			ret = append(ret, []byte(s))
 		}
 		return
 	}
 }
 
-func providerFromStrings(logger common.Logger, samples []string) bytesSamplesProvider {
+func providerFromStrings(samples []string) bytesSamplesProvider {
 	return func() (ret [][]byte) {
 		for _, s := range samples {
-			if len(s) == 0 {
-				logger.Fatal("invalid grammar: empty sample")
-			}
+			common.AssertFalse(len(s) == 0, "invalid grammar: empty sample")
 			ret = append(ret, []byte(s))
 		}
 		return
@@ -114,24 +105,24 @@ func (b Builder[T]) bytesState(name string, provider bytesSamplesProvider, pred 
 
 // Bytes matches any sample from given samples.
 func (b Builder[T]) Bytes(samples ...[]byte) (tail *Chain[T]) {
-	tail = b.bytesState("Bytes", providerFromBytes(b.logger, samples), bytesMatches)
+	tail = b.bytesState("Bytes", providerFromBytes(samples), bytesMatches)
 	return
 }
 
 // BytesNot matches any byte sequence with maximum sample len except for the given samples.
 func (b Builder[T]) NotBytes(samples ...[]byte) (tail *Chain[T]) {
-	tail = b.bytesState("NotBytes", providerFromBytes(b.logger, samples), bytesNotMatches)
+	tail = b.bytesState("NotBytes", providerFromBytes(samples), bytesNotMatches)
 	return
 }
 
 // String matches any sample from given samples.
 func (b Builder[T]) String(samples ...string) (tail *Chain[T]) {
-	tail = b.bytesState("String", providerFromStrings(b.logger, samples), bytesMatches)
+	tail = b.bytesState("String", providerFromStrings(samples), bytesMatches)
 	return
 }
 
 // NotString matches any string with maximum sample len except for the given samples.
 func (b Builder[T]) NotString(samples ...string) (tail *Chain[T]) {
-	tail = b.bytesState("NotString", providerFromStrings(b.logger, samples), bytesNotMatches)
+	tail = b.bytesState("NotString", providerFromStrings(samples), bytesNotMatches)
 	return
 }

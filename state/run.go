@@ -80,14 +80,10 @@ loop:
 	for ctx.Err() == nil {
 		var tx xio.Tx
 		tx, err = r.update(ctx, source)
-		if err == nil {
-			r.logger.Fatal("unexpected nil")
-		}
+		common.AssertError(err, "unexpected no error")
 		switch {
 		case errors.Is(err, errStateNoMoreStates):
-			if tx != nil {
-				r.logger.Fatal("unexpected not nil")
-			}
+			common.AssertNil(tx, "unexpected tx")
 			if source.Has() {
 				// We're done, and we have more data to process, pass error to the parent state.
 				err = ErrIncomplete
@@ -97,41 +93,27 @@ loop:
 			}
 			break loop
 		case errors.Is(err, errChainRepeat), errors.Is(err, errChainNext):
-			if err := tx.Rollback(); err != nil {
-				r.logger.Fatal("rollback error: %s", err)
-			}
-			r.logger.Fatal("invalid grammar: repeat and next allowed only inside chain")
+			common.AssertNoError(tx.Rollback(), "rollback error")
+			common.AssertTrue(false, "invalid grammar: repeat and next allowed only inside chain")
 		case errors.Is(err, ErrCommit):
-			if err := tx.Commit(); err != nil {
-				r.logger.Fatal("commit error: %s", err)
-			}
+			common.AssertNoError(tx.Commit(), "commit error")
 			r.Reset()
 		case errors.Is(err, ErrRollback):
-			if err := tx.Rollback(); err != nil {
-				r.logger.Fatal("rollback error: %s", err)
-			}
+			common.AssertNoError(tx.Rollback(), "rollback error")
 			r.next()
 		case errors.Is(err, errStateBreak):
 			action, ok := getBreakAction(err)
-			if !ok {
-				r.logger.Fatal("can't get break action")
-			}
+			common.AssertTrue(ok, "can't get break action")
 			switch {
 			case errors.Is(action, ErrCommit):
-				if err := tx.Commit(); err != nil {
-					r.logger.Fatal("commit error: %s", err)
-				}
+				common.AssertNoError(tx.Commit(), "commit error")
 			default:
-				if err := tx.Rollback(); err != nil {
-					r.logger.Fatal("rollback error: %s", err)
-				}
+				common.AssertNoError(tx.Rollback(), "rollback error")
 			}
 			err = action
 			break loop
 		default:
-			if err := tx.Rollback(); err != nil {
-				r.logger.Fatal("rollback error: %s", err)
-			}
+			common.AssertNoError(tx.Rollback(), "rollback error")
 			break loop
 		}
 	}

@@ -1,7 +1,6 @@
 package xio
 
 import (
-	"errors"
 	"io"
 	"math"
 
@@ -35,9 +34,7 @@ func New(logger common.Logger, r io.Reader) *Xio {
 
 // Begin starts a new transaction for reading from the buffered reader.
 func (r *Xio) Begin() (ret common.IfaceRef[State]) {
-	if r.tx != nil {
-		r.logger.Fatal("too many transactions, Xio supports only one active transaction")
-	}
+	common.AssertNilPtr(r.tx, "too many transactions, Xio supports only one active transaction")
 	r.tx = newState(r.logger, r, r.offset)
 	ret = common.Ref[State](r.tx)
 	return
@@ -59,12 +56,9 @@ func (r Xio) copyTo(pos int64, out []byte) (n int, err error) {
 		end = int(pos) + len(out)
 	}
 	data, err := r.Range(start, end)
-	if err != nil {
-		r.logger.Fatal("data range error: %s", err)
-	}
-	if n = copy(out, data); n != end-start {
-		r.logger.Fatal("copied bytes count: %d != %d", n, end-start)
-	}
+	common.AssertNoError(err, "data range error")
+	n = copy(out, data)
+	common.AssertTrue(n == end-start, "unexpected copied bytes count")
 	return
 }
 
@@ -78,18 +72,12 @@ func (r Xio) Has() (ret bool) {
 // Range returns a slice of the buffered data between from and to positions.
 func (r Xio) Range(from, to int) (out []byte, err error) {
 	start := from - int(r.pos)
-	// check bounds
-	if start < 0 || start > r.buffer.Len() {
-		r.logger.Fatal("out of bounds")
-	}
+	common.AssertFalse(start < 0 || start > r.buffer.Len(), "out of bounds")
 	if math.MaxInt == to {
 		out = r.buffer.Bytes()[start:]
 	} else {
 		end := to - int(r.pos)
-		// check bounds
-		if end < 0 || end > r.buffer.Len() || end < start {
-			r.logger.Fatal("out of bounds")
-		}
+		common.AssertFalse(end < 0 || end > r.buffer.Len() || end < start, "out of bounds")
 		out = r.buffer.Bytes()[start:end]
 	}
 	return
@@ -109,13 +97,9 @@ func (r *Xio) Truncate(pos int64) (err error) {
 	// This is protection against incorrect position update
 	// inside transaction implementation. Transaction
 	// must update its position before calling truncate.
-	if pos > r.offset {
-		r.logger.Fatal("out of bounds")
-	}
+	common.AssertFalse(pos > r.offset, "out of bounds")
 	data, err := r.Range(int(pos), math.MaxInt)
-	if err != nil {
-		r.logger.Fatal("data range error: %s", err)
-	}
+	common.AssertNoError(err, "data range error")
 	newBuffer := newBuffer(data)
 	r.buffer = newBuffer
 	r.pos = pos
@@ -135,26 +119,20 @@ func (r Xio) Fetch(size int64) (n int64, err error) {
 
 // ReadAt reads from the buffered reader from given position and returns the number of bytes read.
 func (r Xio) ReadAt(pos int64, out []byte) (n int, err error) {
-	if pos < r.pos || pos < r.offset {
-		r.logger.Fatal("out of bounds")
-	}
+	common.AssertFalse(pos < r.pos || pos < r.offset, "out of bounds")
 	end := int(pos) + len(out)
 	if r.len() >= end {
-		if n, err = r.copyTo(pos, out); err != nil {
-			r.logger.Fatal("copy to error: %s", err)
-		}
+		n, err = r.copyTo(pos, out)
+		common.AssertNoError(err, "copy to error")
 		return
 	}
-	if _, err = r.Fetch(int64(end - r.len())); err != nil && !errors.Is(err, io.EOF) {
-		r.logger.Error("fetch error: %s", err)
-		return
-	}
+	_, err = r.Fetch(int64(end - r.len()))
+	common.AssertNoErrorOrIs(err, io.EOF, "fetch error")
 	// We need separate error variable to preserve original fetch error
 	// in particular case of io.EOF.
 	var copyErr error
-	if n, copyErr = r.copyTo(pos, out); copyErr != nil {
-		r.logger.Fatal("copy to error: %s", copyErr)
-	}
+	n, copyErr = r.copyTo(pos, out)
+	common.AssertNoError(copyErr, "copy to error")
 	return
 }
 
