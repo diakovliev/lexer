@@ -4,8 +4,24 @@ package grammar
 type Token uint
 
 const (
-	// Number is a number token.
-	Number Token = iota
+	// NotUsed is non used token
+	NotUsed Token = iota
+	// BinNumber is a binary signed or unsigned number token.
+	BinNumber
+	// OctNumber is a octal signed or unsigned number token.
+	OctNumber
+	// DecNumber is a decimal signed or unsigned number token.
+	DecNumber
+	// HexNumber is a hexadecimal signed or unsigned number token.
+	HexNumber
+	// BinFraction is a binary signed or unsigned fraction token.
+	BinFraction
+	// OctFraction is a octal signed or unsigned fraction token.
+	OctFraction
+	// DecFraction is a decimal signed or unsigned fraction token.
+	DecFraction
+	// HexFraction is a hexadecimal signed or unsigned fraction token.
+	HexFraction
 	// Plus is a plus token.
 	Plus
 	// Minus is a minus token.
@@ -23,8 +39,22 @@ const (
 // String returns the string representation of a token.
 func (t Token) String() string {
 	switch t {
-	case Number:
-		return "Number"
+	case BinNumber:
+		return "BinNumber"
+	case OctNumber:
+		return "OctNumber"
+	case DecNumber:
+		return "DecNumber"
+	case HexNumber:
+		return "HexNumber"
+	case BinFraction:
+		return "BinFraction"
+	case OctFraction:
+		return "OctFraction"
+	case DecFraction:
+		return "DecFraction"
+	case HexFraction:
+		return "HexFraction"
 	case Plus:
 		return "Plus"
 	case Minus:

@@ -3,6 +3,8 @@ package algo
 import (
 	"errors"
 	"fmt"
+	"math"
+	"slices"
 
 	"github.com/diakovliev/lexer/examples/calculator/grammar"
 )
@@ -16,6 +18,8 @@ var (
 	ErrVMUnknownOperation = errors.New("unknown operation")
 	// ErrVMStackEmpty is returned by vm.Pop() when the VM stack is empty.
 	ErrVMStackEmpty = errors.New("stack is empty")
+	// ErrVMDivByZero is returned by vm.div() when the right value is zero.
+	ErrVMDivByZero = errors.New("division by zero")
 )
 
 type (
@@ -27,9 +31,51 @@ type (
 	// VMCode is a code of the virtual machine. It contains token and its value.
 	VMCode struct {
 		Token grammar.Token
-		Value int
+		Value any
 	}
 )
+
+func (vc VMCode) IsZero() bool {
+	return vc.AsInt64() == 0 && vc.AsFloat64() == 0
+}
+
+func (vc VMCode) IsWhole() bool {
+	_, ok := vc.Value.(int64)
+	return ok
+}
+
+func (vc VMCode) AsInt64() (i int64) {
+	i, ok := vc.Value.(int64)
+	if !ok {
+		f, ok := vc.Value.(float64)
+		if !ok {
+			panic("not a number")
+		}
+		i = int64(math.Round(f))
+	}
+	return
+}
+
+func PrintCode(code []VMCode) {
+	codeCopy := make([]VMCode, len(code))
+	copy(codeCopy, code)
+	slices.Reverse(codeCopy)
+	for i, c := range codeCopy {
+		fmt.Printf("%04d %+v\n", i, c)
+	}
+}
+
+func (vc VMCode) AsFloat64() (f float64) {
+	f, ok := vc.Value.(float64)
+	if !ok {
+		i, ok := vc.Value.(int64)
+		if !ok {
+			panic("not a number")
+		}
+		f = float64(i)
+	}
+	return
+}
 
 // NewVM creates new virtual machine with given code.
 func NewVM(code []VMCode) (vm *VM) {
@@ -87,8 +133,32 @@ func (vm *VM) fetch() (token VMCode, err error) {
 	return
 }
 
+func (vm *VM) add(left VMCode, right VMCode) (result VMCode) {
+	if left.IsWhole() && right.IsWhole() {
+		return VMCode{Token: grammar.DecNumber, Value: left.AsInt64() + right.AsInt64()}
+	}
+	return VMCode{Token: grammar.DecNumber, Value: left.AsFloat64() + right.AsFloat64()}
+}
+
+func (vm *VM) sub(left VMCode, right VMCode) (result VMCode) {
+	if left.IsWhole() && right.IsWhole() {
+		return VMCode{Token: grammar.DecNumber, Value: left.AsInt64() - right.AsInt64()}
+	}
+	return VMCode{Token: grammar.DecNumber, Value: left.AsFloat64() - right.AsFloat64()}
+}
+
+func (vm *VM) mul(left VMCode, right VMCode) (result VMCode) {
+	if left.IsWhole() && right.IsWhole() {
+		return VMCode{Token: grammar.DecNumber, Value: left.AsInt64() * right.AsInt64()}
+	}
+	return VMCode{Token: grammar.DecNumber, Value: left.AsFloat64() * right.AsFloat64()}
+}
+
+func (vm *VM) div(left VMCode, right VMCode) (result VMCode) {
+	return VMCode{Token: grammar.DecNumber, Value: left.AsFloat64() / right.AsFloat64()}
+}
+
 func (vm *VM) execute(cmd VMCode) (err error) {
-	// TODO: how many operands is needed?
 	var left, right VMCode
 	if right, err = vm.fetch(); err != nil {
 		return
@@ -96,16 +166,20 @@ func (vm *VM) execute(cmd VMCode) (err error) {
 	if left, err = vm.fetch(); err != nil {
 		return
 	}
-	var result int
+	var result VMCode
 	switch cmd.Token {
 	case grammar.Plus:
-		result = left.Value + right.Value
+		result = vm.add(left, right)
 	case grammar.Minus:
-		result = left.Value - right.Value
+		result = vm.sub(left, right)
 	case grammar.Mul:
-		result = left.Value * right.Value
+		result = vm.mul(left, right)
 	case grammar.Div:
-		result = left.Value / right.Value
+		if right.IsZero() {
+			err = ErrVMDivByZero
+			return
+		}
+		result = vm.div(left, right)
 	default:
 		err = fmt.Errorf("%w: %d", ErrVMUnknownOperation, cmd)
 	}
@@ -113,10 +187,7 @@ func (vm *VM) execute(cmd VMCode) (err error) {
 		err = ErrVMHalt
 	}
 	// push result
-	vm.stack = vm.stack.Push(VMCode{
-		Token: grammar.Number,
-		Value: result,
-	})
+	vm.stack = vm.stack.Push(result)
 	return
 }
 
@@ -135,6 +206,12 @@ func (vm *VM) step() (err error) {
 
 // Run the VM, return ErrVMHalt when finished.
 func (vm *VM) Run() (err error) {
+	PrintCode(vm.stack)
+	if len(vm.stack) == 1 && !Ops.HasToken(vm.stack[0].Token) {
+		// nothing to do, halt immediately
+		err = ErrVMHalt
+		return
+	}
 	for err = vm.step(); err == nil; {
 	}
 	return
