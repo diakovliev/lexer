@@ -67,31 +67,31 @@ func isNotRepeatableFnByte[T any](s Update[T]) bool {
 	return ok
 }
 
-// CheckByte adds a state that checks if the next rune matches the predicate to the chain.
-func (b Builder[T]) CheckByte(pred BytePredicate) (tail *Chain[T]) {
+// ByteCheck adds a state that checks if the next rune matches the predicate to the chain.
+func (b Builder[T]) ByteCheck(pred BytePredicate) (tail *Chain[T]) {
 	common.AssertNotNil(pred, "invalid grammar: nil predicate")
-	tail = b.append("CheckByte", func() Update[T] { return newFnByte[T](b.logger, pred, fnAccept) })
+	tail = b.append("ByteCheck", func() Update[T] { return newFnByte[T](b.logger, pred, fnAccept) })
 	return
 }
 
-// FollowedByCheckByte adds a state that checks if the next rune matches the predicate to the chain, and rolls back if it does not match.
-func (b Builder[T]) FollowedByCheckByte(pred BytePredicate) (tail *Chain[T]) {
+// FollowedByByteCheck adds a state that checks if the next rune matches the predicate to the chain, and rolls back if it does not match.
+func (b Builder[T]) FollowedByByteCheck(pred BytePredicate) (tail *Chain[T]) {
 	common.AssertNotNil(pred, "invalid grammar: nil predicate")
-	tail = b.append("FollowedByCheckByte", func() Update[T] { return newFnByte[T](b.logger, pred, fnLook) })
+	tail = b.append("FollowedByByteCheck", func() Update[T] { return newFnByte[T](b.logger, pred, fnLook) })
 	return
 }
 
-// CheckNotByte adds a state that checks if the next rune doesn't match the predicate to the chain.
-func (b Builder[T]) CheckNotByte(pred BytePredicate) (tail *Chain[T]) {
+// NotByteCheck adds a state that checks if the next rune doesn't match the predicate to the chain.
+func (b Builder[T]) NotByteCheck(pred BytePredicate) (tail *Chain[T]) {
 	common.AssertNotNil(pred, "invalid grammar: nil predicate")
-	tail = b.append("CheckNotByte", func() Update[T] { return newFnByte[T](b.logger, Not(pred), fnAccept) })
+	tail = b.append("NotByteCheck", func() Update[T] { return newFnByte[T](b.logger, Not(pred), fnAccept) })
 	return
 }
 
-// FollowedByCheckNotByte adds a state that checks if the next rune doesn't match the predicate to the chain.
-func (b Builder[T]) FollowedByCheckNotByte(pred BytePredicate) (tail *Chain[T]) {
+// FollowedByNotByteCheck adds a state that checks if the next rune doesn't match the predicate to the chain.
+func (b Builder[T]) FollowedByNotByteCheck(pred BytePredicate) (tail *Chain[T]) {
 	common.AssertNotNil(pred, "invalid grammar: nil predicate")
-	tail = b.append("FollowedByCheckNotByte", func() Update[T] { return newFnByte[T](b.logger, Not(pred), fnLook) })
+	tail = b.append("FollowedByNotByteCheck", func() Update[T] { return newFnByte[T](b.logger, Not(pred), fnLook) })
 	return
 }
 

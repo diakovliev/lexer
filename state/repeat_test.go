@@ -118,7 +118,7 @@ func TestRepeat(t *testing.T) {
 			name:  `_1,_ isDigit.isDigit.CountBetween(0,math.MaxUint)`,
 			input: "1,",
 			state: func(b Builder[Token]) *Chain[Token] {
-				return b.CheckRune(unicode.IsDigit).CheckRune(unicode.IsDigit).Repeat(CountBetween(0, math.MaxUint)).Emit(Token1)
+				return b.RuneCheck(unicode.IsDigit).RuneCheck(unicode.IsDigit).Repeat(CountBetween(0, math.MaxUint)).Emit(Token1)
 			},
 			wantMessages: []*message.Message[Token]{
 				{Level: 0, Type: message.Token, Token: Token1, Value: []byte("1"), Pos: 0, Width: 1},
