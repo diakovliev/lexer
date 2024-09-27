@@ -45,6 +45,6 @@ func Evaluate(input string) (result string, err error) {
 		return
 	}
 	err = nil
-	result = fmt.Sprintf("%d", value.Value)
+	result = fmt.Sprintf("%v", value.Value)
 	return
 }
