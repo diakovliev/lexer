@@ -13,16 +13,18 @@ type (
 		Update(ctx context.Context, tx xio.State) (err error)
 	}
 
-	// RunePredicate is a function that takes rune and returns true if it should be accepted.
-	RunePredicate func(rune) bool
-
-	// BytePredicate is a function that takes byte and returns true if it should be accepted.
-	BytePredicate func(byte) bool
-
+	// fnMode is mode of Fn states
 	fnMode uint
 )
 
 const (
+	// fnAccept in this mode Fn state will advance
+	// io state on successful match
 	fnAccept fnMode = iota
+	// ftLook in this mode FnState will not
+	// advance io state on successful match, but
+	// will return ErrCommit to the caller. It
+	// will allow to look ahead and decide what
+	// to do next.
 	fnLook
 )

@@ -67,31 +67,31 @@ func isNotRepeatableFnRune[T any](s Update[T]) bool {
 	return ok
 }
 
-// CheckRune is a state that matches rune by the given function.
-func (b Builder[T]) CheckRune(pred RunePredicate) (tail *Chain[T]) {
+// RuneCheck is a state that matches rune by the given function.
+func (b Builder[T]) RuneCheck(pred RunePredicate) (tail *Chain[T]) {
 	common.AssertNotNil(pred, "invalid grammar: nil predicate")
-	tail = b.append("CheckRune", func() Update[T] { return newFnRune[T](b.logger, pred, fnAccept) })
+	tail = b.append("RuneCheck", func() Update[T] { return newFnRune[T](b.logger, pred, fnAccept) })
 	return
 }
 
-// FollowedByCheckRune is a state that matches rune by the given function and then rollbacks if it fails.
-func (b Builder[T]) FollowedByCheckRune(pred RunePredicate) (tail *Chain[T]) {
+// FollowedByRuneCheck is a state that matches rune by the given function and then rollbacks if it fails.
+func (b Builder[T]) FollowedByRuneCheck(pred RunePredicate) (tail *Chain[T]) {
 	common.AssertNotNil(pred, "invalid grammar: nil predicate")
-	tail = b.append("FollowedByCheckRune", func() Update[T] { return newFnRune[T](b.logger, pred, fnLook) })
+	tail = b.append("FollowedByRuneCheck", func() Update[T] { return newFnRune[T](b.logger, pred, fnLook) })
 	return
 }
 
-// CheckNotRune is a state that matches rune by the given function and returns an error if it does match.
-func (b Builder[T]) CheckNotRune(pred RunePredicate) (tail *Chain[T]) {
+// NotRuneCheck is a state that matches rune by the given function and returns an error if it does match.
+func (b Builder[T]) NotRuneCheck(pred RunePredicate) (tail *Chain[T]) {
 	common.AssertNotNil(pred, "invalid grammar: nil predicate")
-	tail = b.append("CheckNotRune", func() Update[T] { return newFnRune[T](b.logger, Not(pred), fnAccept) })
+	tail = b.append("NotRuneCheck", func() Update[T] { return newFnRune[T](b.logger, Not(pred), fnAccept) })
 	return
 }
 
-// FollowedByCheckNotRune is a state that matches rune by the given function and rollbacks if it does match.
-func (b Builder[T]) FollowedByCheckNotRune(pred RunePredicate) (tail *Chain[T]) {
+// FollowedByNotRuneCheck is a state that matches rune by the given function and rollbacks if it does match.
+func (b Builder[T]) FollowedByNotRuneCheck(pred RunePredicate) (tail *Chain[T]) {
 	common.AssertNotNil(pred, "invalid grammar: nil predicate")
-	tail = b.append("FollowedByCheckNotRune", func() Update[T] { return newFnRune[T](b.logger, Not(pred), fnLook) })
+	tail = b.append("FollowedByNotRuneCheck", func() Update[T] { return newFnRune[T](b.logger, Not(pred), fnLook) })
 	return
 }
 

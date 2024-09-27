@@ -1,32 +1,8 @@
-package lexer
-
-// Rune returns a function that checks if a given rune is equal to the input rune.
-//
-// It takes a parameter `ir` of type `rune`.
-// It returns a function of type `func(r rune) bool`.
-func Rune(ir rune) func(r rune) bool {
-	return func(r rune) bool {
-		return r == ir
-	}
-}
-
-// Runes returns a function that checks if a given rune is present in the input string.
-//
-// The function takes a string as input and returns a function that takes a rune as input and returns a boolean value.
-// The returned function checks if the given rune is present in the input string and returns true if it is, and false otherwise.
-func Runes(input string) func(r rune) bool {
-	return func(r rune) bool {
-		for _, ir := range input {
-			if r == ir {
-				return true
-			}
-		}
-		return false
-	}
-}
+package state
 
 // EscapeCondition is a condition that checks if the input rune is escaped by another rune.
-// It is designed to be used in While state to parse strings with escape characters.
+// It is designed to be used in Until state to parse strings with escape characters.
+// See: grammar_test.go: stringState for an example of using Escape in Until state.
 type EscapeCondition struct {
 	escape  func(r rune) bool
 	cond    func(r rune) bool
@@ -35,6 +11,7 @@ type EscapeCondition struct {
 
 // Escape returns a function that checks if the input rune is escaped by another rune.
 // It is designed to be used in While state to parse strings with escape characters.
+// See: grammar_test.go: stringState for an example of using Escape in Until state.
 func Escape(escape func(r rune) bool, cond func(r rune) bool) *EscapeCondition {
 	return &EscapeCondition{
 		escape:  escape,
@@ -54,14 +31,16 @@ func (e *EscapeCondition) Accept(r rune) (ret bool) {
 	case !isEscape && e.escaped:
 		// escaped symbol
 		e.escaped = false
-		ret = true
+		ret = false
 	case isEscape && !e.escaped:
 		// first escape symbol
 		e.escaped = true
-		ret = true
+		ret = false
 	case isEscape && e.escaped:
 		// escape symbol followed by escape symbol
 		e.escaped = false
+		ret = false
+	default:
 		ret = true
 	}
 	return

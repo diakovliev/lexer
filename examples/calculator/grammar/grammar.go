@@ -81,12 +81,12 @@ func signedNumberGuard(ctx context.Context, _ xio.State) (err error) {
 func numberSubState(b state.Builder[Token]) []state.Update[Token] {
 	// consume all digits
 	digits := func(b state.Builder[Token]) *state.Chain[Token] {
-		return b.CheckRune(unicode.IsDigit).Repeat(state.CountBetween(0, math.MaxUint))
+		return b.RuneCheck(unicode.IsDigit).Repeat(state.CountBetween(0, math.MaxUint))
 	}
 	return state.AsSlice[state.Update[Token]](
-		digits(b).FollowedByCheckRune(allTerms).Break(),
+		digits(b).FollowedByRuneCheck(allTerms).Break(),
 		// if followed by non known term, emit error
-		digits(b).FollowedByCheckNotRune(unicode.IsDigit).Rest().Error(ErrInvalidNumber),
+		digits(b).FollowedByNotRuneCheck(unicode.IsDigit).Rest().Error(ErrInvalidNumber),
 		// otherwise, break
 		digits(b).Break(),
 	)
@@ -96,9 +96,9 @@ func numberState(name string, signed bool) (number func(b state.Builder[Token]) 
 	return func(b state.Builder[Token]) (state *state.Chain[Token]) {
 		state = b.Named(name)
 		if signed {
-			state = state.CheckRune(plusMinus).Optional().Tap(signedNumberGuard)
+			state = state.RuneCheck(plusMinus).Optional().Tap(signedNumberGuard)
 		}
-		state = state.CheckRune(unicode.IsDigit).State(b, numberSubState).Optional().Emit(Number)
+		state = state.RuneCheck(unicode.IsDigit).State(b, numberSubState).Optional().Emit(Number)
 		return
 	}
 }
@@ -108,7 +108,7 @@ func newState(root bool, maxScopesDepth uint) func(b state.Builder[Token]) []sta
 	return func(b state.Builder[Token]) []state.Update[Token] {
 		return state.AsSlice[state.Update[Token]](
 			// Spaces and tabs are omitted.
-			b.Named("OmitSpaces").CheckRune(unicode.IsSpace).Repeat(state.CountBetween(1, math.MaxUint)).Omit(),
+			b.Named("OmitSpaces").RuneCheck(unicode.IsSpace).Repeat(state.CountBetween(1, math.MaxUint)).Omit(),
 			// Parens with max depth
 			braState("Bra", maxScopesDepth-1)(b),
 			ketState("Ket", root)(b),
