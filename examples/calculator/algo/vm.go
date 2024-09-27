@@ -206,7 +206,7 @@ func (vm *VM) step() (err error) {
 
 // Run the VM, return ErrVMHalt when finished.
 func (vm *VM) Run() (err error) {
-	PrintCode(vm.stack)
+	// PrintCode(vm.stack)
 	if len(vm.stack) == 1 && !Ops.HasToken(vm.stack[0].Token) {
 		// nothing to do, halt immediately
 		err = ErrVMHalt
