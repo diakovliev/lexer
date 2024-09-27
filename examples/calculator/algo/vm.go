@@ -56,15 +56,6 @@ func (vc VMCode) AsInt64() (i int64) {
 	return
 }
 
-func PrintCode(code []VMCode) {
-	codeCopy := make([]VMCode, len(code))
-	copy(codeCopy, code)
-	slices.Reverse(codeCopy)
-	for i, c := range codeCopy {
-		fmt.Printf("%04d %+v\n", i, c)
-	}
-}
-
 func (vc VMCode) AsFloat64() (f float64) {
 	f, ok := vc.Value.(float64)
 	if !ok {
@@ -86,6 +77,15 @@ func NewVM(code []VMCode) (vm *VM) {
 		vm.stack = vm.stack.Push(token)
 	}
 	return
+}
+
+func (vm *VM) PrintCode() {
+	codeCopy := make([]VMCode, len(vm.stack))
+	copy(codeCopy, vm.stack)
+	slices.Reverse(codeCopy)
+	for i, c := range codeCopy {
+		fmt.Printf("%04d %+v\n", i, c)
+	}
 }
 
 // Push pushes new token to the stack of virtual machine.
@@ -206,7 +206,7 @@ func (vm *VM) step() (err error) {
 
 // Run the VM, return ErrVMHalt when finished.
 func (vm *VM) Run() (err error) {
-	// PrintCode(vm.stack)
+	// vm.PrintCode()
 	if len(vm.stack) == 1 && !Ops.HasToken(vm.stack[0].Token) {
 		// nothing to do, halt immediately
 		err = ErrVMHalt
