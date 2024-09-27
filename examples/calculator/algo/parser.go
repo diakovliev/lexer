@@ -18,12 +18,12 @@ var numberBases = map[string]int{
 	grammar.HexNumberPrefixes[1]: 16,
 }
 
-// parse fraction in arbitraty base
+// parse float in arbitraty base
 // Exponents chart:
 // Pos:       ...  |0   1   2   3   4    5    6   | ...
 // Digits:    ...  |N   N   N   .   N    N    N   | ...
 // Exponents: ...  |b^2 b^1 b^0     b^-1 b^-2 b^-3| ...
-func parseFraction(buffer []byte, base int) (result float64, err error) {
+func parseFloat(buffer []byte, base int) (result float64, err error) {
 	// I hope we have enough precision)
 	dotPos := bytes.IndexByte(buffer, '.')
 	maxExponent := dotPos - 1
@@ -72,9 +72,8 @@ func parseNumber(buffer []byte) (any, error) {
 		return result, nil
 	}
 	// float
-	// following works only for base 10
 	var result float64
-	result, err := parseFraction(buffer, base)
+	result, err := parseFloat(buffer, base)
 	if err != nil {
 		return nil, err
 	}
