@@ -10,13 +10,14 @@ import (
 )
 
 const (
-	ps = ">> "
+	ps  = "? "
+	out = "= "
 )
 
 func main() {
 	fmt.Print("The calculator example. Copyright (C) 2024, daemondzk@gmail.com.\n")
 	fmt.Print("Licensed under the MIT license.\n")
-	fmt.Print("It supports whole decimal numbers, brackets and basic arithmetic operations: +, -, *, /.\n")
+	fmt.Print("It supports numbers, brackets and basic arithmetic operations: +, -, *, /.\n")
 	fmt.Print("It is part of the 'github.com/diakovliev/lexer' project.\n")
 	fmt.Print("To exit press Ctrl+C.\n")
 	fmt.Print(ps)
@@ -40,7 +41,7 @@ func main() {
 			fmt.Printf("%s", ps)
 			continue
 		}
-		fmt.Printf("%s\n", res)
+		fmt.Printf("%s%s\n", out, res)
 		fmt.Print(ps)
 	}
 }
