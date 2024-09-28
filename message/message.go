@@ -94,18 +94,36 @@ func (m Message[TokenType]) String() (ret string) {
 	return
 }
 
-// ValueAsBytes returns the value of the message as a []byte. It panics if the message's type is not Token.
-// It can return nil, false if the message's value is not []bytes.
-func (m Message[TokenType]) ValueAsBytes() (value []byte, ok bool) {
-	common.AssertTrue(m.Type == Token, "invalid message type: %s", m.Type)
-	value, ok = m.Value.([]byte)
+// AsError returns the value of the message as an ErrorValue. It panics if the message's type is not Error,
+// or if the Value is not an ErrorValue.
+func (m Message[TokenType]) AsError() (value *ErrorValue) {
+	common.AssertTrue(m.Type == Error, "invalid message type: %s", m.Type)
+	value, ok := m.Value.(*ErrorValue)
+	common.AssertTrue(ok, "value is not an error: %v", m.Value)
 	return
 }
 
-// ValueAsError returns the value of the message as an error. It panics if the message's type is not Error.
-// It can return nil, false if the message's value is not an error.
-func (m Message[TokenType]) ValueAsError() (value *ErrorValue, ok bool) {
-	common.AssertTrue(m.Type == Error, "invalid message type: %s", m.Type)
-	value, ok = m.Value.(*ErrorValue)
+// AsBytes returns the value of the message as a []byte. It panics if the message's type is not Token,
+// or if the Value is not []byte.
+func (m Message[TokenType]) AsBytes() (value []byte) {
+	common.AssertTrue(m.Type == Token, "invalid message type: %s", m.Type)
+	value, ok := m.Value.([]byte)
+	common.AssertTrue(ok, "value is not []byte: %v", m.Value)
+	return
+}
+
+// AsString returns the value of the message as a string. It panics if the message's type is not Token,
+// or if the Value is not a string or []byte.
+func (m Message[TokenType]) AsString() (value string) {
+	common.AssertTrue(m.Type == Token, "invalid message type: %s", m.Type)
+	if str, ok := m.Value.(string); ok {
+		value = str
+		return
+	}
+	if bytes, ok := m.Value.([]byte); ok {
+		value = string(bytes)
+		return
+	}
+	common.AssertUnreachable("invalid value type: %T", m.Value)
 	return
 }
