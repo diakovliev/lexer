@@ -14,6 +14,7 @@ var (
 	outputFile string
 	separator  string
 	withHeader bool
+	pretty     bool
 )
 
 func init() {
@@ -21,6 +22,7 @@ func init() {
 	flag.StringVar(&outputFile, "o", "", "Output file, if no - stdout will be used.")
 	flag.StringVar(&separator, "s", ",", "Separator, ',' by default.")
 	flag.BoolVar(&withHeader, "wh", false, "Treat the first line as a header with column names.")
+	flag.BoolVar(&pretty, "p", false, "Pretty print JSON.")
 }
 
 func main() {
@@ -51,7 +53,12 @@ func main() {
 		fmt.Printf("ERROR: %s\n", err)
 		return
 	}
-	err = json.NewEncoder(output).Encode(rows)
+	encoder := json.NewEncoder(output)
+	if pretty {
+		encoder.SetEscapeHTML(false)
+		encoder.SetIndent("", "  ")
+	}
+	err = encoder.Encode(rows)
 	if err != nil {
 		fmt.Printf("ERROR: %s\n", err)
 	}
