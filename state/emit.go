@@ -11,7 +11,7 @@ import (
 // Emit is a state what emits message.
 type Emit[T any] struct {
 	logger   common.Logger
-	token    T
+	token    func() T
 	factory  message.Factory[T]
 	receiver message.Receiver[T]
 }
@@ -20,7 +20,7 @@ type Emit[T any] struct {
 func newEmit[T any](
 	logger common.Logger,
 	factory message.Factory[T],
-	token T,
+	token func() T,
 ) *Emit[T] {
 	return &Emit[T]{
 		logger:  logger,
@@ -41,7 +41,7 @@ func (e Emit[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	common.AssertFalse(len(data) == 0, "nothing to emit")
 	level, ok := GetTokenLevel(ctx)
 	common.AssertTrue(ok, "no token level in context")
-	msg, err := e.factory.Token(ctx, level, e.token, data, int(pos), len(data))
+	msg, err := e.factory.Token(ctx, level, e.token(), data, int(pos), len(data))
 	common.AssertNoError(err, "messages factory error")
 	err = e.receiver.Receive(msg)
 	common.AssertNoError(err, "send message error")
@@ -49,8 +49,18 @@ func (e Emit[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	return
 }
 
-// Emit adds Emit state to the chain.
+// Emit emits given token.
 func (b Builder[T]) Emit(token T) (tail *Chain[T]) {
+	common.AssertNotNilPtr(b.last, "invalid grammar: emit can't be the first state in chain")
+	newNode := newEmit(b.logger, b.factory, func() T { return token })
+	tail = b.append("Emit", func() Update[T] { return newNode })
+	// sent all messages to the the first node receiver
+	newNode.setReceiver(tail.head().receiver)
+	return
+}
+
+// EmitFn emits token received from the given function.
+func (b Builder[T]) EmitFn(token func() T) (tail *Chain[T]) {
 	common.AssertNotNilPtr(b.last, "invalid grammar: emit can't be the first state in chain")
 	newNode := newEmit(b.logger, b.factory, token)
 	tail = b.append("Emit", func() Update[T] { return newNode })

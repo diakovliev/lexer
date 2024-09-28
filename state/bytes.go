@@ -22,7 +22,7 @@ type (
 	bytesSamplesProvider func() [][]byte
 
 	// bytesPredicate is a function that checks if the given bytes matches the samples.
-	bytesPredicate func(in []byte, samples [][]byte) bool
+	bytesPredicate func(in []byte, samples [][]byte) (int, bool)
 )
 
 func newBytes[T any](
@@ -55,12 +55,21 @@ func (bs Bytes) Update(ctx context.Context, tx xio.State) (err error) {
 		return
 	}
 	in := buffer[:n]
-	if !bs.pred(in, samples) {
+	matched, ok := bs.pred(in, samples)
+	if !ok {
 		_, err = tx.Unread()
 		common.AssertNoError(err, "unread error")
 		err = ErrRollback
 		return
 	}
+	// adjust tx position
+	_, err = tx.Unread()
+	common.AssertNoError(err, "unread error")
+	n, err = tx.Read(buffer[:matched])
+	if err != nil && !errors.Is(err, io.EOF) {
+		return
+	}
+	common.AssertTrue(n == matched, "unexpected read length")
 	err = ErrChainNext
 	return
 }
@@ -85,17 +94,25 @@ func providerFromStrings(samples []string) bytesSamplesProvider {
 	}
 }
 
-func bytesMatches(in []byte, samples [][]byte) bool {
+func bytesMatches(in []byte, samples [][]byte) (n int, ret bool) {
+	var maxLen int
 	for _, sample := range samples {
-		if bytes.Equal(sample, in) {
-			return true
+		n = len(sample)
+		if bytes.Equal(sample, in[:n]) {
+			ret = true
+			return
+		}
+		if n > maxLen {
+			maxLen = n
 		}
 	}
-	return false
+	return maxLen, false
 }
 
-func bytesNotMatches(in []byte, samples [][]byte) bool {
-	return !bytesMatches(in, samples)
+func bytesNotMatches(in []byte, samples [][]byte) (n int, ret bool) {
+	n, ret = bytesMatches(in, samples)
+	ret = !ret
+	return
 }
 
 func (b Builder[T]) bytesState(name string, provider bytesSamplesProvider, pred bytesPredicate) (tail *Chain[T]) {
