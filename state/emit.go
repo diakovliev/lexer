@@ -44,7 +44,10 @@ func (e Emit[T]) Update(ctx context.Context, tx xio.State) (err error) {
 	msg, err := e.factory.Token(ctx, level, e.fn(), data, int(pos), len(data))
 	common.AssertNoError(err, "messages factory error")
 	err = e.receiver.Receive(msg)
-	common.AssertNoError(err, "send message error")
+	if err != nil {
+		err = MakeErrBreak(err)
+		return
+	}
 	err = ErrCommit
 	return
 }

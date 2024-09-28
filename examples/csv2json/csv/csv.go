@@ -63,6 +63,7 @@ func (r *Receiver) appendRow() {
 
 func (r *Receiver) Receive(msg *message.Message[Token]) (err error) {
 	if msg.Type == message.Error {
+		err = msg.AsError()
 		return
 	}
 	switch msg.Token {
