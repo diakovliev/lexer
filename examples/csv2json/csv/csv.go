@@ -19,9 +19,10 @@ type (
 	Token uint
 
 	Receiver struct {
-		header  map[int]string
-		current []string
-		Rows    []Row
+		currentIndex int
+		header       map[int]string
+		current      []string
+		Rows         []Row
 	}
 )
 
@@ -33,6 +34,7 @@ const (
 	NL Token = iota
 	Name
 	Value
+	Separator
 )
 
 func newReceiver() *Receiver {
@@ -58,7 +60,18 @@ func (r *Receiver) appendRow() {
 		row[column] = value
 	}
 	r.Rows = append(r.Rows, row)
+	r.currentIndex = 0
 	r.current = make([]string, 0, len(r.header))
+}
+
+func (r *Receiver) ensureCurrentIndex(index int) {
+	if index < len(r.current) {
+		return
+	}
+	// grow
+	oldCurrent := r.current
+	r.current = make([]string, index+1)
+	copy(r.current, oldCurrent)
 }
 
 func (r *Receiver) Receive(msg *message.Message[Token]) (err error) {
@@ -67,12 +80,17 @@ func (r *Receiver) Receive(msg *message.Message[Token]) (err error) {
 		return
 	}
 	switch msg.Token {
+	case Separator:
+		r.currentIndex++
 	case Name:
-		r.header[len(r.header)] = msg.AsString()
+		r.header[r.currentIndex] = msg.AsString()
 	case Value:
-		r.current = append(r.current, msg.AsString())
+		r.ensureCurrentIndex(r.currentIndex)
+		r.current[r.currentIndex] = msg.AsString()
 	case NL:
 		r.appendRow()
+	default:
+		panic("unreachable")
 	}
 	return
 }
@@ -80,7 +98,12 @@ func (r *Receiver) Receive(msg *message.Message[Token]) (err error) {
 func (r *Receiver) Complete() *Receiver {
 	// we have to append last row
 	r.appendRow()
+	r.currentIndex = 0
 	return r
+}
+
+func (r *Receiver) ResetIndex() {
+	r.currentIndex = 0
 }
 
 func asPtr[T any](v T) *T {
@@ -100,14 +123,15 @@ func Parse(input io.Reader, separator byte, withHeader bool) (rows []Row, err er
 		receiver,
 	).With(func(b state.Builder[Token]) []state.Update[Token] {
 		return state.AsSlice[state.Update[Token]](
+			// emit separator
+			b.Named("Separator").Byte(separator).Emit(Separator),
 			// generate new lines
 			b.Named("NL").Bytes([]byte("\n"), []byte("\r\n")).Emit(NL).
 				Tap(func(_ context.Context, _ xio.State) (err error) {
 					token = asPtr(Value)
+					receiver.ResetIndex()
 					return
 				}),
-			// omit separator
-			b.Named("Separator").Byte(separator).Omit(),
 			// generate name or value
 			b.Named("NameOrValue").UntilByte(state.Or(
 				state.IsByte(separator),
