@@ -140,7 +140,6 @@ func (c *Chain[T]) Update(ctx context.Context, ioState xio.State) (err error) {
 			common.AssertNilPtr(next, "invalid grammar: next can't be from last in chain")
 			if forwardErr := c.forwardMessages(); forwardErr != nil {
 				err = MakeErrBreak(forwardErr)
-				return
 			}
 			return
 		case errors.Is(err, ErrIncomplete), errors.Is(err, ErrInvalidInput):
