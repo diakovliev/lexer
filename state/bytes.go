@@ -14,12 +14,15 @@ type (
 	// Bytes is a state that matches the given bytes.
 	Bytes struct {
 		logger   common.Logger
-		provider bytesSamplesProvider
+		provider BytesSamplesProvider
 		pred     bytesPredicate
 	}
 
-	// bytesSamplesProvider is a function that returns the slice of a sample bytes to match.
-	bytesSamplesProvider func() [][]byte
+	// BytesSamplesProvider is a function that returns the slice of a sample bytes to match.
+	BytesSamplesProvider func() [][]byte
+
+	// StringSamplesProvider is a function that returns the slice of a sample strings to match.
+	StringSamplesProvider func() []string
 
 	// bytesPredicate is a function that checks if the given bytes matches the samples.
 	bytesPredicate func(in []byte, samples [][]byte) (int, bool)
@@ -27,7 +30,7 @@ type (
 
 func newBytes[T any](
 	logger common.Logger,
-	provider bytesSamplesProvider,
+	provider BytesSamplesProvider,
 	pred bytesPredicate,
 ) *Bytes {
 	return &Bytes{
@@ -74,7 +77,7 @@ func (bs Bytes) Update(ctx context.Context, tx xio.State) (err error) {
 	return
 }
 
-func providerFromBytes(samples [][]byte) bytesSamplesProvider {
+func providerFromBytes(samples [][]byte) BytesSamplesProvider {
 	return func() (ret [][]byte) {
 		for _, s := range samples {
 			common.AssertFalse(len(s) == 0, "invalid grammar: empty sample")
@@ -84,7 +87,7 @@ func providerFromBytes(samples [][]byte) bytesSamplesProvider {
 	}
 }
 
-func providerFromStrings(samples []string) bytesSamplesProvider {
+func providerFromStrings(samples []string) BytesSamplesProvider {
 	return func() (ret [][]byte) {
 		for _, s := range samples {
 			common.AssertFalse(len(s) == 0, "invalid grammar: empty sample")
@@ -115,8 +118,29 @@ func bytesNotMatches(in []byte, samples [][]byte) (n int, ret bool) {
 	return
 }
 
-func (b Builder[T]) bytesState(name string, provider bytesSamplesProvider, pred bytesPredicate) (tail *Chain[T]) {
+func asBytesProvider(sp StringSamplesProvider) BytesSamplesProvider {
+	return func() (ret [][]byte) {
+		for _, s := range sp() {
+			ret = append(ret, []byte(s))
+		}
+		return
+	}
+}
+
+func (b Builder[T]) bytesState(name string, provider BytesSamplesProvider, pred bytesPredicate) (tail *Chain[T]) {
 	tail = b.append(name, func() Update[T] { return newBytes[T](b.logger, provider, pred) })
+	return
+}
+
+// BytesFn matches any sample from given samples.
+func (b Builder[T]) BytesFn(fn BytesSamplesProvider) (tail *Chain[T]) {
+	tail = b.bytesState("BytesFn", fn, bytesMatches)
+	return
+}
+
+// NotBytesFn matches any byte sequence with maximum sample len except for the given samples.
+func (b Builder[T]) NotBytesFn(fn BytesSamplesProvider) (tail *Chain[T]) {
+	tail = b.bytesState("NotBytesFn", fn, bytesNotMatches)
 	return
 }
 
@@ -129,6 +153,18 @@ func (b Builder[T]) Bytes(samples ...[]byte) (tail *Chain[T]) {
 // BytesNot matches any byte sequence with maximum sample len except for the given samples.
 func (b Builder[T]) NotBytes(samples ...[]byte) (tail *Chain[T]) {
 	tail = b.bytesState("NotBytes", providerFromBytes(samples), bytesNotMatches)
+	return
+}
+
+// StringFn matches any sample from given samples.
+func (b Builder[T]) StringFn(fn StringSamplesProvider) (tail *Chain[T]) {
+	tail = b.bytesState("StringFn", asBytesProvider(fn), bytesMatches)
+	return
+}
+
+// NotStringFn matches any byte sequence with maximum sample len except for the given samples.
+func (b Builder[T]) NotStringFn(fn StringSamplesProvider) (tail *Chain[T]) {
+	tail = b.bytesState("NotStringFn", asBytesProvider(fn), bytesNotMatches)
 	return
 }
 

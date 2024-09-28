@@ -21,7 +21,7 @@ type (
 	// Begin begins new transaction.
 	Begin interface {
 		// Begin begins new transaction.
-		Begin() common.IfaceRef[State]
+		Begin() common.Ref[State]
 	}
 
 	// Commit commits the transaction.

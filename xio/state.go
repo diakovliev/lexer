@@ -33,7 +33,7 @@ func newState(logger common.Logger, reader *Xio, pos int64) (ret *state) {
 }
 
 // Begin starts a child transaction.
-func (s *state) Begin() (ret common.IfaceRef[State]) {
+func (s *state) Begin() (ret common.Ref[State]) {
 	common.AssertNilPtr(s.tx, "too many transactions, Tx supports only one active child transaction")
 	s.tx = &state{
 		logger: s.logger,
@@ -42,7 +42,7 @@ func (s *state) Begin() (ret common.IfaceRef[State]) {
 		pos:    s.offset,
 		offset: s.offset,
 	}
-	ret = common.Ref[State](s.tx)
+	ret = common.NewRef[State](s.tx)
 	return
 }
 

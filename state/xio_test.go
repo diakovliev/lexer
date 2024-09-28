@@ -24,9 +24,9 @@ func newXioStateMock(newState func() *XioStateMock) *XioStateMock {
 	}
 }
 
-func (m *XioStateMock) Begin() common.IfaceRef[xio.State] {
+func (m *XioStateMock) Begin() common.Ref[xio.State] {
 	m.Called()
-	return common.Ref[xio.State](m.newState())
+	return common.NewRef[xio.State](m.newState())
 }
 func (m *XioStateMock) Has() bool {
 	args := m.Called()
@@ -71,9 +71,9 @@ func (m *XioStateMock) Buffer() (ret []byte, offset int64, err error) {
 // 	}
 // }
 
-func (m *XioSourceMock) Begin() common.IfaceRef[xio.State] {
+func (m *XioSourceMock) Begin() common.Ref[xio.State] {
 	m.Called()
-	return common.Ref[xio.State](m.newState())
+	return common.NewRef[xio.State](m.newState())
 }
 func (m *XioSourceMock) Has() bool {
 	args := m.Called()

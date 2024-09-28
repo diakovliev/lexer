@@ -33,10 +33,10 @@ func New(logger common.Logger, r io.Reader) *Xio {
 }
 
 // Begin starts a new transaction for reading from the buffered reader.
-func (r *Xio) Begin() (ret common.IfaceRef[State]) {
+func (r *Xio) Begin() (ret common.Ref[State]) {
 	common.AssertNilPtr(r.tx, "too many transactions, Xio supports only one active transaction")
 	r.tx = newState(r.logger, r, r.offset)
-	ret = common.Ref[State](r.tx)
+	ret = common.NewRef[State](r.tx)
 	return
 }
 
