@@ -8,8 +8,11 @@ import (
 	"io"
 
 	"github.com/diakovliev/lexer/examples/calculator/grammar"
+	"github.com/diakovliev/lexer/examples/calculator/vm"
 	"github.com/diakovliev/lexer/message"
 )
+
+var VM *vm.VM = vm.New()
 
 var (
 	// ErrVMError is returned when vm failed to execute the code.
@@ -34,12 +37,11 @@ func Evaluate(input string) (result string, err error) {
 		err = fmt.Errorf("%w: %s", ErrParserError, err)
 		return
 	}
-	vm := NewVM(code)
-	if err = vm.Run(); err != nil && !errors.Is(err, ErrVMHalt) {
+	if err = VM.PushCode(code).Run(); err != nil && !errors.Is(err, vm.ErrHalt) {
 		err = fmt.Errorf("%w: %s", ErrVMError, err)
 		return
 	}
-	value, err := vm.Pop()
+	value, err := VM.Pop()
 	if err != nil {
 		err = fmt.Errorf("%w: %s", ErrNoResult, err)
 		return
