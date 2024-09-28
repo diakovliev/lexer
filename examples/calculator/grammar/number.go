@@ -78,6 +78,7 @@ func signedNumberGuard(ctx context.Context, _ xio.State) (err error) {
 	}
 	history := provider.Get()
 	if len(history) == 0 {
+		err = state.ErrRollback
 		return
 	}
 	_, ok = allNumberTokens[history[len(history)-1].Token]

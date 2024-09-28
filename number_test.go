@@ -83,6 +83,9 @@ func signedNumberGuard(ctx context.Context, _ xio.State) (err error) {
 	}
 	history := provider.Get()
 	if len(history) == 0 {
+		// In real application we probably want to reject number
+		// here and generate operator. See calculator example.
+		// err = state.ErrRollback
 		return
 	}
 	_, ok = allNumberTokens[history[len(history)-1].Token]
