@@ -100,8 +100,7 @@ func Parse(tokens []Token) (data []VMCode, err error) {
 			grammar.BinNumber,
 			grammar.OctNumber,
 			grammar.HexNumber:
-			buffer, _ := token.ValueAsBytes()
-			value, parseErr := parseNumber(buffer)
+			value, parseErr := parseNumber(token.AsBytes())
 			if parseErr != nil {
 				err = parseErr
 				return

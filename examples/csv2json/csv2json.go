@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -45,9 +46,13 @@ func main() {
 		defer outputFile.Close()
 		output = outputFile
 	}
-	err = csv.Do(input, output, separator[0], withHeader)
+	rows, err := csv.Parse(input, separator[0], withHeader)
 	if err != nil {
 		fmt.Printf("ERROR: %s\n", err)
 		return
+	}
+	err = json.NewEncoder(output).Encode(rows)
+	if err != nil {
+		fmt.Printf("ERROR: %s\n", err)
 	}
 }

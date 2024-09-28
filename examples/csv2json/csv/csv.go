@@ -2,7 +2,6 @@ package csv
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -16,9 +15,19 @@ import (
 
 type (
 	Row map[string]string
+
+	Token uint
+
+	Receiver struct {
+		header  map[int]string
+		current []string
+		Rows    []Row
+	}
 )
 
-type Token uint
+var (
+	ErrInvalidInput = errors.New("invalid input")
+)
 
 const (
 	NL Token = iota
@@ -26,19 +35,11 @@ const (
 	Value
 )
 
-type (
-	Receiver struct {
-		header  map[int]string
-		current []string
-		Objects []Row
-	}
-)
-
 func newReceiver() *Receiver {
 	return &Receiver{
 		header:  make(map[int]string),
 		current: make([]string, 0),
-		Objects: make([]Row, 0),
+		Rows:    make([]Row, 0),
 	}
 }
 
@@ -50,14 +51,13 @@ func (r *Receiver) appendRow() {
 	for i, value := range r.current {
 		column := fmt.Sprintf("col%d", i)
 		if len(r.header) > 0 {
-			hdr, ok := r.header[i]
-			if ok {
+			if hdr, ok := r.header[i]; ok {
 				column = hdr
 			}
 		}
 		row[column] = value
 	}
-	r.Objects = append(r.Objects, row)
+	r.Rows = append(r.Rows, row)
 	r.current = make([]string, 0, len(r.header))
 }
 
@@ -67,12 +67,9 @@ func (r *Receiver) Receive(msg *message.Message[Token]) (err error) {
 	}
 	switch msg.Token {
 	case Name:
-		length := len(r.header)
-		content, _ := msg.ValueAsBytes()
-		r.header[length] = string(content)
+		r.header[len(r.header)] = msg.AsString()
 	case Value:
-		content, _ := msg.ValueAsBytes()
-		r.current = append(r.current, string(content))
+		r.current = append(r.current, msg.AsString())
 	case NL:
 		r.appendRow()
 	}
@@ -80,6 +77,7 @@ func (r *Receiver) Receive(msg *message.Message[Token]) (err error) {
 }
 
 func (r *Receiver) Complete() *Receiver {
+	// we have to append last row
 	r.appendRow()
 	return r
 }
@@ -88,7 +86,7 @@ func asPtr[T any](v T) *T {
 	return &v
 }
 
-func Do(input io.Reader, output io.Writer, separator byte, withHeader bool) (err error) {
+func Parse(input io.Reader, separator byte, withHeader bool) (rows []Row, err error) {
 	var token *Token = asPtr(Name)
 	if !withHeader {
 		token = asPtr(Value)
@@ -101,27 +99,31 @@ func Do(input io.Reader, output io.Writer, separator byte, withHeader bool) (err
 		receiver,
 	).With(func(b state.Builder[Token]) []state.Update[Token] {
 		return state.AsSlice[state.Update[Token]](
-			b.Named("nl").Bytes([]byte("\n"), []byte("\r\n")).Emit(NL).Tap(func(_ context.Context, _ xio.State) (err error) {
-				token = asPtr(Value)
-				return
-			}),
-			b.Named("separator").Byte(separator).Omit(),
-			b.Named("value").UntilByte(state.Or(
+			// generate new lines
+			b.Named("NL").Bytes([]byte("\n"), []byte("\r\n")).Emit(NL).
+				Tap(func(_ context.Context, _ xio.State) (err error) {
+					token = asPtr(Value)
+					return
+				}),
+			// omit separator
+			b.Named("Separator").Byte(separator).Omit(),
+			// generate name or value
+			b.Named("NameOrValue").UntilByte(state.Or(
 				state.IsByte(separator),
 				state.IsByte('\n'),
 				state.IsByte('\r'),
-			),
-			).EmitFn(func() Token {
+			)).EmitFn(func() Token {
 				return *token
 			}),
-			b.Named("error").Rest().Error(errors.New("unexpected input")),
+			// if we are here - emit error
+			b.Named("Error").Rest().Error(ErrInvalidInput),
 		)
 	})
 	err = lex.Run(context.Background())
 	if err != nil && !errors.Is(err, io.EOF) {
-		return err
+		return
 	}
-	// reset io.EOF
-	err = json.NewEncoder(output).Encode(receiver.Complete().Objects)
+	err = nil
+	rows = receiver.Complete().Rows
 	return
 }
