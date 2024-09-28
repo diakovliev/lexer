@@ -1,6 +1,9 @@
 package vm
 
-import "math"
+import (
+	"fmt"
+	"math"
+)
 
 // Cell is a token in virtual machine
 type Cell struct {
@@ -51,4 +54,18 @@ func (vc Cell) AsFloat64() (f float64) {
 		f = float64(i)
 	}
 	return
+}
+
+func (vc Cell) String() string {
+	if vc.Op != Val {
+		return vc.Op.String()
+	}
+	switch v := vc.Value.(type) {
+	case int64:
+		return fmt.Sprintf("%d", v)
+	case float64:
+		return fmt.Sprintf("%f", v)
+	default:
+		return fmt.Sprintf("%v", v)
+	}
 }

@@ -33,7 +33,11 @@ func (vm *VM) PrintCode() *VM {
 	copy(codeCopy, vm.stack)
 	slices.Reverse(codeCopy)
 	for i, c := range codeCopy {
-		fmt.Printf("%04d %+v\n", i, c)
+		if i == 0 {
+			fmt.Printf(" * %04d %+v\n", i, c)
+		} else {
+			fmt.Printf("   %04d %+v\n", i, c)
+		}
 	}
 	return vm
 }
@@ -54,6 +58,7 @@ func (vm *VM) Pop() (value Cell, err error) {
 	return
 }
 
+// Peek peeks token from the top of the stack not poping it.
 func (vm *VM) Peek() (value Cell, err error) {
 	if vm.stack.Empty() {
 		err = ErrStackEmpty
@@ -70,7 +75,10 @@ func (vm *VM) fetchCommand() (cmd Cell, err error) {
 	}
 	vm.stack, cmd = vm.stack.Pop()
 	if !Ops.Has(cmd.Op) {
-		err = ErrNonOperation
+		// Return cell to the stack
+		vm.Push(cmd)
+		// Non operation -> halt
+		err = ErrHalt
 	}
 	return
 }
@@ -93,19 +101,24 @@ func (vm *VM) fetch() (token Cell, err error) {
 }
 
 func (vm *VM) execute(cmd Cell) (err error) {
-	operation, ok := Ops[cmd.Op]
-	if !ok {
-		err = fmt.Errorf("%w: %d", ErrUnknownOperation, cmd)
-		return
-	}
+	operation := Ops[cmd.Op]
 	var arguments []Cell
 	for i := 0; i < operation.Args; i++ {
 		var argument Cell
 		if argument, err = vm.fetch(); err != nil {
+			// can't execute operation, not enough arguments
+			// push fetched argiments back and return error
+			if len(arguments) > 0 {
+				for _, arg := range arguments {
+					vm.stack = vm.stack.Push(arg)
+				}
+			}
+			err = fmt.Errorf("%w: %s", ErrNotEnoughArguments, cmd.Op)
 			return
 		}
 		arguments = append(arguments, argument)
 	}
+
 	result, err := Ops[cmd.Op].Do(arguments...)
 	if vm.stack.Empty() {
 		err = ErrHalt
@@ -130,13 +143,17 @@ func (vm *VM) step() (err error) {
 
 // Run the VM, return ErrVMHalt when finished.
 func (vm *VM) Run() (err error) {
-	// vm.PrintCode()
-	if len(vm.stack) == 1 && !Ops.Has(vm.stack[0].Op) {
+	top, err := vm.Peek()
+	if err != nil {
+		return
+	}
+	if !Ops.Has(top.Op) {
 		// nothing to do, halt immediately
 		err = ErrHalt
 		return
 	}
-	for err = vm.step(); err == nil; {
+	for err == nil {
+		err = vm.step()
 	}
 	return
 }

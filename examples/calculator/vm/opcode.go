@@ -21,7 +21,7 @@ const (
 func (op OpCode) String() string {
 	switch op {
 	case Val:
-		return "V"
+		return "VAL"
 	case Add:
 		return "ADD"
 	case Sub:
