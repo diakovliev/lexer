@@ -2,11 +2,23 @@ package algo
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"math"
 	"strconv"
 
 	"github.com/diakovliev/lexer/examples/calculator/grammar"
+	"github.com/diakovliev/lexer/examples/calculator/vm"
 	"github.com/diakovliev/lexer/message"
+)
+
+var (
+	ErrUnknownToken = errors.New("unknown token")
+)
+
+type (
+	// Token is a lexer token.
+	Token = *message.Message[grammar.Token]
 )
 
 var numberBases = map[string]int{
@@ -83,9 +95,16 @@ func parseNumber(buffer []byte) (any, error) {
 	return result, nil
 }
 
-// Parse - parse tokens to VMCode
-func Parse(tokens []Token) (data []VMCode, err error) {
-	data = make([]VMCode, 0, len(tokens))
+var mapOp = map[grammar.Token]vm.OpCode{
+	grammar.Plus:  vm.Add,
+	grammar.Minus: vm.Sub,
+	grammar.Mul:   vm.Mul,
+	grammar.Div:   vm.Div,
+}
+
+// Parse parses tokens into vm code
+func Parse(tokens []Token) (data []vm.Cell, err error) {
+	data = make([]vm.Cell, 0, len(tokens))
 	for _, token := range tokens {
 		if token.Type == message.Error {
 			err = token.Value.(error)
@@ -105,11 +124,15 @@ func Parse(tokens []Token) (data []VMCode, err error) {
 				err = parseErr
 				return
 			}
-			data = append(data, VMCode{Token: token.Token, Value: value})
+			data = append(data, vm.Cell{Op: vm.Val, Value: value})
 			continue
-
 		default:
-			data = append(data, VMCode{Token: token.Token})
+			op, ok := mapOp[token.Token]
+			if !ok {
+				err = fmt.Errorf("%w: %d", ErrUnknownToken, token.Token)
+				return
+			}
+			data = append(data, vm.Cell{Op: op})
 		}
 	}
 	return

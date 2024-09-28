@@ -2,45 +2,42 @@ package algo
 
 import (
 	"github.com/diakovliev/lexer/examples/calculator/grammar"
-	"github.com/diakovliev/lexer/message"
+	"github.com/diakovliev/lexer/examples/calculator/stack"
 )
 
 type (
-	// Token is a lexer token.
-	Token = *message.Message[grammar.Token]
+	// syOperators is a map of operators and their properties.
+	syOperators map[grammar.Token]syOp
 
-	// Operators is a map of operators and their properties.
-	Operators map[grammar.Token]Op
-
-	// Op is a operator properties.
-	Op struct {
+	// syOp is a operator properties.
+	syOp struct {
 		Precedence int
 		IsLeft     bool
 	}
 )
 
-// Ops is a map of operators and their properties.
-var Ops = Operators{
-	grammar.Plus:  Op{Precedence: 0, IsLeft: true},
-	grammar.Minus: Op{Precedence: 0, IsLeft: true},
-	grammar.Mul:   Op{Precedence: 5, IsLeft: true},
-	grammar.Div:   Op{Precedence: 5, IsLeft: true},
+// syOps is a map of operators and their properties.
+var syOps = syOperators{
+	grammar.Plus:  syOp{Precedence: 0, IsLeft: true},
+	grammar.Minus: syOp{Precedence: 0, IsLeft: true},
+	grammar.Mul:   syOp{Precedence: 5, IsLeft: true},
+	grammar.Div:   syOp{Precedence: 5, IsLeft: true},
 }
 
 // Has checks if the token is an operator.
-func (o Operators) Has(t Token) (ok bool) {
+func (o syOperators) Has(t Token) (ok bool) {
 	_, ok = o[t.Token]
 	return
 }
 
 // Has checks if the token is an operator.
-func (o Operators) HasToken(t grammar.Token) (ok bool) {
+func (o syOperators) HasToken(t grammar.Token) (ok bool) {
 	_, ok = o[t]
 	return
 }
 
 // Precedence returns the precedence of an operator.
-func (o Operators) Precedence(t Token) (p int) {
+func (o syOperators) Precedence(t Token) (p int) {
 	op, ok := o[t.Token]
 	if !ok {
 		panic("unreachable")
@@ -50,7 +47,7 @@ func (o Operators) Precedence(t Token) (p int) {
 }
 
 // IsLeftAssociative checks if the operator is left associative.
-func (o Operators) IsLeftAssociative(t Token) (ok bool) {
+func (o syOperators) IsLeftAssociative(t Token) (ok bool) {
 	op, ok := o[t.Token]
 	if !ok {
 		panic("unreachable")
@@ -60,20 +57,20 @@ func (o Operators) IsLeftAssociative(t Token) (ok bool) {
 
 // ShuntingYard implements the Shunting-yard algorithm for converting an infix expression to a postfix one.
 func ShuntingYard(tokens []Token) (output []Token) {
-	stack := makeStack[Token](100)
+	stack := stack.New[Token](100)
 	output = make([]Token, 0, len(tokens))
 	for _, token := range tokens {
 		switch {
-		case Ops.Has(token):
+		case syOps.Has(token):
 			var precedence int
 			// Check if the operator is right-associative and adjust the precedence comparison accordingly
-			if Ops.IsLeftAssociative(token) {
-				precedence = Ops.Precedence(token)
+			if syOps.IsLeftAssociative(token) {
+				precedence = syOps.Precedence(token)
 			} else {
-				precedence = Ops.Precedence(token) - 1
+				precedence = syOps.Precedence(token) - 1
 			}
 			// Check if the stack is empty or if the top of the stack has a lower precedence than the current operator
-			for !stack.Empty() && Ops.Has(stack.Peek()) && precedence <= Ops.Precedence(stack.Peek()) {
+			for !stack.Empty() && syOps.Has(stack.Peek()) && precedence <= syOps.Precedence(stack.Peek()) {
 				var token Token
 				stack, token = stack.Pop()
 				output = append(output, token)
