@@ -135,20 +135,21 @@ func isZeroMaxRepeat[T any](s Update[T]) (ret bool) {
 	return
 }
 
-func isRepeatable[T any](s Update[T]) bool {
-	if isRepeat[T](s) ||
-		isEmit[T](s) ||
-		isError[T](s) ||
-		isOmit[T](s) ||
-		isRest[T](s) ||
-		isTap[T](s) ||
-		isBreak[T](s) ||
-		isNamed[T](s) ||
-		isNotRepeatableFnRune[T](s) ||
-		isNotRepeatableFnByte[T](s) {
-		return false
-	}
-	return true
+func isRepeatable[T any](s Update[T]) (ret bool) {
+	isRepeatableState := Not(Or(
+		isRepeat[T],
+		isEmit[T],
+		isError[T],
+		isOmit[T],
+		isRest[T],
+		isTap[T],
+		isBreak[T],
+		isNamed[T],
+		isNotRepeatableFnRune[T],
+		isNotRepeatableFnByte[T],
+	))
+	ret = isRepeatableState(s)
+	return
 }
 
 // repeat implements repeat sub state.
@@ -164,7 +165,7 @@ func (c *Chain[T]) repeat(ctx context.Context, state Update[T], repeat error, io
 	count := uint(1)
 loop:
 	for ; count < q.max; count++ {
-		ioState := source.Begin().Ref
+		ioState := source.Begin().Deref()
 		err = state.Update(ctx, ioState)
 		common.AssertError(err, "unexpected no error")
 		tx := xio.AsTx(ioState)

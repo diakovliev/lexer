@@ -27,19 +27,23 @@ func main() {
 	input := os.Stdin
 	var err error
 	if inputFile != "" {
-		input, err = os.OpenFile(inputFile, os.O_RDONLY, 0o644)
+		inputFile, err := os.OpenFile(inputFile, os.O_RDONLY, 0o644)
 		if err != nil {
 			fmt.Printf("ERROR: %s\n", err)
 			return
 		}
+		defer inputFile.Close()
+		input = inputFile
 	}
 	output := os.Stdout
 	if outputFile != "" {
-		output, err = os.OpenFile(outputFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
+		outputFile, err := os.OpenFile(outputFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
 		if err != nil {
 			fmt.Printf("ERROR: %s\n", err)
 			return
 		}
+		defer outputFile.Close()
+		output = outputFile
 	}
 	err = csv.Do(input, output, separator[0], withHeader)
 	if err != nil {

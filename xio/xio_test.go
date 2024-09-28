@@ -103,7 +103,7 @@ func TestReader_Truncate(t *testing.T) {
 		t.Run(
 			fmt.Sprintf("tx %d, buffer size: %d, expected: %s", i, bufferSize, expected),
 			func(t *testing.T) {
-				state := r.Begin().Ref
+				state := r.Begin().Deref()
 				buffer := make([]byte, bufferSize)
 				n, err := state.Read(buffer)
 				if n < bufferSize {

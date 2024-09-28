@@ -66,7 +66,7 @@ func (r *Run[T]) update(ctx context.Context, source xio.Source) (tx xio.Tx, err 
 		err = errStateNoMoreStates
 		return
 	}
-	ioState := source.Begin().Ref
+	ioState := source.Begin().Deref()
 	tx = xio.AsTx(ioState)
 	err = state.Update(ctx, ioState)
 	return

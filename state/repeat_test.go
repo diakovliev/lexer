@@ -229,7 +229,7 @@ func TestRepeat(t *testing.T) {
 			receiver := message.Slice[Token]()
 			builder := makeTestBuilder(receiver)
 			source := xio.New(builder.logger, bytes.NewBufferString(tc.input))
-			err := tc.state(builder).Update(WithNextTokenLevel(context.Background()), source.Begin().Ref)
+			err := tc.state(builder).Update(WithNextTokenLevel(context.Background()), source.Begin().Deref())
 			assert.ErrorIs(t, err, tc.wantError)
 			assert.Equal(t, tc.wantMessages, receiver.Slice)
 		})
