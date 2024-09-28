@@ -88,10 +88,10 @@ func (c *Chain[T]) head() *Chain[T] {
 }
 
 // forwardMessages forwards messages from the head to final receiver.
-func (c *Chain[T]) forwardMessages() {
+func (c *Chain[T]) forwardMessages() (err error) {
 	head := c.head()
-	err := head.receiver.ForwardTo(head.Builder.receiver)
-	common.AssertNoError(err, "forward messages error")
+	err = head.receiver.ForwardTo(head.Builder.receiver)
+	return
 }
 
 // Update implements State interface
@@ -118,7 +118,10 @@ func (c *Chain[T]) Update(ctx context.Context, ioState xio.State) (err error) {
 				err = ErrRollback
 				return
 			}
-			c.forwardMessages()
+			if forwardErr := c.forwardMessages(); forwardErr != nil {
+				err = MakeErrBreak(forwardErr)
+				return
+			}
 			if next == nil {
 				return
 			}
@@ -135,7 +138,10 @@ func (c *Chain[T]) Update(ctx context.Context, ioState xio.State) (err error) {
 			err = ErrChainNext
 		case errors.Is(err, errStateBreak):
 			common.AssertNilPtr(next, "invalid grammar: next can't be from last in chain")
-			c.forwardMessages()
+			if forwardErr := c.forwardMessages(); forwardErr != nil {
+				err = MakeErrBreak(forwardErr)
+				return
+			}
 			return
 		case errors.Is(err, ErrIncomplete), errors.Is(err, ErrInvalidInput):
 			// pass known errors as is
