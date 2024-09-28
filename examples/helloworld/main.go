@@ -28,7 +28,7 @@ const (
 func Lex(input string) (res []*message.Message[Token], err error) {
 	receiver := message.Slice[Token]()
 	lex := lexer.New(
-		logger.New(),
+		logger.Nop(),
 		bytes.NewBufferString(input),
 		message.DefaultFactory[Token](),
 		receiver,
@@ -58,7 +58,6 @@ const (
 )
 
 func main() {
-
 	fmt.Print("The helloworld example. Copyright (C) 2024, daemondzk@gmail.com.\n")
 	fmt.Print("Licensed under the MIT license.\n")
 	fmt.Print("Enter 'hello', 'world' or 'hello world' and press Enter.\n")
