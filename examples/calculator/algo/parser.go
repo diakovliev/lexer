@@ -13,8 +13,12 @@ import (
 )
 
 var (
-	ErrUnknownToken = errors.New("unknown token")
+	ErrUnknownToken             = errors.New("unknown token")
+	ErrNotEnoughArgumentsForSet = errors.New("not enough argiments for 'set'")
+	ErrNonNumberValueAllocation = errors.New("non number value allocation")
 )
+
+const setFunctionName = "set"
 
 type (
 	// Token is a lexer token.
@@ -102,29 +106,56 @@ var mapOp = map[grammar.Token]vm.OpCode{
 	grammar.Div:   vm.Div,
 }
 
+func isNumber(token Token) bool {
+	switch token.Token {
+	case grammar.DecFraction,
+		grammar.BinFraction,
+		grammar.OctFraction,
+		grammar.HexFraction,
+		grammar.DecNumber,
+		grammar.BinNumber,
+		grammar.OctNumber,
+		grammar.HexNumber:
+		return true
+	default:
+		return false
+	}
+}
+
+func filterOutCommas(tokens []Token) (result []Token) {
+	for _, token := range tokens {
+		if token.Token != grammar.Comma {
+			result = append(result, token)
+		}
+	}
+	return
+}
+
 // Parse parses tokens into vm code
 func Parse(tokens []Token) (data []vm.Cell, err error) {
+	tokens = filterOutCommas(tokens)
 	data = make([]vm.Cell, 0, len(tokens))
-	for _, token := range tokens {
+	for i := 0; i < len(tokens); i++ {
+		token := tokens[i]
 		if token.Type == message.Error {
 			err = token.Value.(error)
 			return
 		}
-		switch token.Token {
-		case grammar.DecFraction,
-			grammar.BinFraction,
-			grammar.OctFraction,
-			grammar.HexFraction,
-			grammar.DecNumber,
-			grammar.BinNumber,
-			grammar.OctNumber,
-			grammar.HexNumber:
-			value, parseErr := parseNumber(token.AsBytes())
+		switch {
+		case isNumber(token):
+			number, parseErr := parseNumber(token.AsBytes())
 			if parseErr != nil {
 				err = parseErr
 				return
 			}
-			data = append(data, vm.Cell{Op: vm.Val, Value: value})
+			data = append(data, vm.Cell{Op: vm.Val, Value: number})
+			continue
+		case token.Token == grammar.Identifier:
+			// CALL identifier
+			data = append(data, []vm.Cell{
+				{Op: vm.Ident, Value: token.AsString()},
+				{Op: vm.Call, Value: nil},
+			}...)
 			continue
 		default:
 			op, ok := mapOp[token.Token]

@@ -41,7 +41,11 @@ func main() {
 			fmt.Printf("%s", ps)
 			continue
 		}
-		fmt.Printf("%s%s\n", out, res)
+		if res == "" {
+			fmt.Printf("%s%s\n", out, " <none>")
+		} else {
+			fmt.Printf("%s%s\n", out, res)
+		}
 		fmt.Print(ps)
 	}
 }

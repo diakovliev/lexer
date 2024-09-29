@@ -16,4 +16,6 @@ var (
 	// ErrNotEnoughArguments is returned by vm.execute() when the operation has not enough arguments.
 	// The on top of the stack operation can't be executed.
 	ErrNotEnoughArguments = errors.New("not enough arguments")
+	// ErrUnknownIdentifier is returned by vm.Call() when the identifier is unknown.
+	ErrUnknownIdentifier = errors.New("unknown identifier")
 )

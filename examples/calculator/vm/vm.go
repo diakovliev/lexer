@@ -1,7 +1,6 @@
 package vm
 
 import (
-	"errors"
 	"fmt"
 	"slices"
 
@@ -9,28 +8,48 @@ import (
 )
 
 type (
+	VMLoop interface {
+		Step() error
+	}
+
 	// VM is a simple stack virtual machine
 	VM struct {
-		stack stack.Stack[Cell]
+		state stack.Stack[Cell]
+		vars  map[string]Cell
+		loop  VMLoop
 	}
 )
 
+func newVM(loop func(*VM) VMLoop) (vm *VM) {
+	vm = &VM{
+		vars: make(map[string]Cell),
+	}
+	vm.loop = loop(vm)
+	return
+}
+
 // New creates new virtual machine with given code.
 func New() (vm *VM) {
-	vm = &VM{}
+	vm = newVM(newVMStackLoop)
+	return
+}
+
+func (vm *VM) Reset() (err error) {
+	vm.state = stack.Stack[Cell]{}
+	vm.vars = make(map[string]Cell)
 	return
 }
 
 func (vm *VM) PushCode(code []Cell) *VM {
-	for _, token := range code {
-		vm.stack = vm.stack.Push(token)
+	for _, cell := range code {
+		vm.state = vm.state.Push(cell)
 	}
 	return vm
 }
 
-func (vm *VM) PrintCode() *VM {
-	codeCopy := make([]Cell, len(vm.stack))
-	copy(codeCopy, vm.stack)
+func (vm *VM) PrintState() *VM {
+	codeCopy := make([]Cell, len(vm.state))
+	copy(codeCopy, vm.state)
 	slices.Reverse(codeCopy)
 	for i, c := range codeCopy {
 		if i == 0 {
@@ -42,118 +61,84 @@ func (vm *VM) PrintCode() *VM {
 	return vm
 }
 
+// Empty checks if the stack is empty.
+func (vm VM) Empty() bool {
+	return vm.state.Empty()
+}
+
 // Push pushes new token to the stack of virtual machine.
-func (vm *VM) Push(t Cell) {
-	vm.stack = vm.stack.Push(t)
+func (vm *VM) Push(c Cell) {
+	vm.state = vm.state.Push(c)
 }
 
 // Pop pops token from the stack of virtual machine and returns it.
 // If there is no tokens in the stack, then error will be returned.
-func (vm *VM) Pop() (value Cell, err error) {
-	if vm.stack.Empty() {
+func (vm *VM) Pop() (cell Cell, err error) {
+	if vm.state.Empty() {
 		err = ErrStackEmpty
 		return
 	}
-	vm.stack, value = vm.stack.Pop()
+	vm.state, cell = vm.state.Pop()
 	return
 }
 
 // Peek peeks token from the top of the stack not poping it.
-func (vm *VM) Peek() (value Cell, err error) {
-	if vm.stack.Empty() {
+func (vm VM) Peek() (cell Cell, err error) {
+	if vm.state.Empty() {
 		err = ErrStackEmpty
 		return
 	}
-	value = vm.stack.Peek()
+	cell = vm.state.Peek()
 	return
 }
 
-func (vm *VM) fetchCommand() (cmd Cell, err error) {
-	if vm.stack.Empty() {
-		err = ErrStackEmpty
-		return
-	}
-	vm.stack, cmd = vm.stack.Pop()
-	if !Ops.Has(cmd.Op) {
-		// Return cell to the stack
-		vm.Push(cmd)
-		// Non operation -> halt
-		err = ErrHalt
+func (vm *VM) SetVar(identifier Cell, value Cell) {
+	vm.vars[identifier.String()] = value
+}
+
+func (vm *VM) CreateVar(identifier Cell) {
+	cell := Cell{Op: Val, Value: int64(0)}
+	vm.vars[identifier.String()] = cell
+}
+
+func (vm *VM) GetVar(identifier Cell) (result *Cell, ok bool) {
+	var value Cell
+	if value, ok = vm.vars[identifier.String()]; ok {
+		result = &value
 	}
 	return
 }
 
-func (vm *VM) fetch() (token Cell, err error) {
-	if vm.stack.Empty() {
-		err = ErrStackEmpty
-		return
-	}
-	vm.stack, token = vm.stack.Pop()
-	if Ops.Has(token.Op) {
-		vm.stack = vm.stack.Push(token)
-		if err = vm.step(); err != nil && !errors.Is(err, ErrHalt) {
-			return
+// Call calls an external function or resolves constant or variable
+func (vm *VM) Call(op Cell, args ...Cell) (result *Cell, err error) {
+	identifier := args[0]
+	if !Functs.Has(identifier.String()) {
+		// try to resolve variable
+		var ok bool
+		result, ok = vm.GetVar(identifier)
+		if !ok {
+			err = fmt.Errorf("%w: %s", ErrUnknownIdentifier, identifier.String())
 		}
-		vm.stack, token = vm.stack.Pop()
-		err = nil
-	}
-	return
-}
-
-func (vm *VM) execute(cmd Cell) (err error) {
-	operation := Ops[cmd.Op]
-	var arguments []Cell
-	for i := 0; i < operation.Args; i++ {
-		var argument Cell
-		if argument, err = vm.fetch(); err != nil {
-			// can't execute operation, not enough arguments
-			// push fetched argiments back and return error
-			if len(arguments) > 0 {
-				for _, arg := range arguments {
-					vm.stack = vm.stack.Push(arg)
-				}
-			}
-			err = fmt.Errorf("%w: %s", ErrNotEnoughArguments, cmd.Op)
-			return
-		}
-		arguments = append(arguments, argument)
-	}
-
-	result, err := Ops[cmd.Op].Do(arguments...)
-	if vm.stack.Empty() {
-		err = ErrHalt
-	}
-	// push result
-	vm.stack = vm.stack.Push(result)
-	return
-}
-
-func (vm *VM) step() (err error) {
-	if vm.stack.Empty() {
-		err = ErrStackEmpty
 		return
 	}
-	cmd, err := vm.fetchCommand()
-	if err != nil {
-		return
-	}
-	err = vm.execute(cmd)
+	// invoke function
+	result, err = Functs.Get(identifier.String()).Do(vm, args[1:]...)
 	return
 }
 
 // Run the VM, return ErrVMHalt when finished.
 func (vm *VM) Run() (err error) {
-	top, err := vm.Peek()
+	cell, err := vm.Peek()
 	if err != nil {
 		return
 	}
-	if !Ops.Has(top.Op) {
+	if !cell.Op.IsOperation() {
 		// nothing to do, halt immediately
 		err = ErrHalt
 		return
 	}
 	for err == nil {
-		err = vm.step()
+		err = vm.loop.Step()
 	}
 	return
 }

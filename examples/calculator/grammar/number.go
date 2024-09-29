@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	allNumberTokens = map[Token]bool{
+	allValueTokens = map[Token]bool{
 		BinNumber:   true,
 		OctNumber:   true,
 		DecNumber:   true,
@@ -19,6 +19,7 @@ var (
 		OctFraction: true,
 		DecFraction: true,
 		HexFraction: true,
+		Identifier:  true,
 	}
 
 	plusMinus = state.Or(
@@ -81,7 +82,7 @@ func signedNumberGuard(ctx context.Context, _ xio.State) (err error) {
 		err = state.ErrRollback
 		return
 	}
-	_, ok = allNumberTokens[history[len(history)-1].Token]
+	_, ok = allValueTokens[history[len(history)-1].Token]
 	if ok {
 		err = state.ErrRollback
 	}

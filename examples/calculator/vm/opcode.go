@@ -16,8 +16,23 @@ const (
 	Mul
 	// Div is a division operation.
 	Div
+	// Call is a call operation.
+	Call
+	// Ident is an identifier.
+	Ident
 )
 
+// IsOperation checks if the opcode is an operation.
+func (op OpCode) IsOperation() bool {
+	return Ops.Has(op)
+}
+
+// Args returns the number of required arguments.
+func (op OpCode) Args() int {
+	return Ops[op].Args
+}
+
+// String returns a string representation of the opcode.
 func (op OpCode) String() string {
 	switch op {
 	case Val:
@@ -30,6 +45,10 @@ func (op OpCode) String() string {
 		return "MUL"
 	case Div:
 		return "DIV"
+	case Call:
+		return "CALL"
+	case Ident:
+		return "IDENT"
 	default:
 		panic("unknown opcode")
 	}

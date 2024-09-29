@@ -18,10 +18,12 @@ type (
 
 // syOps is a map of operators and their properties.
 var syOps = syOperators{
-	grammar.Plus:  syOp{Precedence: 0, IsLeft: true},
-	grammar.Minus: syOp{Precedence: 0, IsLeft: true},
-	grammar.Mul:   syOp{Precedence: 5, IsLeft: true},
-	grammar.Div:   syOp{Precedence: 5, IsLeft: true},
+	grammar.Comma:      syOp{Precedence: 0, IsLeft: true},
+	grammar.Plus:       syOp{Precedence: 0, IsLeft: true},
+	grammar.Minus:      syOp{Precedence: 0, IsLeft: true},
+	grammar.Mul:        syOp{Precedence: 5, IsLeft: true},
+	grammar.Div:        syOp{Precedence: 5, IsLeft: true},
+	grammar.Identifier: syOp{Precedence: 10, IsLeft: true},
 }
 
 // Has checks if the token is an operator.

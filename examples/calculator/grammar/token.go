@@ -34,6 +34,10 @@ const (
 	Bra
 	// Ket is a closing bracket token.
 	Ket
+	// Comma
+	Comma
+	// Identifier is an identifier token.
+	Identifier
 )
 
 // String returns the string representation of a token.
@@ -67,6 +71,10 @@ func (t Token) String() string {
 		return "Bra"
 	case Ket:
 		return "Ket"
+	case Comma:
+		return "Comma"
+	case Identifier:
+		return "Identifier"
 	default:
 		panic("unreachable")
 	}

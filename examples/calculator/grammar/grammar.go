@@ -1,25 +1,10 @@
 package grammar
 
 import (
-	"errors"
 	"math"
 	"unicode"
 
 	"github.com/diakovliev/lexer/state"
-)
-
-var (
-	// ErrInvalidExpression is returned when the lexer encounters an invalid expression.
-	ErrInvalidExpression = errors.New("invalid expression")
-	// ErrInvalidNumber is returned when the lexer encounters an invalid number.
-	ErrInvalidNumber = errors.New("invalid number")
-	// ErrUnexpectedBra is returned when the lexer encounters an unexpected '(' character. It means
-	// that expression is reached max scopes depth.
-	ErrUnexpectedBra = errors.New("unexpected '('")
-	// ErrUnexpectedKet is returned when the lexer encounters an unexpected ')' character.
-	ErrUnexpectedKet = errors.New("unexpected ')'")
-	// ErrDisabledHistory is returned when the lexer tries to use history and it's disabled.
-	ErrDisabledHistory = errors.New("history disabled")
 )
 
 var (
@@ -31,6 +16,7 @@ var (
 		state.IsRune('/'),
 		state.IsRune(')'),
 		state.IsRune('('),
+		state.IsRune(','),
 	)
 )
 
@@ -60,6 +46,7 @@ func newState(root bool, maxScopesDepth uint) func(b state.Builder[Token]) []sta
 		base := []state.Update[Token]{
 			// Spaces and tabs are omitted.
 			b.Named("OmitSpaces").RuneCheck(unicode.IsSpace).Repeat(state.CountBetween(1, math.MaxUint)).Omit(),
+			b.Named("Comma").Rune(',').Emit(Comma),
 			// Parens with max depth
 			braState("Bra", maxScopesDepth-1)(b),
 			ketState("Ket", root)(b),
@@ -69,6 +56,8 @@ func newState(root bool, maxScopesDepth uint) func(b state.Builder[Token]) []sta
 			numbers = append(numbers, numberStateBuilder.build(b))
 		}
 		rest := []state.Update[Token]{
+			// Identifiers
+			identifierState("Identifier")(b),
 			// Operators
 			b.Named("Plus").Rune('+').Emit(Plus),
 			b.Named("Minus").Rune('-').Emit(Minus),

@@ -6,7 +6,7 @@ type (
 		// Args is a number of required arguments.
 		Args int
 		// Do is a function that performs the operation.
-		Do func(args ...Cell) (Cell, error)
+		Do func(vm *VM, op Cell, args ...Cell) (*Cell, error)
 	}
 
 	// Operations is a map of operators and their properties.
@@ -20,7 +20,7 @@ func (o Operations) Has(op OpCode) (ok bool) {
 }
 
 // addOperation adds a new operation to the operations map.
-func addOperation(op OpCode, operandsCount int, do func(args ...Cell) (Cell, error)) {
+func addOperation(op OpCode, operandsCount int, do func(vm *VM, op Cell, args ...Cell) (*Cell, error)) {
 	operation := Operation{Args: operandsCount, Do: do}
 	Ops[op] = operation
 }
@@ -28,53 +28,10 @@ func addOperation(op OpCode, operandsCount int, do func(args ...Cell) (Cell, err
 // Ops is a map of operators and their properties.
 var Ops = Operations{}
 
-func add(args ...Cell) (result Cell, err error) {
-	left := args[1]
-	right := args[0]
-	if left.IsWhole() && right.IsWhole() {
-		result = Cell{Op: Val, Value: left.AsInt64() + right.AsInt64()}
-		return
-	}
-	result = Cell{Op: Val, Value: left.AsFloat64() + right.AsFloat64()}
-	return
-}
-
-func sub(args ...Cell) (result Cell, err error) {
-	left := args[1]
-	right := args[0]
-	if left.IsWhole() && right.IsWhole() {
-		result = Cell{Op: Val, Value: left.AsInt64() - right.AsInt64()}
-		return
-	}
-	result = Cell{Op: Val, Value: left.AsFloat64() - right.AsFloat64()}
-	return
-}
-
-func mul(args ...Cell) (result Cell, err error) {
-	left := args[1]
-	right := args[0]
-	if left.IsWhole() && right.IsWhole() {
-		result = Cell{Op: Val, Value: left.AsInt64() * right.AsInt64()}
-		return
-	}
-	result = Cell{Op: Val, Value: left.AsFloat64() * right.AsFloat64()}
-	return
-}
-
-func div(args ...Cell) (result Cell, err error) {
-	left := args[1]
-	right := args[0]
-	if right.IsZero() {
-		err = ErrDivByZero
-		return
-	}
-	result = Cell{Op: Val, Value: left.AsFloat64() / right.AsFloat64()}
-	return
-}
-
 func init() {
 	addOperation(Add, 2, add)
 	addOperation(Sub, 2, sub)
 	addOperation(Mul, 2, mul)
 	addOperation(Div, 2, div)
+	addOperation(Call, 1, call)
 }

@@ -30,3 +30,7 @@ func (s Stack[T]) Pop() (Stack[T], T) {
 	}
 	return s[:l-1], s[l-1]
 }
+
+func (s Stack[T]) AsSlice() []T {
+	return s[:]
+}

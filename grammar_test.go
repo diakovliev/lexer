@@ -36,12 +36,6 @@ var (
 		state.IsRune(','),
 		state.IsRune('"'),
 	)
-
-	identifierBody = state.Or(
-		unicode.IsLetter,
-		unicode.IsDigit,
-		state.IsRune('_'),
-	)
 )
 
 func ketState(name string, root bool) (ket func(b state.Builder[Token]) *state.Chain[Token]) {
@@ -61,47 +55,6 @@ func braState(name string, depth uint) func(b state.Builder[Token]) *state.Chain
 			return base.Emit(Bra).State(b, testGrammar(false, depth-1))
 		}
 		return base.Error(ErrUnexpectedBra)
-	}
-}
-
-func identifierSubState(b state.Builder[Token]) []state.Update[Token] {
-	body := func(b state.Builder[Token]) *state.Chain[Token] {
-		return b.RuneCheck(identifierBody).Repeat(state.CountBetween(0, math.MaxUint))
-	}
-	return state.AsSlice[state.Update[Token]](
-		body(b).FollowedByRuneCheck(allTerms).Break(),
-		// if followed by non known term, emit error
-		body(b).FollowedByNotRuneCheck(unicode.IsDigit).Rest().Error(ErrInvalidIdentifier),
-		// otherwise, break
-		body(b).Break(),
-	)
-}
-
-func identifierState(name string) (identifier func(b state.Builder[Token]) *state.Chain[Token]) {
-	return func(b state.Builder[Token]) *state.Chain[Token] {
-		return b.Named(name).
-			// first letter must be a letter or underscore
-			RuneCheck(unicode.IsLetter).
-			// consume all subsequent letters, digits and underscores
-			State(b, identifierSubState).
-			// if followed by a known term, emit error
-			Emit(Identifier)
-	}
-}
-
-// stringState matches string data between '"' with the escape character '\'
-func stringState(name string, escape rune, border rune) (identifier func(b state.Builder[Token]) *state.Chain[Token]) {
-	return func(b state.Builder[Token]) *state.Chain[Token] {
-		return b.Named(name).
-			// Match the start of string
-			Rune(border).
-			// Consume string data
-			UntilRune(state.Escape(state.IsRune(escape), state.IsRune(border)).Accept).
-			// Match the end of string
-			Rune(border).
-			// We're done!
-			Emit(String)
-
 	}
 }
 

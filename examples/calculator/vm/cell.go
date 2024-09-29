@@ -57,7 +57,7 @@ func (vc Cell) AsFloat64() (f float64) {
 }
 
 func (vc Cell) String() string {
-	if vc.Op != Val {
+	if vc.Op != Val && vc.Op != Ident {
 		return vc.Op.String()
 	}
 	switch v := vc.Value.(type) {
@@ -65,6 +65,8 @@ func (vc Cell) String() string {
 		return fmt.Sprintf("%d", v)
 	case float64:
 		return fmt.Sprintf("%f", v)
+	case string:
+		return v
 	default:
 		return fmt.Sprintf("%v", v)
 	}
