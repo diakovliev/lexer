@@ -39,21 +39,22 @@ func Evaluate(input string) (result string, err error) {
 		err = fmt.Errorf("%w: %s", ErrParserError, err)
 		return
 	}
-	if TraceInitialVMState {
-		fmt.Printf("INITIAL STACK ->\n")
-		VM.PrintCode()
-		fmt.Printf("<- INITIAL STACK\n")
-	}
 	VM.PushCode(code)
+	if TraceInitialVMState {
+		fmt.Printf("INITIAL STATE ->\n")
+		VM.PrintState()
+		fmt.Printf("<- INITIAL STATE\n")
+	}
 	err = VM.Run()
-	VM.PrintCode()
+	VM.PrintState()
 	if err != nil && !errors.Is(err, vm.ErrHalt) {
 		err = fmt.Errorf("%w: %s", ErrVMError, err)
 		return
 	}
 	value, err := VM.Peek()
 	if err != nil {
-		err = fmt.Errorf("%w: %s", ErrNoResult, err)
+		err = nil
+		// err = fmt.Errorf("%w: %s", ErrNoResult, err)
 		return
 	}
 	err = nil
