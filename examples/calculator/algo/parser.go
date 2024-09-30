@@ -34,7 +34,7 @@ var numberBases = map[string]int{
 	grammar.HexNumberPrefixes[1]: 16,
 }
 
-// parse float in arbitraty base
+// parse float in arbitrary base
 // Exponents chart:
 // Pos:       ...  |0   1   2   3   4    5    6   | ...
 // Digits:    ...  |N   N   N   .   N    N    N   | ...
