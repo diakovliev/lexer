@@ -9,6 +9,7 @@ type (
 	Function struct {
 		Args int
 		Do   func(vm *VM, args ...Cell) (result *Cell, err error)
+		Desc string
 	}
 
 	Functions map[string]Function
@@ -241,8 +242,35 @@ func round(_ *VM, args ...Cell) (result *Cell, err error) {
 	return
 }
 
+func help(vm *VM, _ ...Cell) (result *Cell, err error) {
+	fmt.Printf("Supported functions and constants:\n")
+	for name, f := range Functs {
+		fmt.Printf(" %s - %s\n", name, f.Desc)
+	}
+	err = ErrHalt
+	return
+}
+
 func reset(vm *VM, _ ...Cell) (result *Cell, err error) {
 	vm.Reset()
+	err = ErrHalt
+	return
+}
+
+func debug(vm *VM, _ ...Cell) (result *Cell, err error) {
+	vm.ToggleDebug()
+	err = ErrHalt
+	return
+}
+
+func state(vm *VM, _ ...Cell) (result *Cell, err error) {
+	vm.PrintState()
+	err = ErrHalt
+	return
+}
+
+func pop(vm *VM, _ ...Cell) (result *Cell, err error) {
+	vm.Pop()
 	err = ErrHalt
 	return
 }
@@ -255,22 +283,25 @@ func set(vm *VM, args ...Cell) (result *Cell, err error) {
 	}
 	identifier, err := vm.Pop()
 	if err != nil {
+		vm.Push(identifier)
 		err = fmt.Errorf("set: not enough arguments on a stack")
 		return
 	}
 	// We expect strictly CALL <identifier> sequence on stack
 	if call.Op != Call || identifier.Op != Ident {
+		vm.Push(call)
+		vm.Push(identifier)
 		err = fmt.Errorf("set: invalid arguments on a stack")
 		return
 	}
 	if Functs.Has(identifier.String()) {
-		err = fmt.Errorf("set: %s is a reserved name, varible is not set", identifier.String())
+		err = fmt.Errorf("set: %s is a reserved name, variable is not set", identifier.String())
 		return
 	}
 	vm.SetVar(identifier, args[0])
 	result, ok := vm.GetVar(identifier)
 	if !ok {
-		err = fmt.Errorf("set: %s varible is not set", identifier.String())
+		err = fmt.Errorf("set: %s variable is not set", identifier.String())
 	}
 	return
 }
@@ -278,41 +309,45 @@ func set(vm *VM, args ...Cell) (result *Cell, err error) {
 func init() {
 	Functs = Functions{
 		// Constants
-		"Pi":  Function{Args: 0, Do: Pi},
-		"E":   Function{Args: 0, Do: E},
-		"Phi": Function{Args: 0, Do: Phi},
+		"Pi":  Function{Args: 0, Do: Pi, Desc: "PI"},
+		"E":   Function{Args: 0, Do: E, Desc: "E"},
+		"Phi": Function{Args: 0, Do: Phi, Desc: "Phi"},
 		// Exponential
-		"pow": Function{Args: 2, Do: pow},
-		"exp": Function{Args: 1, Do: exp},
+		"pow": Function{Args: 2, Do: pow, Desc: "x to the power of y"},
+		"exp": Function{Args: 1, Do: exp, Desc: "exponential function (e^x)"},
 		// Trigonometric
-		"sqrt": Function{Args: 1, Do: sqrt},
-		"sin":  Function{Args: 1, Do: sin},
-		"cos":  Function{Args: 1, Do: cos},
-		"tan":  Function{Args: 1, Do: tan},
-		"asin": Function{Args: 1, Do: asin},
-		"acos": Function{Args: 1, Do: acos},
-		"atan": Function{Args: 1, Do: atan},
+		"sqrt": Function{Args: 1, Do: sqrt, Desc: "square root function (√x)"},
+		"sin":  Function{Args: 1, Do: sin, Desc: "sine function (sin(x))"},
+		"cos":  Function{Args: 1, Do: cos, Desc: "cosine function (cos(x))"},
+		"tan":  Function{Args: 1, Do: tan, Desc: "tangent function (tan(x))"},
+		"asin": Function{Args: 1, Do: asin, Desc: "arcsine function (arcsin(x))"},
+		"acos": Function{Args: 1, Do: acos, Desc: "arccosine function (arccos(x))"},
+		"atan": Function{Args: 1, Do: atan, Desc: "arctangent function (arctan(x))"},
 		// Hyperbolic
-		"sinh":  Function{Args: 1, Do: sinh},
-		"cosh":  Function{Args: 1, Do: cosh},
-		"tanh":  Function{Args: 1, Do: tanh},
-		"asinh": Function{Args: 1, Do: asinh},
-		"acosh": Function{Args: 1, Do: acosh},
-		"atanh": Function{Args: 1, Do: atanh},
+		"sinh":  Function{Args: 1, Do: sinh, Desc: "hyperbolic sine function (sinh(x))"},
+		"cosh":  Function{Args: 1, Do: cosh, Desc: "hyperbolic cosine function (cosh(x))"},
+		"tanh":  Function{Args: 1, Do: tanh, Desc: "hyperbolic tangent function (tanh(x))"},
+		"asinh": Function{Args: 1, Do: asinh, Desc: "hyperbolic arcsine function (arcsinh(x))"},
+		"acosh": Function{Args: 1, Do: acosh, Desc: "hyperbolic arccosine function (arccosh(x))"},
+		"atanh": Function{Args: 1, Do: atanh, Desc: "hyperbolic arctangent function (arctanh(x))"},
 		// Log
-		"log":   Function{Args: 1, Do: log},
-		"log10": Function{Args: 1, Do: log10},
-		"log2":  Function{Args: 1, Do: log2},
+		"log":   Function{Args: 1, Do: log, Desc: "natural logarithm function (ln(x))"},
+		"log10": Function{Args: 1, Do: log10, Desc: "logarithm base 10 function (log10(x))"},
+		"log2":  Function{Args: 1, Do: log2, Desc: "logarithm base 2 function (log2(x))"},
 		// Miscellaneous
-		"abs":   Function{Args: 1, Do: abs},
-		"min":   Function{Args: 2, Do: min},
-		"max":   Function{Args: 2, Do: max},
-		"floor": Function{Args: 1, Do: floor},
-		"ceil":  Function{Args: 1, Do: ceil},
-		"round": Function{Args: 1, Do: round},
+		"abs":   Function{Args: 1, Do: abs, Desc: "absolute value function (|x|)"},
+		"min":   Function{Args: 2, Do: min, Desc: "minimum function (min(a, b))"},
+		"max":   Function{Args: 2, Do: max, Desc: "maximum function (max(a, b))"},
+		"floor": Function{Args: 1, Do: floor, Desc: "floor function (∌x)"},
+		"ceil":  Function{Args: 1, Do: ceil, Desc: "ceiling function (^x)"},
+		"round": Function{Args: 1, Do: round, Desc: "rounding function (round(x))"},
 		// System
-		"reset": Function{Args: 0, Do: reset},
-		"set":   Function{Args: 1, Do: set},
+		"help":  Function{Args: 0, Do: help, Desc: "display this help message"},
+		"reset": Function{Args: 0, Do: reset, Desc: "reset the calculator to its initial state"},
+		"debug": Function{Args: 0, Do: debug, Desc: "toggle debugging mode on or off"},
+		"state": Function{Args: 0, Do: state, Desc: "display the current calculator state"},
+		"pop":   Function{Args: 0, Do: pop, Desc: "remove the top element from the stack"},
+		"set":   Function{Args: 1, Do: set, Desc: "set a variable to the given value"},
 	}
 }
 

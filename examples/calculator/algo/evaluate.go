@@ -14,8 +14,6 @@ import (
 
 var VM *vm.VM = vm.New()
 
-const TraceInitialVMState = false
-
 var (
 	// ErrVMError is returned when vm failed to execute the code.
 	ErrVMError = errors.New("VM error")
@@ -39,22 +37,13 @@ func Evaluate(input string) (result string, err error) {
 		err = fmt.Errorf("%w: %s", ErrParserError, err)
 		return
 	}
-	VM.PushCode(code)
-	if TraceInitialVMState {
-		fmt.Printf("INITIAL STATE ->\n")
-		VM.PrintState()
-		fmt.Printf("<- INITIAL STATE\n")
-	}
-	err = VM.Run()
-	VM.PrintState()
-	if err != nil && !errors.Is(err, vm.ErrHalt) {
+	if err = VM.PushCode(code).Run(); err != nil && !errors.Is(err, vm.ErrHalt) {
 		err = fmt.Errorf("%w: %s", ErrVMError, err)
 		return
 	}
 	value, err := VM.Peek()
 	if err != nil {
 		err = nil
-		// err = fmt.Errorf("%w: %s", ErrNoResult, err)
 		return
 	}
 	err = nil

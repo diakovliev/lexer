@@ -17,6 +17,7 @@ type (
 		state stack.Stack[Cell]
 		vars  map[string]Cell
 		loop  VMLoop
+		debug bool
 	}
 )
 
@@ -47,10 +48,20 @@ func (vm *VM) PushCode(code []Cell) *VM {
 	return vm
 }
 
+func (vm *VM) ToggleDebug() *VM {
+	vm.debug = !vm.debug
+	return vm
+}
+
 func (vm *VM) PrintState() *VM {
 	codeCopy := make([]Cell, len(vm.state))
 	copy(codeCopy, vm.state)
 	slices.Reverse(codeCopy)
+	fmt.Printf("Variables:\n")
+	for k, v := range vm.vars {
+		fmt.Printf("   %s = %+v\n", k, v)
+	}
+	fmt.Printf("Stack:\n")
 	for i, c := range codeCopy {
 		if i == 0 {
 			fmt.Printf(" * %04d %+v\n", i, c)
@@ -128,6 +139,18 @@ func (vm *VM) Call(op Cell, args ...Cell) (result *Cell, err error) {
 
 // Run the VM, return ErrVMHalt when finished.
 func (vm *VM) Run() (err error) {
+	if vm.debug {
+		fmt.Printf("STATE BEFORE ->\n")
+		vm.PrintState()
+		fmt.Printf("<- STATE BEFORE\n")
+	}
+	defer func() {
+		if vm.debug {
+			fmt.Printf("STATE AFTER ->\n")
+			vm.PrintState()
+			fmt.Printf("<- STATE AFTER\n")
+		}
+	}()
 	cell, err := vm.Peek()
 	if err != nil {
 		return
