@@ -57,7 +57,7 @@ func (vc Cell) AsFloat64() (f float64) {
 }
 
 func (vc Cell) String() string {
-	if vc.Op != Val && vc.Op != Ident {
+	if vc.Op != Val && vc.Op != Call {
 		return vc.Op.String()
 	}
 	switch v := vc.Value.(type) {

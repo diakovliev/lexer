@@ -48,7 +48,10 @@ func main() {
 		defer outputFile.Close()
 		output = outputFile
 	}
-	rows, err := csv.Parse(input, separator[0], withHeader)
+	rows, err := csv.New(
+		csv.WithHeader(withHeader),
+		csv.WithSeparator(separator[0]),
+	).Parse(input)
 	if err != nil {
 		fmt.Printf("ERROR: %s\n", err)
 		return

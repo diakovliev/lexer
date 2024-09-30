@@ -259,12 +259,17 @@ func reset(vm *VM, _ ...Cell) (result *Cell, err error) {
 
 func debug(vm *VM, _ ...Cell) (result *Cell, err error) {
 	vm.ToggleDebug()
+	if vm.IsDebug() {
+		fmt.Println("debug is on")
+	} else {
+		fmt.Println("debug is off")
+	}
 	err = ErrHalt
 	return
 }
 
 func state(vm *VM, _ ...Cell) (result *Cell, err error) {
-	vm.PrintState()
+	vm.PrintState("state: ")
 	err = ErrHalt
 	return
 }
@@ -281,27 +286,21 @@ func set(vm *VM, args ...Cell) (result *Cell, err error) {
 		err = fmt.Errorf("set: not enough arguments on a stack")
 		return
 	}
-	identifier, err := vm.Pop()
-	if err != nil {
-		vm.Push(identifier)
-		err = fmt.Errorf("set: not enough arguments on a stack")
-		return
-	}
-	// We expect strictly CALL <identifier> sequence on stack
-	if call.Op != Call || identifier.Op != Ident {
+	// We expect strictly CALL
+	if call.Op != Call {
 		vm.Push(call)
-		vm.Push(identifier)
 		err = fmt.Errorf("set: invalid arguments on a stack")
 		return
 	}
-	if Functs.Has(identifier.String()) {
-		err = fmt.Errorf("set: %s is a reserved name, variable is not set", identifier.String())
+	identifier := call.Value.(string)
+	if Functs.Has(identifier) {
+		err = fmt.Errorf("set: %s is a reserved name, variable is not set", identifier)
 		return
 	}
 	vm.SetVar(identifier, args[0])
 	result, ok := vm.GetVar(identifier)
 	if !ok {
-		err = fmt.Errorf("set: %s variable is not set", identifier.String())
+		err = fmt.Errorf("set: %s variable is not set", identifier)
 	}
 	return
 }

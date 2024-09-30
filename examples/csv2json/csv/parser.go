@@ -18,11 +18,13 @@ type (
 
 	Token uint
 
-	Receiver struct {
+	Parser struct {
 		currentIndex int
 		header       map[int]string
 		current      []string
 		Rows         []Row
+		withHeader   bool
+		separator    byte
 	}
 )
 
@@ -37,44 +39,53 @@ const (
 	Separator
 )
 
-func newReceiver() *Receiver {
-	return &Receiver{
+func asPtr[T any](v T) *T {
+	return &v
+}
+
+func New(opts ...Option) (ret *Parser) {
+	ret = &Parser{
 		header:  make(map[int]string),
 		current: make([]string, 0),
 		Rows:    make([]Row, 0),
 	}
+	for _, opt := range opts {
+		opt(ret)
+	}
+	return ret
 }
 
-func (r *Receiver) appendRow() {
-	if len(r.current) == 0 {
+func (p *Parser) appendRow() {
+	if len(p.current) == 0 {
 		return
 	}
 	row := make(Row)
-	for i, value := range r.current {
+	for i, value := range p.current {
 		column := fmt.Sprintf("col%d", i)
-		if len(r.header) > 0 {
-			if hdr, ok := r.header[i]; ok {
+		if len(p.header) > 0 {
+			if hdr, ok := p.header[i]; ok {
 				column = hdr
 			}
 		}
 		row[column] = value
 	}
-	r.Rows = append(r.Rows, row)
-	r.currentIndex = 0
-	r.current = make([]string, 0, len(r.header))
+	p.Rows = append(p.Rows, row)
+	p.currentIndex = 0
+	p.current = make([]string, 0, len(p.header))
 }
 
-func (r *Receiver) ensureCurrentIndex(index int) {
-	if index < len(r.current) {
+func (p *Parser) ensureCurrentIndex(index int) {
+	if index < len(p.current) {
 		return
 	}
 	// grow
-	oldCurrent := r.current
-	r.current = make([]string, index+1)
-	copy(r.current, oldCurrent)
+	oldCurrent := p.current
+	p.current = make([]string, index+1)
+	copy(p.current, oldCurrent)
 }
 
-func (r *Receiver) Receive(msgs []*message.Message[Token]) (err error) {
+// Receive receives a message from the parser and updates its state accordingly.
+func (p *Parser) Receive(msgs []*message.Message[Token]) (err error) {
 	for _, msg := range msgs {
 		if msg.Type == message.Error {
 			err = msg.AsError()
@@ -82,62 +93,63 @@ func (r *Receiver) Receive(msgs []*message.Message[Token]) (err error) {
 		}
 		switch msg.Token {
 		case Separator:
-			r.currentIndex++
+			p.currentIndex++
 		case Name:
-			r.header[r.currentIndex] = msg.AsString()
+			p.header[p.currentIndex] = msg.AsString()
 		case Value:
-			r.ensureCurrentIndex(r.currentIndex)
-			r.current[r.currentIndex] = msg.AsString()
+			p.ensureCurrentIndex(p.currentIndex)
+			p.current[p.currentIndex] = msg.AsString()
 		case NL:
-			r.appendRow()
+			p.appendRow()
 		default:
 			panic("unreachable")
 		}
-
 	}
 	return
 }
 
-func (r *Receiver) Complete() *Receiver {
+func (p *Parser) complete() *Parser {
 	// we have to append last row
-	r.appendRow()
-	r.currentIndex = 0
-	return r
+	p.appendRow()
+	p.currentIndex = 0
+	return p
 }
 
-func (r *Receiver) ResetIndex() {
-	r.currentIndex = 0
+func (p *Parser) resetIndex() {
+	p.currentIndex = 0
 }
 
-func asPtr[T any](v T) *T {
-	return &v
+func (p *Parser) reset() {
+	p.header = make(map[int]string)
+	p.current = make([]string, 0)
+	p.Rows = make([]Row, 0)
 }
 
-func Parse(input io.Reader, separator byte, withHeader bool) (rows []Row, err error) {
+func (p *Parser) Parse(input io.Reader) (rows []Row, err error) {
+	p.reset()
 	var token *Token = asPtr(Name)
-	if !withHeader {
+	if !p.withHeader {
 		token = asPtr(Value)
 	}
-	receiver := newReceiver()
 	lex := lexer.New(
 		logger.Nop(),
 		input,
 		message.DefaultFactory[Token](),
-		receiver,
+		p,
 	).With(func(b state.Builder[Token]) []state.Update[Token] {
 		return state.AsSlice[state.Update[Token]](
 			// emit separator
-			b.Named("Separator").Byte(separator).Emit(Separator),
+			b.Named("Separator").Byte(p.separator).Emit(Separator),
 			// generate new lines
 			b.Named("NL").Bytes([]byte("\n"), []byte("\r\n")).Emit(NL).
 				Tap(func(_ context.Context, _ xio.State) (err error) {
 					token = asPtr(Value)
-					receiver.ResetIndex()
+					p.resetIndex()
 					return
 				}),
 			// generate name or value
 			b.Named("NameOrValue").UntilByte(state.Or(
-				state.IsByte(separator),
+				state.IsByte(p.separator),
 				state.IsByte('\n'),
 				state.IsByte('\r'),
 			)).EmitFn(func() Token {
@@ -152,6 +164,6 @@ func Parse(input io.Reader, separator byte, withHeader bool) (rows []Row, err er
 		return
 	}
 	err = nil
-	rows = receiver.Complete().Rows
+	rows = p.complete().Rows
 	return
 }

@@ -33,5 +33,5 @@ func init() {
 	addOperation(Sub, 2, sub)
 	addOperation(Mul, 2, mul)
 	addOperation(Div, 2, div)
-	addOperation(Call, 1, call)
+	addOperation(Call, 0, call)
 }

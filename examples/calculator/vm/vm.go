@@ -8,20 +8,16 @@ import (
 )
 
 type (
-	VMLoop interface {
-		Step() error
-	}
-
 	// VM is a simple stack virtual machine
 	VM struct {
-		state stack.Stack[Cell]
+		code  stack.Stack[Cell]
 		vars  map[string]Cell
-		loop  VMLoop
+		loop  *Loop
 		debug bool
 	}
 )
 
-func newVM(loop func(*VM) VMLoop) (vm *VM) {
+func newVM(loop func(*VM) *Loop) (vm *VM) {
 	vm = &VM{
 		vars: make(map[string]Cell),
 	}
@@ -36,14 +32,14 @@ func New() (vm *VM) {
 }
 
 func (vm *VM) Reset() (err error) {
-	vm.state = stack.Stack[Cell]{}
+	vm.code = stack.Stack[Cell]{}
 	vm.vars = make(map[string]Cell)
 	return
 }
 
 func (vm *VM) PushCode(code []Cell) *VM {
 	for _, cell := range code {
-		vm.state = vm.state.Push(cell)
+		vm.code = vm.code.Push(cell)
 	}
 	return vm
 }
@@ -53,20 +49,29 @@ func (vm *VM) ToggleDebug() *VM {
 	return vm
 }
 
-func (vm *VM) PrintState() *VM {
-	codeCopy := make([]Cell, len(vm.state))
-	copy(codeCopy, vm.state)
+func (vm *VM) IsDebug() bool {
+	return vm.debug
+}
+
+func (vm *VM) PrintState(pfx string) *VM {
+	vm.loop.PrintState(pfx)
+	codeCopy := make([]Cell, len(vm.code))
+	copy(codeCopy, vm.code)
 	slices.Reverse(codeCopy)
-	fmt.Printf("Variables:\n")
-	for k, v := range vm.vars {
-		fmt.Printf("   %s = %+v\n", k, v)
+	if len(vm.vars) > 0 {
+		fmt.Printf("%sVariables:\n", pfx)
+		for k, v := range vm.vars {
+			fmt.Printf("%s    %s = %+v\n", pfx, k, v)
+		}
 	}
-	fmt.Printf("Stack:\n")
-	for i, c := range codeCopy {
-		if i == 0 {
-			fmt.Printf(" * %04d %+v\n", i, c)
-		} else {
-			fmt.Printf("   %04d %+v\n", i, c)
+	if len(codeCopy) > 0 {
+		fmt.Printf("%sStack:\n", pfx)
+		for i, c := range codeCopy {
+			if i == 0 {
+				fmt.Printf("%s  * %04d %+v\n", pfx, i, c)
+			} else {
+				fmt.Printf("%s    %04d %+v\n", pfx, i, c)
+			}
 		}
 	}
 	return vm
@@ -74,47 +79,47 @@ func (vm *VM) PrintState() *VM {
 
 // Empty checks if the stack is empty.
 func (vm VM) Empty() bool {
-	return vm.state.Empty()
+	return vm.code.Empty()
 }
 
 // Push pushes new token to the stack of virtual machine.
 func (vm *VM) Push(c Cell) {
-	vm.state = vm.state.Push(c)
+	vm.code = vm.code.Push(c)
 }
 
 // Pop pops token from the stack of virtual machine and returns it.
 // If there is no tokens in the stack, then error will be returned.
 func (vm *VM) Pop() (cell Cell, err error) {
-	if vm.state.Empty() {
+	if vm.code.Empty() {
 		err = ErrStackEmpty
 		return
 	}
-	vm.state, cell = vm.state.Pop()
+	vm.code, cell = vm.code.Pop()
 	return
 }
 
 // Peek peeks token from the top of the stack not poping it.
 func (vm VM) Peek() (cell Cell, err error) {
-	if vm.state.Empty() {
+	if vm.code.Empty() {
 		err = ErrStackEmpty
 		return
 	}
-	cell = vm.state.Peek()
+	cell = vm.code.Peek()
 	return
 }
 
-func (vm *VM) SetVar(identifier Cell, value Cell) {
-	vm.vars[identifier.String()] = value
+func (vm *VM) SetVar(identifier string, value Cell) {
+	vm.vars[identifier] = value
 }
 
-func (vm *VM) CreateVar(identifier Cell) {
+func (vm *VM) CreateVar(identifier string) {
 	cell := Cell{Op: Val, Value: int64(0)}
-	vm.vars[identifier.String()] = cell
+	vm.vars[identifier] = cell
 }
 
-func (vm *VM) GetVar(identifier Cell) (result *Cell, ok bool) {
+func (vm *VM) GetVar(identifier string) (result *Cell, ok bool) {
 	var value Cell
-	if value, ok = vm.vars[identifier.String()]; ok {
+	if value, ok = vm.vars[identifier]; ok {
 		result = &value
 	}
 	return
@@ -122,33 +127,33 @@ func (vm *VM) GetVar(identifier Cell) (result *Cell, ok bool) {
 
 // Call calls an external function or resolves constant or variable
 func (vm *VM) Call(op Cell, args ...Cell) (result *Cell, err error) {
-	identifier := args[0]
-	if !Functs.Has(identifier.String()) {
+	identifier := op.Value.(string)
+	if !Functs.Has(identifier) {
 		// try to resolve variable
 		var ok bool
 		result, ok = vm.GetVar(identifier)
 		if !ok {
-			err = fmt.Errorf("%w: %s", ErrUnknownIdentifier, identifier.String())
+			err = fmt.Errorf("%w: %s", ErrUnknownIdentifier, identifier)
 		}
 		return
 	}
 	// invoke function
-	result, err = Functs.Get(identifier.String()).Do(vm, args[1:]...)
+	result, err = Functs.Get(identifier).Do(vm, args...)
 	return
 }
 
 // Run the VM, return ErrVMHalt when finished.
 func (vm *VM) Run() (err error) {
 	if vm.debug {
-		fmt.Printf("STATE BEFORE ->\n")
-		vm.PrintState()
-		fmt.Printf("<- STATE BEFORE\n")
+		fmt.Printf("debug: STATE BEFORE ->\n")
+		vm.PrintState("debug: ")
+		fmt.Printf("debug: <- STATE BEFORE\n")
 	}
 	defer func() {
 		if vm.debug {
-			fmt.Printf("STATE AFTER ->\n")
-			vm.PrintState()
-			fmt.Printf("<- STATE AFTER\n")
+			fmt.Printf("debug: STATE AFTER ->\n")
+			vm.PrintState("debug: ")
+			fmt.Printf("debug: <- STATE AFTER\n")
 		}
 	}()
 	cell, err := vm.Peek()
@@ -163,5 +168,6 @@ func (vm *VM) Run() (err error) {
 	for err == nil {
 		err = vm.loop.Step()
 	}
+	vm.loop.Finalize()
 	return
 }

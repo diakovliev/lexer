@@ -6,8 +6,14 @@ type (
 )
 
 const (
-	// Val is a value it marks the token as a value.
-	Val OpCode = iota
+	// Comma is a comma. Used only on parsing.
+	Comma OpCode = iota
+	// Bra is an opening bracket. Used only on parsing.
+	Bra
+	// Ket is a closing bracket. Used only on parsing.
+	Ket
+	// Val is a value it marks the cell as a value.
+	Val
 	// Add is a add operation.
 	Add
 	// Sub is a minus operation.
@@ -18,8 +24,6 @@ const (
 	Div
 	// Call is a call operation.
 	Call
-	// Ident is an identifier.
-	Ident
 )
 
 // IsOperation checks if the opcode is an operation.
@@ -35,6 +39,12 @@ func (op OpCode) Args() int {
 // String returns a string representation of the opcode.
 func (op OpCode) String() string {
 	switch op {
+	case Comma:
+		return ","
+	case Bra:
+		return "("
+	case Ket:
+		return ")"
 	case Val:
 		return "VAL"
 	case Add:
@@ -47,8 +57,6 @@ func (op OpCode) String() string {
 		return "DIV"
 	case Call:
 		return "CALL"
-	case Ident:
-		return "IDENT"
 	default:
 		panic("unknown opcode")
 	}
