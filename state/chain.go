@@ -90,7 +90,8 @@ func (c *Chain[T]) head() *Chain[T] {
 // forwardMessages forwards messages from the head to final receiver.
 func (c *Chain[T]) forwardMessages() (err error) {
 	head := c.head()
-	err = head.receiver.ForwardTo(head.Builder.receiver)
+	err = head.Builder.receiver.Receive(head.receiver.Slice)
+	head.receiver.Reset()
 	return
 }
 
