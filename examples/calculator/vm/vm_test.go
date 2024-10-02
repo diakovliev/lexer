@@ -64,9 +64,7 @@ func TestVm1(t *testing.T) {
 				{Op: Add},
 			},
 			want: []Cell{
-				{Op: Val, Value: int64(1)},
-				{Op: Val, Value: int64(1)},
-				{Op: Add},
+				{Op: Val, Value: int64(2)},
 				{Op: Val, Value: int64(2)},
 			},
 		},
@@ -82,9 +80,7 @@ func TestVm1(t *testing.T) {
 				{Op: Add},
 			},
 			want: []Cell{
-				{Op: Val, Value: int64(4)},
-				{Op: Val, Value: int64(3)},
-				{Op: Add},
+				{Op: Val, Value: int64(7)},
 				{Op: Val, Value: int64(3)},
 			},
 		},
@@ -93,8 +89,7 @@ func TestVm1(t *testing.T) {
 			wantErr: ErrUnknownIdentifier,
 			code: []Cell{
 				{Op: Val, Value: int64(0)},
-				{Op: Val, Value: "garbage_ggg"},
-				{Op: Call},
+				{Op: Call, Value: "garbage_ggg"},
 			},
 			want: []Cell{
 				{Op: Val, Value: int64(0)},
@@ -105,8 +100,7 @@ func TestVm1(t *testing.T) {
 			wantErr: ErrHalt,
 			code: []Cell{
 				{Op: Val, Value: int64(0)},
-				{Op: Ident, Value: "sin"},
-				{Op: Call},
+				{Op: Call, Value: "sin"},
 			},
 			want: []Cell{
 				{Op: Val, Value: float64(0)},
@@ -117,13 +111,12 @@ func TestVm1(t *testing.T) {
 			wantErr: ErrHalt,
 			code: []Cell{
 				{Op: Val, Value: int64(0)},
-				{Op: Ident, Value: "reset"},
-				{Op: Call},
+				{Op: Call, Value: "reset"},
 			},
 			want: []Cell{},
 		},
 		{
-			name:    "pow(1+1+2+2)",
+			name:    "pow(1+1,2+2)",
 			wantErr: ErrHalt,
 			code: []Cell{
 				{Op: Val, Value: int64(1)},
@@ -132,8 +125,7 @@ func TestVm1(t *testing.T) {
 				{Op: Val, Value: int64(2)},
 				{Op: Val, Value: int64(2)},
 				{Op: Add},
-				{Op: Ident, Value: "pow"},
-				{Op: Call},
+				{Op: Call, Value: "pow"},
 			},
 			want: []Cell{
 				{Op: Val, Value: float64(16)},
@@ -143,11 +135,9 @@ func TestVm1(t *testing.T) {
 			name:    "set(x,1)",
 			wantErr: ErrHalt,
 			code: []Cell{
-				{Op: Ident, Value: "x"},
-				{Op: Call},
+				{Op: Call, Value: "x"},
 				{Op: Val, Value: int64(1)},
-				{Op: Ident, Value: "set"},
-				{Op: Call},
+				{Op: Call, Value: "set"},
 			},
 			want: []Cell{
 				{Op: Val, Value: int64(1)},
@@ -160,7 +150,7 @@ func TestVm1(t *testing.T) {
 			vm := New().PushCode(tc.code)
 			err := vm.Run()
 			assert.ErrorIs(t, err, tc.wantErr)
-			assert.Equal(t, tc.want, vm.state.AsSlice())
+			assert.Equal(t, tc.want, vm.code.AsSlice())
 		})
 	}
 }

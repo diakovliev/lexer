@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/diakovliev/lexer/examples/calculator/algo"
+	"github.com/diakovliev/lexer/examples/calculator/evaluate"
 )
 
 const (
@@ -35,7 +35,7 @@ func main() {
 			fmt.Printf("%s", ps)
 			continue
 		}
-		res, err := algo.Evaluate(text)
+		res, err := evaluate.Evaluate(text)
 		if err != nil {
 			fmt.Printf("ERROR: %s\n", err)
 			fmt.Printf("%s", ps)

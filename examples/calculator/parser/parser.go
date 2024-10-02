@@ -1,9 +1,11 @@
-package algo
+package parser
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
+	"io"
 	"math"
 	"strconv"
 
@@ -13,16 +15,20 @@ import (
 )
 
 var (
+	ErrLexerError               = errors.New("lexer error")
 	ErrUnknownToken             = errors.New("unknown token")
-	ErrNotEnoughArgumentsForSet = errors.New("not enough argiments for 'set'")
+	ErrNotEnoughArgumentsForSet = errors.New("not enough arguments for 'set'")
 	ErrNonNumberValueAllocation = errors.New("non number value allocation")
 )
-
-const setFunctionName = "set"
 
 type (
 	// Token is a lexer token.
 	Token = *message.Message[grammar.Token]
+
+	// Parse parses tokens into vm code
+	Parser struct {
+		code []vm.Cell
+	}
 )
 
 var numberBases = map[string]int{
@@ -100,6 +106,9 @@ func parseNumber(buffer []byte) (any, error) {
 }
 
 var mapOp = map[grammar.Token]vm.OpCode{
+	grammar.Comma: vm.Comma,
+	grammar.Bra:   vm.Bra,
+	grammar.Ket:   vm.Ket,
 	grammar.Plus:  vm.Add,
 	grammar.Minus: vm.Sub,
 	grammar.Mul:   vm.Mul,
@@ -122,21 +131,14 @@ func isNumber(token Token) bool {
 	}
 }
 
-func filterOutCommas(tokens []Token) (result []Token) {
-	for _, token := range tokens {
-		if token.Token != grammar.Comma {
-			result = append(result, token)
-		}
+func New() *Parser {
+	return &Parser{
+		code: make([]vm.Cell, 0),
 	}
-	return
 }
 
-// Parse parses tokens into vm code
-func Parse(tokens []Token) (data []vm.Cell, err error) {
-	tokens = filterOutCommas(tokens)
-	data = make([]vm.Cell, 0, len(tokens))
-	for i := 0; i < len(tokens); i++ {
-		token := tokens[i]
+func (p *Parser) Receive(msgs []*message.Message[grammar.Token]) (err error) {
+	for _, token := range msgs {
 		if token.Type == message.Error {
 			err = token.Value.(error)
 			return
@@ -148,13 +150,12 @@ func Parse(tokens []Token) (data []vm.Cell, err error) {
 				err = parseErr
 				return
 			}
-			data = append(data, vm.Cell{Op: vm.Val, Value: number})
+			p.code = append(p.code, vm.Cell{Op: vm.Val, Value: number})
 			continue
 		case token.Token == grammar.Identifier:
 			// CALL identifier
-			data = append(data, []vm.Cell{
-				{Op: vm.Ident, Value: token.AsString()},
-				{Op: vm.Call, Value: nil},
+			p.code = append(p.code, []vm.Cell{
+				{Op: vm.Call, Value: token.AsString()},
 			}...)
 			continue
 		default:
@@ -163,8 +164,35 @@ func Parse(tokens []Token) (data []vm.Cell, err error) {
 				err = fmt.Errorf("%w: %d", ErrUnknownToken, token.Token)
 				return
 			}
-			data = append(data, vm.Cell{Op: op})
+			p.code = append(p.code, vm.Cell{Op: op})
 		}
 	}
+	return
+}
+
+func (p *Parser) reset() {
+	p.code = make([]vm.Cell, 0)
+}
+
+func (p *Parser) withoutCommas() []vm.Cell {
+	var code []vm.Cell
+	for _, cell := range p.code {
+		if cell.Op != vm.Comma {
+			code = append(code, cell)
+		}
+	}
+	return code
+}
+
+func (p *Parser) Parse(input io.Reader) (code []vm.Cell, err error) {
+	p.reset()
+	lexer := grammar.New(input, p)
+	if err = lexer.Run(context.Background()); !errors.Is(err, io.EOF) {
+		err = fmt.Errorf("%w: %s", ErrLexerError, err)
+		return
+	}
+	err = nil
+	p.code = shuntingYard(p.code)
+	code = p.withoutCommas()
 	return
 }
