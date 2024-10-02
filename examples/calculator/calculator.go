@@ -17,7 +17,7 @@ const (
 func main() {
 	fmt.Print("The calculator example. Copyright (C) 2024, daemondzk@gmail.com.\n")
 	fmt.Print("Licensed under the MIT license.\n")
-	fmt.Print("It supports numbers, brackets and basic arithmetic operations: +, -, *, /.\n")
+	fmt.Print("It supports numbers, variables (set(X,...)), brackets, basic arithmetic operations (+, -, *, /) and set of functions (type help).\n")
 	fmt.Print("It is part of the 'github.com/diakovliev/lexer' project.\n")
 	fmt.Print("To exit press Ctrl+C.\n")
 	fmt.Print(ps)
@@ -35,16 +35,10 @@ func main() {
 			fmt.Printf("%s", ps)
 			continue
 		}
-		res, err := evaluate.Evaluate(text)
-		if err != nil {
+		if err := evaluate.Evaluate(text); err != nil {
 			fmt.Printf("ERROR: %s\n", err)
 			fmt.Printf("%s", ps)
 			continue
-		}
-		if res == "" {
-			fmt.Printf("%s%s\n", out, " <none>")
-		} else {
-			fmt.Printf("%s%s\n", out, res)
 		}
 		fmt.Print(ps)
 	}

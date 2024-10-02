@@ -10,16 +10,18 @@ import (
 type (
 	// VM is a simple stack virtual machine
 	VM struct {
-		code  stack.Stack[Cell]
-		vars  map[string]Cell
-		loop  *Loop
-		debug bool
+		code      stack.Stack[Cell]
+		vars      map[string]Cell
+		loop      *Loop
+		debug     bool
+		outputFmt string
 	}
 )
 
 func newVM(loop func(*VM) *Loop) (vm *VM) {
 	vm = &VM{
-		vars: make(map[string]Cell),
+		vars:      make(map[string]Cell),
+		outputFmt: "%s%s[%d]:\t%v\n",
 	}
 	vm.loop = loop(vm)
 	return
@@ -142,6 +144,18 @@ func (vm *VM) Call(op Cell, args ...Cell) (result *Cell, err error) {
 	return
 }
 
+func (vm *VM) Output(prefix, out string) {
+	if len(vm.code) == 0 {
+		fmt.Printf(vm.outputFmt, prefix, out, 0, " <none>")
+		return
+	}
+	idx := 0
+	for i := len(vm.code) - 1; i >= 0; i-- {
+		fmt.Printf(vm.outputFmt, prefix, out, idx, vm.code[i])
+		idx++
+	}
+}
+
 // Run the VM, return ErrVMHalt when finished.
 func (vm *VM) Run() (err error) {
 	if vm.debug {
@@ -156,15 +170,6 @@ func (vm *VM) Run() (err error) {
 			fmt.Printf("debug: <- STATE AFTER\n")
 		}
 	}()
-	cell, err := vm.Peek()
-	if err != nil {
-		return
-	}
-	if !cell.Op.IsOperation() {
-		// nothing to do, halt immediately
-		err = ErrHalt
-		return
-	}
 	for err == nil {
 		err = vm.loop.Step()
 	}

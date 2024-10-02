@@ -106,13 +106,14 @@ func parseNumber(buffer []byte) (any, error) {
 }
 
 var mapOp = map[grammar.Token]vm.OpCode{
-	grammar.Comma: vm.Comma,
-	grammar.Bra:   vm.Bra,
-	grammar.Ket:   vm.Ket,
-	grammar.Plus:  vm.Add,
-	grammar.Minus: vm.Sub,
-	grammar.Mul:   vm.Mul,
-	grammar.Div:   vm.Div,
+	grammar.Comma:      vm.Comma,
+	grammar.Bra:        vm.Bra,
+	grammar.Ket:        vm.Ket,
+	grammar.Plus:       vm.Add,
+	grammar.Minus:      vm.Sub,
+	grammar.Mul:        vm.Mul,
+	grammar.Div:        vm.Div,
+	grammar.Identifier: vm.Call,
 }
 
 func isNumber(token Token) bool {
@@ -152,19 +153,13 @@ func (p *Parser) Receive(msgs []*message.Message[grammar.Token]) (err error) {
 			}
 			p.code = append(p.code, vm.Cell{Op: vm.Val, Value: number})
 			continue
-		case token.Token == grammar.Identifier:
-			// CALL identifier
-			p.code = append(p.code, []vm.Cell{
-				{Op: vm.Call, Value: token.AsString()},
-			}...)
-			continue
 		default:
 			op, ok := mapOp[token.Token]
 			if !ok {
 				err = fmt.Errorf("%w: %d", ErrUnknownToken, token.Token)
 				return
 			}
-			p.code = append(p.code, vm.Cell{Op: op})
+			p.code = append(p.code, vm.Cell{Op: op, Value: token.AsString()})
 		}
 	}
 	return

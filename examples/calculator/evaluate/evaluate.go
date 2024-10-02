@@ -18,22 +18,15 @@ var (
 	ErrParserError = errors.New("parser error")
 )
 
-func Evaluate(input string) (result string, err error) {
+func Evaluate(input string) (err error) {
 	code, err := parser.New().Parse(bytes.NewBufferString(input))
 	if err != nil {
 		err = fmt.Errorf("%w: %s", ErrParserError, err)
 		return
 	}
-	if err = VM.PushCode(code).Run(); err != nil && !errors.Is(err, vm.ErrHalt) {
-		err = fmt.Errorf("%w: %s", ErrVMError, err)
-		return
-	}
-	value, err := VM.Peek()
-	if err != nil {
+	if err = VM.PushCode(code).Run(); errors.Is(err, vm.ErrHalt) {
 		err = nil
-		return
 	}
-	err = nil
-	result = value.String()
+	VM.Output("= ", "S")
 	return
 }
