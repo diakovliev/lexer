@@ -194,6 +194,54 @@ func log2(_ *VM, args ...Cell) (result *Cell, err error) {
 	return
 }
 
+func sum(vm *VM, _ ...Cell) (result *Cell, err error) {
+	var res float64
+	for {
+		cell, err := vm.Pop()
+		if err != nil {
+			break
+		}
+		if cell.Op != Val {
+			vm.Push(cell)
+			break
+		}
+		res += cell.AsFloat64()
+	}
+	result = &Cell{
+		Op:    Val,
+		Value: res,
+	}
+	return
+}
+
+func product(vm *VM, _ ...Cell) (result *Cell, err error) {
+	var res float64 = 1.
+	for {
+		cell, err := vm.Pop()
+		if err != nil {
+			break
+		}
+		if cell.Op != Val {
+			vm.Push(cell)
+			break
+		}
+		res *= cell.AsFloat64()
+	}
+	result = &Cell{
+		Op:    Val,
+		Value: res,
+	}
+	return
+}
+
+func inv(_ *VM, args ...Cell) (result *Cell, err error) {
+	result = &Cell{
+		Op:    Val,
+		Value: 1. / args[0].AsFloat64(),
+	}
+	return
+}
+
 func abs(_ *VM, args ...Cell) (result *Cell, err error) {
 	result = &Cell{
 		Op:    Val,
@@ -334,12 +382,15 @@ func init() {
 		"log10": Function{Args: 1, Do: log10, Desc: "logarithm base 10 function (log10(x))"},
 		"log2":  Function{Args: 1, Do: log2, Desc: "logarithm base 2 function (log2(x))"},
 		// Miscellaneous
-		"abs":   Function{Args: 1, Do: abs, Desc: "absolute value function (|x|)"},
-		"min":   Function{Args: 2, Do: min, Desc: "minimum function (min(a, b))"},
-		"max":   Function{Args: 2, Do: max, Desc: "maximum function (max(a, b))"},
-		"floor": Function{Args: 1, Do: floor, Desc: "floor function (∌x)"},
-		"ceil":  Function{Args: 1, Do: ceil, Desc: "ceiling function (^x)"},
-		"round": Function{Args: 1, Do: round, Desc: "rounding function (round(x))"},
+		"sum":     Function{Args: 0, Do: sum, Desc: "eliminate all values from the top of the stack until the first non value into theirs sum"},
+		"product": Function{Args: 0, Do: product, Desc: "eliminate all values from the top of the stack until the first non value into theirs product"},
+		"inv":     Function{Args: 1, Do: inv, Desc: "inversion (1/x)"},
+		"abs":     Function{Args: 1, Do: abs, Desc: "absolute value function (|x|)"},
+		"min":     Function{Args: 2, Do: min, Desc: "minimum function (min(a, b))"},
+		"max":     Function{Args: 2, Do: max, Desc: "maximum function (max(a, b))"},
+		"floor":   Function{Args: 1, Do: floor, Desc: "floor function (∌x)"},
+		"ceil":    Function{Args: 1, Do: ceil, Desc: "ceiling function (^x)"},
+		"round":   Function{Args: 1, Do: round, Desc: "rounding function (round(x))"},
 		// System
 		"help":  Function{Args: 0, Do: help, Desc: "display this help message"},
 		"reset": Function{Args: 0, Do: reset, Desc: "reset the calculator to its initial state"},
