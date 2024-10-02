@@ -29,12 +29,12 @@ func Remember[T any](receiver Receiver[T], keepCount int) *RememberImpl[T] {
 }
 
 // Receive implements the Receiver interface
-func (h *RememberImpl[T]) Receive(m *Message[T]) (err error) {
+func (h *RememberImpl[T]) Receive(m []*Message[T]) (err error) {
 	err = h.receiver.Receive(m)
 	if err != nil {
 		return
 	}
-	h.messages = append(h.messages, m)
+	h.messages = append(h.messages, m...)
 	if len(h.messages) > h.keepCount {
 		h.messages = h.messages[len(h.messages)-h.keepCount:]
 	}

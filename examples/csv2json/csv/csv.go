@@ -74,23 +74,26 @@ func (r *Receiver) ensureCurrentIndex(index int) {
 	copy(r.current, oldCurrent)
 }
 
-func (r *Receiver) Receive(msg *message.Message[Token]) (err error) {
-	if msg.Type == message.Error {
-		err = msg.AsError()
-		return
-	}
-	switch msg.Token {
-	case Separator:
-		r.currentIndex++
-	case Name:
-		r.header[r.currentIndex] = msg.AsString()
-	case Value:
-		r.ensureCurrentIndex(r.currentIndex)
-		r.current[r.currentIndex] = msg.AsString()
-	case NL:
-		r.appendRow()
-	default:
-		panic("unreachable")
+func (r *Receiver) Receive(msgs []*message.Message[Token]) (err error) {
+	for _, msg := range msgs {
+		if msg.Type == message.Error {
+			err = msg.AsError()
+			return
+		}
+		switch msg.Token {
+		case Separator:
+			r.currentIndex++
+		case Name:
+			r.header[r.currentIndex] = msg.AsString()
+		case Value:
+			r.ensureCurrentIndex(r.currentIndex)
+			r.current[r.currentIndex] = msg.AsString()
+		case NL:
+			r.appendRow()
+		default:
+			panic("unreachable")
+		}
+
 	}
 	return
 }

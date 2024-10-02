@@ -4,7 +4,7 @@ type (
 	// Receiver is a type that can receive messages.
 	Receiver[T any] interface {
 		// Receive receives a message.
-		Receive(*Message[T]) error
+		Receive([]*Message[T]) error
 	}
 
 	// SliceReceiver is a receiver that stores messages in a slice.
@@ -22,7 +22,7 @@ func Dispose[T any]() *DisposeReceiver[T] {
 }
 
 // Receive implements the Receiver interface.
-func (DisposeReceiver[T]) Receive(*Message[T]) (err error) {
+func (DisposeReceiver[T]) Receive([]*Message[T]) (err error) {
 	return
 }
 
@@ -34,29 +34,18 @@ func Slice[T any]() *SliceReceiver[T] {
 }
 
 // Receive implements the Receiver interface.
-func (sr *SliceReceiver[T]) Receive(m *Message[T]) (err error) {
-	newLen := len(sr.Slice) + 1
+func (sr *SliceReceiver[T]) Receive(m []*Message[T]) (err error) {
+	newLen := len(sr.Slice) + len(m)
 	if newLen > cap(sr.Slice) {
 		sr.Slice = growSlice(sr.Slice, newLen)
 	}
-	sr.Slice = append(sr.Slice, m)
+	sr.Slice = append(sr.Slice, m...)
 	return
 }
 
 // Reset resets the slice receiver to an empty state.
 func (sr *SliceReceiver[T]) Reset() {
 	sr.Slice = sr.Slice[:0]
-}
-
-// ForwardTo forwards all messages to the given receiver and resets the slice receiver.
-func (sr *SliceReceiver[T]) ForwardTo(target Receiver[T]) (err error) {
-	for _, m := range sr.Slice {
-		if err = target.Receive(m); err != nil {
-			return err
-		}
-	}
-	sr.Reset()
-	return
 }
 
 // UserErrors returns all errors messages from the slice receiver.

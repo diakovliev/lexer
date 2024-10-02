@@ -46,7 +46,7 @@ func (e Error[T]) Update(ctx context.Context, tx xio.State) (err error) {
 		err = MakeErrBreak(err)
 		return
 	}
-	err = e.receiver.Receive(msg)
+	err = e.receiver.Receive(AsSlice(msg))
 	if err != nil {
 		err = MakeErrBreak(err)
 		return
