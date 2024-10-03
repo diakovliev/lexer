@@ -57,12 +57,14 @@ func New[T any](
 
 // With adds a new states produced by given provider to the lexer.
 func (l *Lexer[T]) With(fn state.Provider[T]) *Lexer[T] {
+	common.AssertNotNil(fn, "state provider is nil")
 	l.provider = fn
 	return l
 }
 
 // Run runs the lexer until it is done or an error occurs.
 func (l *Lexer[T]) Run(ctx context.Context) (err error) {
+	common.AssertNotNil(l.provider, "state provider is nil")
 	if l.history != nil {
 		ctx = state.WithHistoryProvider(ctx, l.history)
 	}

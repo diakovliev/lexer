@@ -1,0 +1,20 @@
+[
+  {
+    "column1": "r0value1",
+    "column2": "r0value2",
+    "column3": "r0value3",
+    "column4": "r0value4"
+  },
+  {
+    "column1": "r1value1",
+    "column2": "r1value2",
+    "column3": "r1value3",
+    "column4": "r1value4"
+  },
+  {
+    "column1": "",
+    "column2": "r1value2",
+    "column3": "",
+    "column4": "r1value4"
+  }
+]
