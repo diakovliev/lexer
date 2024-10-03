@@ -97,7 +97,7 @@ func (i *Iterator[T]) Prev(backIndex ...int) *message.Message[T] {
 func (i *Iterator[T]) Next(ctx context.Context) (msg *message.Message[T], err error) {
 	select {
 	case <-ctx.Done():
-		err = ctx.Err()
+		err = io.EOF
 	case msg = <-i.buffer:
 	}
 	common.AssertFalse(msg == nil && err == nil, "both msg and err are nil")
@@ -107,9 +107,7 @@ func (i *Iterator[T]) Next(ctx context.Context) (msg *message.Message[T], err er
 // Run runs the lexer and yields messages to the iterator channel until the lexer is done or
 // an error occurs. If an error occurs, it is sent to the errors channel and both channels are closed.
 func (i *Iterator[T]) Run(ctx context.Context) (err error) {
-	if err = i.lexer.Run(ctx); err != nil && !errors.Is(err, io.EOF) {
-		i.Error = err
-	}
+	err = i.lexer.Run(ctx)
 	return
 }
 
@@ -130,7 +128,7 @@ func (i *Iterator[T]) Range(yield func(*message.Message[T]) bool) {
 	}()
 	for {
 		msg, err := i.Next(ctx)
-		if err != nil && (errors.Is(err, io.EOF) || errors.Is(err, context.Canceled)) {
+		if err != nil && errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
