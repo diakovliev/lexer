@@ -9,6 +9,11 @@ import (
 	"github.com/diakovliev/lexer/xio"
 )
 
+const (
+	// TODO: Detect the platform's default radix and use it instead of 10.
+	Radix = rune('.')
+)
+
 var (
 	allValueTokens = map[Token]bool{
 		BinNumber:   true,
@@ -28,8 +33,8 @@ var (
 	)
 
 	// Numbers misc
-	IsNumberDot = state.IsRune('.')
-	isHexDigit  = state.Or(
+	IsRadix    = state.IsRune(rune(Radix))
+	isHexDigit = state.Or(
 		unicode.IsDigit,
 		state.IsRune('a'), state.IsRune('A'),
 		state.IsRune('b'), state.IsRune('B'),
@@ -105,7 +110,7 @@ func numberSubState(
 		if withFraction {
 			fraction := func(b state.Builder[Token]) []state.Update[Token] {
 				return state.AsSlice[state.Update[Token]](
-					b.RuneCheck(IsNumberDot).
+					b.RuneCheck(IsRadix).
 						State(b, numberSubState(false, numberBody, maxFractionLen, 0, errInvalidNumber)).Optional().
 						Break(),
 				)
@@ -187,17 +192,17 @@ func (nsb numberStateBuilder) build(b state.Builder[Token]) *state.Chain[Token] 
 
 var numberStateBuilders = []numberStateBuilder{
 	// Bin fractions
-	{"Signed", true, false, IsNumberDot, binNumberBody, BinNumberPrefixes, math.MaxUint, math.MaxUint, BinFraction, ErrInvalidNumber},
-	{"Unsigned", false, false, IsNumberDot, binNumberBody, BinNumberPrefixes, math.MaxUint, math.MaxUint, BinFraction, ErrInvalidNumber},
+	{"Signed", true, false, IsRadix, binNumberBody, BinNumberPrefixes, math.MaxUint, math.MaxUint, BinFraction, ErrInvalidNumber},
+	{"Unsigned", false, false, IsRadix, binNumberBody, BinNumberPrefixes, math.MaxUint, math.MaxUint, BinFraction, ErrInvalidNumber},
 	// Oct fractions
-	{"Signed", true, false, IsNumberDot, octNumberBody, OctNumberPrefixes, math.MaxUint, math.MaxUint, OctFraction, ErrInvalidNumber},
-	{"Unsigned", false, false, IsNumberDot, octNumberBody, OctNumberPrefixes, math.MaxUint, math.MaxUint, OctFraction, ErrInvalidNumber},
+	{"Signed", true, false, IsRadix, octNumberBody, OctNumberPrefixes, math.MaxUint, math.MaxUint, OctFraction, ErrInvalidNumber},
+	{"Unsigned", false, false, IsRadix, octNumberBody, OctNumberPrefixes, math.MaxUint, math.MaxUint, OctFraction, ErrInvalidNumber},
 	// Hex fractions
-	{"Signed", true, false, IsNumberDot, hexNumberBody, HexNumberPrefixes, math.MaxUint, math.MaxUint, HexFraction, ErrInvalidNumber},
-	{"Unsigned", false, false, IsNumberDot, hexNumberBody, HexNumberPrefixes, math.MaxUint, math.MaxUint, HexFraction, ErrInvalidNumber},
+	{"Signed", true, false, IsRadix, hexNumberBody, HexNumberPrefixes, math.MaxUint, math.MaxUint, HexFraction, ErrInvalidNumber},
+	{"Unsigned", false, false, IsRadix, hexNumberBody, HexNumberPrefixes, math.MaxUint, math.MaxUint, HexFraction, ErrInvalidNumber},
 	// Dec fractions
-	{"Signed", true, false, IsNumberDot, decNumberBody, DecNumberPrefixes, math.MaxUint, math.MaxUint, DecFraction, ErrInvalidNumber},
-	{"Unsigned", false, false, IsNumberDot, decNumberBody, DecNumberPrefixes, math.MaxUint, math.MaxUint, DecFraction, ErrInvalidNumber},
+	{"Signed", true, false, IsRadix, decNumberBody, DecNumberPrefixes, math.MaxUint, math.MaxUint, DecFraction, ErrInvalidNumber},
+	{"Unsigned", false, false, IsRadix, decNumberBody, DecNumberPrefixes, math.MaxUint, math.MaxUint, DecFraction, ErrInvalidNumber},
 
 	// Bin numbers
 	{"Signed", true, true, binNumberBody, binNumberBody, BinNumberPrefixes, math.MaxUint, math.MaxUint, BinNumber, ErrInvalidNumber},
