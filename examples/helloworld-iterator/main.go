@@ -47,7 +47,6 @@ const (
 )
 
 func main() {
-	Lex("hello")
 	fmt.Print("The helloworld example. Copyright (C) 2024, daemondzk@gmail.com.\n")
 	fmt.Print("Licensed under the MIT license.\n")
 	fmt.Print("Enter 'hello', 'world' or 'hello world' and press Enter.\n")
