@@ -125,40 +125,48 @@ func (p *Parser) reset() {
 	p.Rows = make([]Row, 0)
 }
 
+func (p *Parser) Grammar(
+	nlCb func(context.Context, xio.State) error,
+	emitCb func() Token,
+) func(b state.Builder[Token]) []state.Update[Token] {
+	return func(b state.Builder[Token]) []state.Update[Token] {
+		return state.AsSlice[state.Update[Token]](
+			// emit separator
+			b.Named("Separator").Byte(p.separator).Emit(Separator),
+			// generate new lines
+			b.Named("NL").Bytes([]byte("\n"), []byte("\r\n")).Emit(NL).Tap(nlCb),
+			// generate name or value
+			b.Named("NameOrValue").UntilByte(state.Or(
+				state.IsByte(p.separator),
+				state.IsByte('\n'),
+				state.IsByte('\r'),
+			)).EmitFn(emitCb),
+			// if we are here - emit error
+			b.Named("Error").Rest().Error(ErrInvalidInput),
+		)
+	}
+}
+
 func (p *Parser) Parse(input io.Reader) (rows []Row, err error) {
 	p.reset()
-	var token *Token = asPtr(Name)
-	if !p.withHeader {
-		token = asPtr(Value)
+	var token *Token = asPtr(Value)
+	if p.withHeader {
+		token = asPtr(Name)
 	}
 	lex := lexer.New(
 		logger.Nop(),
 		input,
 		message.DefaultFactory[Token](),
 		p,
-	).With(func(b state.Builder[Token]) []state.Update[Token] {
-		return state.AsSlice[state.Update[Token]](
-			// emit separator
-			b.Named("Separator").Byte(p.separator).Emit(Separator),
-			// generate new lines
-			b.Named("NL").Bytes([]byte("\n"), []byte("\r\n")).Emit(NL).
-				Tap(func(_ context.Context, _ xio.State) (err error) {
-					token = asPtr(Value)
-					p.resetIndex()
-					return
-				}),
-			// generate name or value
-			b.Named("NameOrValue").UntilByte(state.Or(
-				state.IsByte(p.separator),
-				state.IsByte('\n'),
-				state.IsByte('\r'),
-			)).EmitFn(func() Token {
-				return *token
-			}),
-			// if we are here - emit error
-			b.Named("Error").Rest().Error(ErrInvalidInput),
-		)
-	})
+	).With(p.Grammar(
+		func(_ context.Context, _ xio.State) (err error) {
+			token = asPtr(Value)
+			p.resetIndex()
+			return
+		},
+		func() Token {
+			return *token
+		}))
 	err = lex.Run(context.Background())
 	if err != nil && !errors.Is(err, io.EOF) {
 		return
