@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/diakovliev/lexer/examples/calculator/grammar"
+	"github.com/diakovliev/lexer/examples/calculator/parse"
 )
 
 var (
@@ -14,10 +14,10 @@ var (
 	ErrInvalidBase = fmt.Errorf("invalid base")
 
 	basePrefixes = map[int]string{
-		2:  "0b",
-		8:  "0o",
+		2:  parse.BinPrefixes[0],
+		8:  parse.OctPrefixes[0],
 		10: "",
-		16: "0x",
+		16: parse.HexPrefixes[0],
 	}
 )
 
@@ -53,13 +53,13 @@ func FormatNumber(f float64, prec uint, base int) (ret string, err error) {
 		return
 	}
 	if prec == 0 {
-		round := math.Round(fAbs)
+		round := math.Round(fAbs + tail)
 		builder.WriteString(strings.ToUpper(strconv.FormatInt(int64(round), base)))
 		ret = builder.String()
 		return
 	} else {
 		builder.WriteString(strings.ToUpper(strconv.FormatInt(int64(floor), base)))
-		builder.WriteRune(grammar.Radix)
+		builder.WriteRune(parse.RadixPoint)
 	}
 	for i := uint(0); i < prec; i++ {
 		tail *= float64(base)

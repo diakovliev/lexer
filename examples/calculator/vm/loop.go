@@ -55,7 +55,7 @@ func (loop *Loop) PrintState(pfx string) {
 		fmt.Printf("%sOps stack:\n", pfx)
 		for i := 0; i < len(loop.stack); i++ {
 			sc := loop.stack[i]
-			fmt.Printf("%s    %d %s %v\n", pfx, i, sc.Op.String(), sc.Args)
+			fmt.Printf("%s    %d %s\t%s\n", pfx, i, sc.Op.String(), loop.vm.formatCellValue(sc.Op))
 		}
 	}
 }

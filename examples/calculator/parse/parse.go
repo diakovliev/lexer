@@ -2,44 +2,8 @@ package parse
 
 import (
 	"bytes"
-	"fmt"
 	"math"
 	"strconv"
-
-	"github.com/diakovliev/lexer/examples/calculator/grammar"
-)
-
-var (
-	// ErrInvalidDigit is returned when a digit is invalid.
-	ErrInvalidDigit = fmt.Errorf("invalid digit")
-
-	numberBases = map[string]int{
-		grammar.BinNumberPrefixes[0]: 2,
-		grammar.BinNumberPrefixes[1]: 2,
-		grammar.OctNumberPrefixes[0]: 8,
-		grammar.OctNumberPrefixes[1]: 8,
-		grammar.HexNumberPrefixes[0]: 16,
-		grammar.HexNumberPrefixes[1]: 16,
-	}
-
-	digitsValues = map[byte]float64{
-		'0': 0,
-		'1': 1,
-		'2': 2,
-		'3': 3,
-		'4': 4,
-		'5': 5,
-		'6': 6,
-		'7': 7,
-		'8': 8,
-		'9': 9,
-		'a': 10, 'A': 10,
-		'b': 11, 'B': 11,
-		'c': 12, 'C': 12,
-		'd': 13, 'D': 13,
-		'e': 14, 'E': 14,
-		'f': 15, 'F': 15,
-	}
 )
 
 // parse float in arbitrary base
@@ -49,19 +13,19 @@ var (
 // Exponents: ...  |b^2 b^1 b^0     b^-1 b^-2 b^-3| ...
 func parseFloat(buffer []byte, base int) (result float64, err error) {
 	// I hope we have enough precision)
-	dotPos := bytes.IndexRune(buffer, grammar.Radix)
+	dotPos := bytes.IndexRune(buffer, RadixPoint)
 	maxExponent := dotPos - 1
 	startBase := math.Pow(float64(base), float64(maxExponent))
 	for i := 0; i < len(buffer); i++ {
 		if i == dotPos {
 			continue
 		}
-		dv, ok := digitsValues[buffer[i]]
-		if !ok {
-			err = fmt.Errorf("%w '%c'", ErrInvalidDigit, buffer[i])
+		w, wErr := digitWeight(rune(buffer[i]))
+		if wErr != nil {
+			err = wErr
 			return
 		}
-		delta := dv * startBase
+		delta := w * startBase
 		if math.IsNaN(delta) {
 			// no sense to continue
 			break
@@ -80,14 +44,14 @@ func ParseNumber(buffer []byte) (any, error) {
 		buffer = buffer[1:]
 	}
 	base := 10
-	for prefix, pBase := range numberBases {
+	for prefix, pBase := range bases {
 		if bytes.Contains(buffer, []byte(prefix)) {
 			base = pBase
 			buffer = buffer[len(prefix):]
 			break
 		}
 	}
-	if !bytes.ContainsFunc(buffer, grammar.IsRadix) {
+	if !bytes.ContainsFunc(buffer, IsRadixPoint) {
 		var result int64
 		// whole
 		result, err := strconv.ParseInt(string(buffer), base, 64)

@@ -3,25 +3,49 @@ package vm
 import (
 	"fmt"
 	"slices"
+	"strings"
 
+	"github.com/diakovliev/lexer/examples/calculator/format"
 	"github.com/diakovliev/lexer/examples/calculator/stack"
 )
 
 type (
 	// VM is a simple stack virtual machine
 	VM struct {
-		code      stack.Stack[Cell]
-		vars      map[string]Cell
-		loop      *Loop
-		debug     bool
-		outputFmt string
+		code   stack.Stack[Cell]
+		vars   map[string]Cell
+		loop   *Loop
+		debug  bool
+		outFmt string
+	}
+)
+
+const (
+	outModeVar     = "out_mode"
+	outModeHex     = 1 << 1
+	outModeOct     = 1 << 2
+	outModeBin     = 1 << 3
+	outModeDecOnly = 0
+	outModeAll     = outModeHex | outModeOct | outModeBin
+
+	outPrecisionVar     = "out_precision"
+	outDefaultPrecision = 8
+)
+
+var (
+	settingsVars = map[string]Cell{
+		outModeVar:      {Op: Val, Value: int64(outModeDecOnly)},
+		outPrecisionVar: {Op: Val, Value: int64(outDefaultPrecision)},
 	}
 )
 
 func newVM(loop func(*VM) *Loop) (vm *VM) {
 	vm = &VM{
-		vars:      make(map[string]Cell),
-		outputFmt: "%s%s[%d]:\t%v\n",
+		vars:   map[string]Cell{},
+		outFmt: "%s%s[%d]:\t%s\n",
+	}
+	for k, v := range settingsVars {
+		vm.vars[k] = v
 	}
 	vm.loop = loop(vm)
 	return
@@ -35,7 +59,10 @@ func New() (vm *VM) {
 
 func (vm *VM) Reset() (err error) {
 	vm.code = stack.Stack[Cell]{}
-	vm.vars = make(map[string]Cell)
+	vm.vars = map[string]Cell{}
+	for k, v := range settingsVars {
+		vm.vars[k] = v
+	}
 	return
 }
 
@@ -63,17 +90,17 @@ func (vm *VM) PrintState(pfx string) *VM {
 	if len(vm.vars) > 0 {
 		fmt.Printf("%sVariables:\n", pfx)
 		for k, v := range vm.vars {
-			fmt.Printf("%s    %s = %+v\n", pfx, k, v)
+			fmt.Printf("%s    %s =\t%s\n", pfx, k, vm.formatCellValue(v))
 		}
 	}
 	if len(codeCopy) > 0 {
 		fmt.Printf("%sStack:\n", pfx)
 		for i, c := range codeCopy {
+			fmtStr := "%s    %04d\t%s\n"
 			if i == 0 {
-				fmt.Printf("%s  * %04d %+v\n", pfx, i, c)
-			} else {
-				fmt.Printf("%s    %04d %+v\n", pfx, i, c)
+				fmtStr = "%s  * %04d\t%s\n"
 			}
+			fmt.Printf(fmtStr, pfx, i, vm.formatCellValue(c))
 		}
 	}
 	return vm
@@ -112,6 +139,9 @@ func (vm VM) Peek() (cell Cell, err error) {
 
 func (vm *VM) SetVar(identifier string, value Cell) {
 	vm.vars[identifier] = value
+	if _, ok := settingsVars[identifier]; ok {
+		settingsVars[identifier] = value
+	}
 }
 
 func (vm *VM) CreateVar(identifier string) {
@@ -144,14 +174,59 @@ func (vm *VM) Call(op Cell, args ...Cell) (result *Cell, err error) {
 	return
 }
 
+func (vm VM) getOutBases() (bases []int) {
+	bases = append(bases, 10)
+	cell := vm.vars[outModeVar]
+	mode := cell.AsInt64()
+	if mode&outModeHex != 0 {
+		bases = append(bases, 16)
+	}
+	if mode&outModeOct != 0 {
+		bases = append(bases, 8)
+	}
+	if mode&outModeBin != 0 {
+		bases = append(bases, 2)
+	}
+	return
+}
+
+func (vm VM) getOutPrecision() uint {
+	cell := vm.vars[outPrecisionVar]
+	return uint(cell.AsInt64())
+}
+
+func (vm VM) formatCellValue(cell Cell) (ret string) {
+	builder := strings.Builder{}
+	if !cell.IsNumber() {
+		ret = cell.String()
+		return
+	}
+	precision := vm.getOutPrecision()
+	outBases := vm.getOutBases()
+	for _, base := range outBases {
+		str, err := format.FormatNumber(cell.AsFloat64(), precision, base)
+		if err != nil {
+			builder.WriteString("<")
+			builder.WriteString(err.Error())
+			builder.WriteString(">")
+		} else {
+			builder.WriteString(str)
+		}
+		builder.WriteByte('\t')
+	}
+	ret = strings.TrimSpace(builder.String())
+	return
+}
+
+// Perform output to stdout
 func (vm *VM) Output(prefix, out string) {
 	if len(vm.code) == 0 {
-		fmt.Printf(vm.outputFmt, prefix, out, 0, " <none>")
+		fmt.Printf(vm.outFmt, prefix, out, 0, "<none>")
 		return
 	}
 	idx := 0
 	for i := len(vm.code) - 1; i >= 0; i-- {
-		fmt.Printf(vm.outputFmt, prefix, out, idx, vm.code[i])
+		fmt.Printf(vm.outFmt, prefix, out, idx, vm.formatCellValue(vm.code[i]))
 		idx++
 	}
 }

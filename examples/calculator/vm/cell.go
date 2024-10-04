@@ -11,6 +11,19 @@ type Cell struct {
 	Value any
 }
 
+func (vc Cell) IsNumber() (ret bool) {
+	if vc.Op != Val {
+		return false
+	}
+	switch vc.Value.(type) {
+	case int64:
+		ret = true
+	case float64:
+		ret = true
+	}
+	return
+}
+
 func (vc Cell) IsZero() bool {
 	if vc.Op != Val {
 		panic("not a value")
