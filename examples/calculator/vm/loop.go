@@ -52,10 +52,10 @@ func newVMStackLoop(vm *VM) *Loop {
 
 func (loop *Loop) PrintState(pfx string) {
 	if len(loop.stack) > 0 {
-		fmt.Printf("%sOps stack:\n", pfx)
+		fmt.Fprintf(loop.vm.output, "%sOps stack:\n", pfx)
 		for i := 0; i < len(loop.stack); i++ {
 			sc := loop.stack[i]
-			fmt.Printf("%s    %d %s %v\n", pfx, i, sc.Op.String(), sc.Args)
+			fmt.Fprintf(loop.vm.output, "%s    %d %s\t%s\n", pfx, i, sc.Op.String(), loop.vm.formatCellValue(sc.Op))
 		}
 	}
 }

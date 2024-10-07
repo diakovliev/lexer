@@ -9,7 +9,7 @@ import (
 	"github.com/diakovliev/lexer/examples/calculator/vm"
 )
 
-var VM *vm.VM = vm.New()
+var VM *vm.VM
 
 var (
 	// ErrVMError is returned when vm failed to execute the code.
@@ -18,7 +18,14 @@ var (
 	ErrParserError = errors.New("parser error")
 )
 
+func Init(opts ...vm.Option) {
+	VM = vm.New(opts...)
+}
+
 func Evaluate(input string) (err error) {
+	if VM == nil {
+		panic("vm is not initialized")
+	}
 	code, err := parser.New().Parse(bytes.NewBufferString(input))
 	if err != nil {
 		err = fmt.Errorf("%w: %s", ErrParserError, err)

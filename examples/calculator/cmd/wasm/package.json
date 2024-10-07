@@ -1,0 +1,26 @@
+{
+  "dependencies": {
+    "@xterm/xterm": "^5.5.0",
+    "xterm-addon-fit": "^0.8.0"
+  },
+  "name": "wasm",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "devDependencies": {
+    "css-loader": "^7.1.2",
+    "env-cmd": "^10.1.0",
+    "html-webpack-plugin": "^5.6.0",
+    "style-loader": "^4.0.0",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "scripts": {
+    "build": "npm run build:wasm && npm run copy:wasm-exec && npm run build:js",
+    "build:js": "webpack --config webpack.config.js",
+    "build:wasm": "env-cmd -f ./wasm-build.env go build -o dist/main.wasm main.go",
+    "copy:wasm-exec": "sh copy_wasm_exec.sh"
+  },
+  "author": "Dmytro Iakovliev <daemondzk@gmail.com>",
+  "license": "MIT",
+  "description": ""
+}

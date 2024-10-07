@@ -291,9 +291,9 @@ func round(_ *VM, args ...Cell) (result *Cell, err error) {
 }
 
 func help(vm *VM, _ ...Cell) (result *Cell, err error) {
-	fmt.Printf("Supported functions and constants:\n")
+	fmt.Fprintf(vm.output, "Supported functions and constants:\n")
 	for name, f := range Functs {
-		fmt.Printf(" %s - %s\n", name, f.Desc)
+		fmt.Fprintf(vm.output, " %s - %s\n", name, f.Desc)
 	}
 	err = ErrHalt
 	return
@@ -308,9 +308,9 @@ func reset(vm *VM, _ ...Cell) (result *Cell, err error) {
 func debug(vm *VM, _ ...Cell) (result *Cell, err error) {
 	vm.ToggleDebug()
 	if vm.IsDebug() {
-		fmt.Println("debug is on")
+		fmt.Fprintf(vm.output, "debug is on")
 	} else {
-		fmt.Println("debug is off")
+		fmt.Fprintf(vm.output, "debug is off")
 	}
 	err = ErrHalt
 	return

@@ -1,0 +1,5 @@
+The wasm calculator example. Copyright (C) 2024, daemondzk@gmail.com.
+Licensed under the MIT license.
+It supports numbers, variables (set(X,...)), brackets, basic arithmetic operations (+, -, *, /) and set of functions (type help).
+It is part of the 'github.com/diakovliev/lexer' project.
+To exit press Ctrl+C.

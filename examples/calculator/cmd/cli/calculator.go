@@ -2,11 +2,13 @@ package main
 
 import (
 	"bufio"
+	_ "embed"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/diakovliev/lexer/examples/calculator/evaluate"
+	"github.com/diakovliev/lexer/examples/calculator/vm"
 )
 
 const (
@@ -14,12 +16,15 @@ const (
 	out = "= "
 )
 
+//go:embed welcome.txt
+var welcome string
+
+func init() {
+	evaluate.Init(vm.WithOutput(os.Stdout))
+}
+
 func main() {
-	fmt.Print("The calculator example. Copyright (C) 2024, daemondzk@gmail.com.\n")
-	fmt.Print("Licensed under the MIT license.\n")
-	fmt.Print("It supports numbers, variables (set(X,...)), brackets, basic arithmetic operations (+, -, *, /) and set of functions (type help).\n")
-	fmt.Print("It is part of the 'github.com/diakovliev/lexer' project.\n")
-	fmt.Print("To exit press Ctrl+C.\n")
+	fmt.Print(welcome)
 	fmt.Print(ps)
 	for {
 		scanner := bufio.NewScanner(os.Stdin)
