@@ -2,6 +2,8 @@ package vm
 
 import (
 	"fmt"
+	"io"
+	"os"
 	"slices"
 	"strings"
 
@@ -17,6 +19,7 @@ type (
 		loop   *Loop
 		debug  bool
 		outFmt string
+		output io.Writer
 	}
 )
 
@@ -39,10 +42,14 @@ var (
 	}
 )
 
-func newVM(loop func(*VM) *Loop) (vm *VM) {
+func newVM(loop func(*VM) *Loop, opts ...Option) (vm *VM) {
 	vm = &VM{
 		vars:   map[string]Cell{},
 		outFmt: "%s%s[%d]:\t%s\n",
+		output: os.Stdout,
+	}
+	for _, opt := range opts {
+		opt(vm)
 	}
 	for k, v := range settingsVars {
 		vm.vars[k] = v
@@ -52,11 +59,12 @@ func newVM(loop func(*VM) *Loop) (vm *VM) {
 }
 
 // New creates new virtual machine with given code.
-func New() (vm *VM) {
+func New(opts ...Option) (vm *VM) {
 	vm = newVM(newVMStackLoop)
 	return
 }
 
+// Reset resets virtual machine to initial state, except settings vars.
 func (vm *VM) Reset() (err error) {
 	vm.code = stack.Stack[Cell]{}
 	vm.vars = map[string]Cell{}
@@ -66,6 +74,7 @@ func (vm *VM) Reset() (err error) {
 	return
 }
 
+// PushCode pushes code to the virtual machine stack.
 func (vm *VM) PushCode(code []Cell) *VM {
 	for _, cell := range code {
 		vm.code = vm.code.Push(cell)
@@ -73,34 +82,37 @@ func (vm *VM) PushCode(code []Cell) *VM {
 	return vm
 }
 
+// ToggleDebug enables or disables debug mode.
 func (vm *VM) ToggleDebug() *VM {
 	vm.debug = !vm.debug
 	return vm
 }
 
+// IsDebug returns true if debug mode is enabled.
 func (vm *VM) IsDebug() bool {
 	return vm.debug
 }
 
+// PrintState prints current state of the virtual machine to output.
 func (vm *VM) PrintState(pfx string) *VM {
 	vm.loop.PrintState(pfx)
 	codeCopy := make([]Cell, len(vm.code))
 	copy(codeCopy, vm.code)
 	slices.Reverse(codeCopy)
 	if len(vm.vars) > 0 {
-		fmt.Printf("%sVariables:\n", pfx)
+		fmt.Fprintf(vm.output, "%sVariables:\n", pfx)
 		for k, v := range vm.vars {
-			fmt.Printf("%s    %s =\t%s\n", pfx, k, vm.formatCellValue(v))
+			fmt.Fprintf(vm.output, "%s    %s =\t%s\n", pfx, k, vm.formatCellValue(v))
 		}
 	}
 	if len(codeCopy) > 0 {
-		fmt.Printf("%sStack:\n", pfx)
+		fmt.Fprintf(vm.output, "%sStack:\n", pfx)
 		for i, c := range codeCopy {
 			fmtStr := "%s    %04d\t%s\n"
 			if i == 0 {
 				fmtStr = "%s  * %04d\t%s\n"
 			}
-			fmt.Printf(fmtStr, pfx, i, vm.formatCellValue(c))
+			fmt.Fprintf(vm.output, fmtStr, pfx, i, vm.formatCellValue(c))
 		}
 	}
 	return vm
@@ -137,6 +149,7 @@ func (vm VM) Peek() (cell Cell, err error) {
 	return
 }
 
+// SetVar sets variable to the given value. It also updates settingsVars map.
 func (vm *VM) SetVar(identifier string, value Cell) {
 	vm.vars[identifier] = value
 	if _, ok := settingsVars[identifier]; ok {
@@ -144,11 +157,13 @@ func (vm *VM) SetVar(identifier string, value Cell) {
 	}
 }
 
+// CreateVar creates new variable with given identifier and sets it to zero.
 func (vm *VM) CreateVar(identifier string) {
 	cell := Cell{Op: Val, Value: int64(0)}
 	vm.vars[identifier] = cell
 }
 
+// GetVar returns cell with given identifier and true if it exists in the vars map. Otherwise false.
 func (vm *VM) GetVar(identifier string) (result *Cell, ok bool) {
 	var value Cell
 	if value, ok = vm.vars[identifier]; ok {
@@ -221,12 +236,12 @@ func (vm VM) formatCellValue(cell Cell) (ret string) {
 // Perform output to stdout
 func (vm *VM) Output(prefix, out string) {
 	if len(vm.code) == 0 {
-		fmt.Printf(vm.outFmt, prefix, out, 0, "<none>")
+		fmt.Fprintf(vm.output, vm.outFmt, prefix, out, 0, "<none>")
 		return
 	}
 	idx := 0
 	for i := len(vm.code) - 1; i >= 0; i-- {
-		fmt.Printf(vm.outFmt, prefix, out, idx, vm.formatCellValue(vm.code[i]))
+		fmt.Fprintf(vm.output, vm.outFmt, prefix, out, idx, vm.formatCellValue(vm.code[i]))
 		idx++
 	}
 }
@@ -234,15 +249,15 @@ func (vm *VM) Output(prefix, out string) {
 // Run the VM, return ErrVMHalt when finished.
 func (vm *VM) Run() (err error) {
 	if vm.debug {
-		fmt.Printf("debug: STATE BEFORE ->\n")
+		fmt.Fprintf(vm.output, "debug: STATE BEFORE ->\n")
 		vm.PrintState("debug: ")
-		fmt.Printf("debug: <- STATE BEFORE\n")
+		fmt.Fprintf(vm.output, "debug: <- STATE BEFORE\n")
 	}
 	defer func() {
 		if vm.debug {
-			fmt.Printf("debug: STATE AFTER ->\n")
+			fmt.Fprintf(vm.output, "debug: STATE AFTER ->\n")
 			vm.PrintState("debug: ")
-			fmt.Printf("debug: <- STATE AFTER\n")
+			fmt.Fprintf(vm.output, "debug: <- STATE AFTER\n")
 		}
 	}()
 	for err == nil {

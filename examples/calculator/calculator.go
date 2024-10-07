@@ -7,12 +7,17 @@ import (
 	"strings"
 
 	"github.com/diakovliev/lexer/examples/calculator/evaluate"
+	"github.com/diakovliev/lexer/examples/calculator/vm"
 )
 
 const (
 	ps  = "? "
 	out = "= "
 )
+
+func init() {
+	evaluate.Init(vm.WithOutput(os.Stdout))
+}
 
 func main() {
 	fmt.Print("The calculator example. Copyright (C) 2024, daemondzk@gmail.com.\n")
