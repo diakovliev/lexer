@@ -60,7 +60,7 @@ func newVM(loop func(*VM) *Loop, opts ...Option) (vm *VM) {
 
 // New creates new virtual machine with given code.
 func New(opts ...Option) (vm *VM) {
-	vm = newVM(newVMStackLoop)
+	vm = newVM(newVMStackLoop, opts...)
 	return
 }
 
