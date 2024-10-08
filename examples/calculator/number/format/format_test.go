@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/diakovliev/lexer/examples/calculator/parse"
+	"github.com/diakovliev/lexer/examples/calculator/number/parse"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,6 +17,12 @@ func TestFormatNumber(t *testing.T) {
 		wantError error
 	}
 	tests := []testCase{
+		{
+			input:    "-0.32813326",
+			prec:     8,
+			base:     10,
+			expected: "-0.32813326",
+		},
 		{
 			input:    "0xABC",
 			prec:     0,
@@ -93,17 +99,17 @@ func TestFormatNumber(t *testing.T) {
 	for _, tc := range tests {
 		testName := fmt.Sprintf("input %s base %d prec %d expected %s", tc.input, tc.base, tc.prec, tc.expected)
 		t.Run(testName, func(t *testing.T) {
-			a, err := parse.ParseNumber([]byte(tc.input))
+			num, err := parse.ParseNumber([]byte(tc.input))
 			assert.NoError(t, err)
-			assert.NotNil(t, a)
+			assert.NotNil(t, num)
 			f := 0.0
-			switch v := a.(type) {
+			switch v := num.(type) {
 			case int64:
 				f = float64(v)
 			case float64:
 				f = v
 			default:
-				assert.FailNow(t, "unexpected parsed type %T", a)
+				assert.FailNow(t, "unexpected parsed type %T", num)
 			}
 			actual, err := FormatNumber(f, tc.prec, tc.base)
 			if tc.wantError != nil {

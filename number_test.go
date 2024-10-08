@@ -44,11 +44,11 @@ var (
 	)
 
 	// Number bodies
-	binNumberBody = state.Or(
+	IsBinDigit = state.Or(
 		state.IsRune('0'),
 		state.IsRune('1'),
 	)
-	octNumberBody = state.Or(
+	IsOctDigit = state.Or(
 		state.IsRune('0'),
 		state.IsRune('1'),
 		state.IsRune('2'),
@@ -58,18 +58,18 @@ var (
 		state.IsRune('6'),
 		state.IsRune('7'),
 	)
-	decNumberBody = unicode.IsDigit
-	hexNumberBody = isHexDigit
+	IsDecDigit = unicode.IsDigit
+	IsHexDigit = isHexDigit
 
 	// Number prefixes
-	binNumberPrefixes = []string{
+	BinPrefixes = []string{
 		"0b", "0B",
 	}
-	octNumberPrefixes = []string{
+	OctPrefixes = []string{
 		"0o", "0O",
 	}
-	decNumberPrefixes = []string{}
-	hexNumberPrefixes = []string{
+	DecPrefixes = []string{}
+	HexPrefixes = []string{
 		"0x", "0X",
 	}
 )
@@ -193,30 +193,30 @@ func (nsb numberStateBuilder) build(b state.Builder[Token]) *state.Chain[Token] 
 
 var numberStateBuilders = []numberStateBuilder{
 	// Bin fractions
-	{"Signed", true, false, isNumberDot, binNumberBody, binNumberPrefixes, math.MaxUint, math.MaxUint, BinFraction, ErrInvalidNumber},
-	{"Unsigned", false, false, isNumberDot, binNumberBody, binNumberPrefixes, math.MaxUint, math.MaxUint, BinFraction, ErrInvalidNumber},
+	{"Signed", true, false, isNumberDot, IsBinDigit, BinPrefixes, math.MaxUint, math.MaxUint, BinFraction, ErrInvalidNumber},
+	{"Unsigned", false, false, isNumberDot, IsBinDigit, BinPrefixes, math.MaxUint, math.MaxUint, BinFraction, ErrInvalidNumber},
 	// Oct fractions
-	{"Signed", true, false, isNumberDot, octNumberBody, octNumberPrefixes, math.MaxUint, math.MaxUint, OctFraction, ErrInvalidNumber},
-	{"Unsigned", false, false, isNumberDot, octNumberBody, octNumberPrefixes, math.MaxUint, math.MaxUint, OctFraction, ErrInvalidNumber},
+	{"Signed", true, false, isNumberDot, IsOctDigit, OctPrefixes, math.MaxUint, math.MaxUint, OctFraction, ErrInvalidNumber},
+	{"Unsigned", false, false, isNumberDot, IsOctDigit, OctPrefixes, math.MaxUint, math.MaxUint, OctFraction, ErrInvalidNumber},
 	// Hex fractions
-	{"Signed", true, false, isNumberDot, hexNumberBody, hexNumberPrefixes, math.MaxUint, math.MaxUint, HexFraction, ErrInvalidNumber},
-	{"Unsigned", false, false, isNumberDot, hexNumberBody, hexNumberPrefixes, math.MaxUint, math.MaxUint, HexFraction, ErrInvalidNumber},
+	{"Signed", true, false, isNumberDot, IsHexDigit, HexPrefixes, math.MaxUint, math.MaxUint, HexFraction, ErrInvalidNumber},
+	{"Unsigned", false, false, isNumberDot, IsHexDigit, HexPrefixes, math.MaxUint, math.MaxUint, HexFraction, ErrInvalidNumber},
 	// Dec fractions
-	{"Signed", true, false, isNumberDot, decNumberBody, decNumberPrefixes, math.MaxUint, math.MaxUint, DecFraction, ErrInvalidNumber},
-	{"Unsigned", false, false, isNumberDot, decNumberBody, decNumberPrefixes, math.MaxUint, math.MaxUint, DecFraction, ErrInvalidNumber},
+	{"Signed", true, false, isNumberDot, IsDecDigit, DecPrefixes, math.MaxUint, math.MaxUint, DecFraction, ErrInvalidNumber},
+	{"Unsigned", false, false, isNumberDot, IsDecDigit, DecPrefixes, math.MaxUint, math.MaxUint, DecFraction, ErrInvalidNumber},
 
 	// Bin numbers
-	{"Signed", true, true, binNumberBody, binNumberBody, binNumberPrefixes, math.MaxUint, math.MaxUint, BinNumber, ErrInvalidNumber},
-	{"Unsigned", false, true, binNumberBody, binNumberBody, binNumberPrefixes, math.MaxUint, math.MaxUint, BinNumber, ErrInvalidNumber},
+	{"Signed", true, true, IsBinDigit, IsBinDigit, BinPrefixes, math.MaxUint, math.MaxUint, BinNumber, ErrInvalidNumber},
+	{"Unsigned", false, true, IsBinDigit, IsBinDigit, BinPrefixes, math.MaxUint, math.MaxUint, BinNumber, ErrInvalidNumber},
 	// Oct numbers
-	{"Signed", true, true, octNumberBody, octNumberBody, octNumberPrefixes, math.MaxUint, math.MaxUint, OctNumber, ErrInvalidNumber},
-	{"Unsigned", false, true, octNumberBody, octNumberBody, octNumberPrefixes, math.MaxUint, math.MaxUint, OctNumber, ErrInvalidNumber},
+	{"Signed", true, true, IsOctDigit, IsOctDigit, OctPrefixes, math.MaxUint, math.MaxUint, OctNumber, ErrInvalidNumber},
+	{"Unsigned", false, true, IsOctDigit, IsOctDigit, OctPrefixes, math.MaxUint, math.MaxUint, OctNumber, ErrInvalidNumber},
 	// Hex numbers
-	{"Signed", true, true, hexNumberBody, hexNumberBody, hexNumberPrefixes, math.MaxUint, math.MaxUint, HexNumber, ErrInvalidNumber},
-	{"Unsigned", false, true, hexNumberBody, hexNumberBody, hexNumberPrefixes, math.MaxUint, math.MaxUint, HexNumber, ErrInvalidNumber},
+	{"Signed", true, true, IsHexDigit, IsHexDigit, HexPrefixes, math.MaxUint, math.MaxUint, HexNumber, ErrInvalidNumber},
+	{"Unsigned", false, true, IsHexDigit, IsHexDigit, HexPrefixes, math.MaxUint, math.MaxUint, HexNumber, ErrInvalidNumber},
 	// Dec numbers
-	{"Signed", true, true, decNumberBody, decNumberBody, decNumberPrefixes, math.MaxUint, math.MaxUint, DecNumber, ErrInvalidNumber},
-	{"Unsigned", false, true, decNumberBody, decNumberBody, decNumberPrefixes, math.MaxUint, math.MaxUint, DecNumber, ErrInvalidNumber},
+	{"Signed", true, true, IsDecDigit, IsDecDigit, DecPrefixes, math.MaxUint, math.MaxUint, DecNumber, ErrInvalidNumber},
+	{"Unsigned", false, true, IsDecDigit, IsDecDigit, DecPrefixes, math.MaxUint, math.MaxUint, DecNumber, ErrInvalidNumber},
 }
 
 // /////////////////////////////////////////////////////////////////////////////
@@ -345,109 +345,109 @@ func numberTests() (tests []testCase) {
 	// Numbers
 	for _, width := range inputWidth {
 		tests = append(tests, []testCase{
-			randomNumberTest(0, BinNumber, width, false, binNumberPrefixes[0], "", io.EOF),
-			randomNumberTest(0, BinNumber, width, false, binNumberPrefixes[1], "", io.EOF),
-			randomNumberTest(0, BinNumber, width, false, binNumberPrefixes[0], ".", io.EOF),
-			randomNumberTest(0, BinNumber, width, false, binNumberPrefixes[1], ".", io.EOF),
-			randomNumberTest(0, BinNumber, width, false, "-"+binNumberPrefixes[0], "", io.EOF),
-			randomNumberTest(0, BinNumber, width, false, "-"+binNumberPrefixes[1], "", io.EOF),
-			randomNumberTest(0, BinNumber, width, false, "-"+binNumberPrefixes[0], ".", io.EOF),
-			randomNumberTest(0, BinNumber, width, false, "-"+binNumberPrefixes[1], ".", io.EOF),
+			randomNumberTest(0, BinNumber, width, false, BinPrefixes[0], "", io.EOF),
+			randomNumberTest(0, BinNumber, width, false, BinPrefixes[1], "", io.EOF),
+			randomNumberTest(0, BinNumber, width, false, BinPrefixes[0], ".", io.EOF),
+			randomNumberTest(0, BinNumber, width, false, BinPrefixes[1], ".", io.EOF),
+			randomNumberTest(0, BinNumber, width, false, "-"+BinPrefixes[0], "", io.EOF),
+			randomNumberTest(0, BinNumber, width, false, "-"+BinPrefixes[1], "", io.EOF),
+			randomNumberTest(0, BinNumber, width, false, "-"+BinPrefixes[0], ".", io.EOF),
+			randomNumberTest(0, BinNumber, width, false, "-"+BinPrefixes[1], ".", io.EOF),
 
-			randomNumberTest(0, OctNumber, width, false, octNumberPrefixes[0], "", io.EOF),
-			randomNumberTest(0, OctNumber, width, false, octNumberPrefixes[1], "", io.EOF),
-			randomNumberTest(0, OctNumber, width, false, octNumberPrefixes[0], ".", io.EOF),
-			randomNumberTest(0, OctNumber, width, false, octNumberPrefixes[1], ".", io.EOF),
-			randomNumberTest(0, OctNumber, width, false, "-"+octNumberPrefixes[0], "", io.EOF),
-			randomNumberTest(0, OctNumber, width, false, "-"+octNumberPrefixes[1], "", io.EOF),
-			randomNumberTest(0, OctNumber, width, false, "-"+octNumberPrefixes[0], ".", io.EOF),
-			randomNumberTest(0, OctNumber, width, false, "-"+octNumberPrefixes[1], ".", io.EOF),
+			randomNumberTest(0, OctNumber, width, false, OctPrefixes[0], "", io.EOF),
+			randomNumberTest(0, OctNumber, width, false, OctPrefixes[1], "", io.EOF),
+			randomNumberTest(0, OctNumber, width, false, OctPrefixes[0], ".", io.EOF),
+			randomNumberTest(0, OctNumber, width, false, OctPrefixes[1], ".", io.EOF),
+			randomNumberTest(0, OctNumber, width, false, "-"+OctPrefixes[0], "", io.EOF),
+			randomNumberTest(0, OctNumber, width, false, "-"+OctPrefixes[1], "", io.EOF),
+			randomNumberTest(0, OctNumber, width, false, "-"+OctPrefixes[0], ".", io.EOF),
+			randomNumberTest(0, OctNumber, width, false, "-"+OctPrefixes[1], ".", io.EOF),
 
 			randomNumberTest(0, DecNumber, width, false, "", "", io.EOF),
 			randomNumberTest(0, DecNumber, width, false, "", ".", io.EOF),
 
-			randomNumberTest(0, HexNumber, width, false, hexNumberPrefixes[0], "", io.EOF),
-			randomNumberTest(0, HexNumber, width, false, hexNumberPrefixes[1], "", io.EOF),
-			randomNumberTest(0, HexNumber, width, true, hexNumberPrefixes[0], "", io.EOF),
-			randomNumberTest(0, HexNumber, width, true, hexNumberPrefixes[1], "", io.EOF),
-			randomNumberTest(0, HexNumber, width, false, hexNumberPrefixes[0], ".", io.EOF),
-			randomNumberTest(0, HexNumber, width, false, hexNumberPrefixes[1], ".", io.EOF),
-			randomNumberTest(0, HexNumber, width, true, hexNumberPrefixes[0], ".", io.EOF),
-			randomNumberTest(0, HexNumber, width, true, hexNumberPrefixes[1], ".", io.EOF),
-			randomNumberTest(0, HexNumber, width, false, "-"+hexNumberPrefixes[0], "", io.EOF),
-			randomNumberTest(0, HexNumber, width, false, "-"+hexNumberPrefixes[1], "", io.EOF),
-			randomNumberTest(0, HexNumber, width, true, "-"+hexNumberPrefixes[0], "", io.EOF),
-			randomNumberTest(0, HexNumber, width, true, "-"+hexNumberPrefixes[1], "", io.EOF),
-			randomNumberTest(0, HexNumber, width, false, "-"+hexNumberPrefixes[0], ".", io.EOF),
-			randomNumberTest(0, HexNumber, width, false, "-"+hexNumberPrefixes[1], ".", io.EOF),
-			randomNumberTest(0, HexNumber, width, true, "-"+hexNumberPrefixes[0], ".", io.EOF),
-			randomNumberTest(0, HexNumber, width, true, "-"+hexNumberPrefixes[1], ".", io.EOF),
+			randomNumberTest(0, HexNumber, width, false, HexPrefixes[0], "", io.EOF),
+			randomNumberTest(0, HexNumber, width, false, HexPrefixes[1], "", io.EOF),
+			randomNumberTest(0, HexNumber, width, true, HexPrefixes[0], "", io.EOF),
+			randomNumberTest(0, HexNumber, width, true, HexPrefixes[1], "", io.EOF),
+			randomNumberTest(0, HexNumber, width, false, HexPrefixes[0], ".", io.EOF),
+			randomNumberTest(0, HexNumber, width, false, HexPrefixes[1], ".", io.EOF),
+			randomNumberTest(0, HexNumber, width, true, HexPrefixes[0], ".", io.EOF),
+			randomNumberTest(0, HexNumber, width, true, HexPrefixes[1], ".", io.EOF),
+			randomNumberTest(0, HexNumber, width, false, "-"+HexPrefixes[0], "", io.EOF),
+			randomNumberTest(0, HexNumber, width, false, "-"+HexPrefixes[1], "", io.EOF),
+			randomNumberTest(0, HexNumber, width, true, "-"+HexPrefixes[0], "", io.EOF),
+			randomNumberTest(0, HexNumber, width, true, "-"+HexPrefixes[1], "", io.EOF),
+			randomNumberTest(0, HexNumber, width, false, "-"+HexPrefixes[0], ".", io.EOF),
+			randomNumberTest(0, HexNumber, width, false, "-"+HexPrefixes[1], ".", io.EOF),
+			randomNumberTest(0, HexNumber, width, true, "-"+HexPrefixes[0], ".", io.EOF),
+			randomNumberTest(0, HexNumber, width, true, "-"+HexPrefixes[1], ".", io.EOF),
 		}...)
 	}
 
 	// Numbers with fractions
 	for _, width := range inputWidth {
 		tests = append(tests, []testCase{
-			randomNumberWithFractionTest(0, BinNumber, width, false, binNumberPrefixes[0], "", io.EOF),
-			randomNumberWithFractionTest(0, BinNumber, width, false, binNumberPrefixes[1], "", io.EOF),
-			randomNumberWithFractionTest(3, BinNumber, width, false, binNumberPrefixes[0], ".", ErrInvalidNumber),
-			randomNumberWithFractionTest(3, BinNumber, width, false, binNumberPrefixes[1], ".", ErrInvalidNumber),
-			randomNumberWithFractionTest(0, BinNumber, width, false, "-"+binNumberPrefixes[0], "", io.EOF),
-			randomNumberWithFractionTest(0, BinNumber, width, false, "-"+binNumberPrefixes[1], "", io.EOF),
-			randomNumberWithFractionTest(3, BinNumber, width, false, "-"+binNumberPrefixes[0], ".", ErrInvalidNumber),
-			randomNumberWithFractionTest(3, BinNumber, width, false, "-"+binNumberPrefixes[1], ".", ErrInvalidNumber),
+			randomNumberWithFractionTest(0, BinNumber, width, false, BinPrefixes[0], "", io.EOF),
+			randomNumberWithFractionTest(0, BinNumber, width, false, BinPrefixes[1], "", io.EOF),
+			randomNumberWithFractionTest(3, BinNumber, width, false, BinPrefixes[0], ".", ErrInvalidNumber),
+			randomNumberWithFractionTest(3, BinNumber, width, false, BinPrefixes[1], ".", ErrInvalidNumber),
+			randomNumberWithFractionTest(0, BinNumber, width, false, "-"+BinPrefixes[0], "", io.EOF),
+			randomNumberWithFractionTest(0, BinNumber, width, false, "-"+BinPrefixes[1], "", io.EOF),
+			randomNumberWithFractionTest(3, BinNumber, width, false, "-"+BinPrefixes[0], ".", ErrInvalidNumber),
+			randomNumberWithFractionTest(3, BinNumber, width, false, "-"+BinPrefixes[1], ".", ErrInvalidNumber),
 
-			randomNumberWithFractionTest(0, OctNumber, width, false, octNumberPrefixes[0], "", io.EOF),
-			randomNumberWithFractionTest(0, OctNumber, width, false, octNumberPrefixes[1], "", io.EOF),
-			randomNumberWithFractionTest(3, OctNumber, width, false, octNumberPrefixes[0], ".", ErrInvalidNumber),
-			randomNumberWithFractionTest(3, OctNumber, width, false, octNumberPrefixes[1], ".", ErrInvalidNumber),
-			randomNumberWithFractionTest(0, OctNumber, width, false, "-"+octNumberPrefixes[0], "", io.EOF),
-			randomNumberWithFractionTest(0, OctNumber, width, false, "-"+octNumberPrefixes[1], "", io.EOF),
-			randomNumberWithFractionTest(3, OctNumber, width, false, "-"+octNumberPrefixes[0], ".", ErrInvalidNumber),
-			randomNumberWithFractionTest(3, OctNumber, width, false, "-"+octNumberPrefixes[1], ".", ErrInvalidNumber),
+			randomNumberWithFractionTest(0, OctNumber, width, false, OctPrefixes[0], "", io.EOF),
+			randomNumberWithFractionTest(0, OctNumber, width, false, OctPrefixes[1], "", io.EOF),
+			randomNumberWithFractionTest(3, OctNumber, width, false, OctPrefixes[0], ".", ErrInvalidNumber),
+			randomNumberWithFractionTest(3, OctNumber, width, false, OctPrefixes[1], ".", ErrInvalidNumber),
+			randomNumberWithFractionTest(0, OctNumber, width, false, "-"+OctPrefixes[0], "", io.EOF),
+			randomNumberWithFractionTest(0, OctNumber, width, false, "-"+OctPrefixes[1], "", io.EOF),
+			randomNumberWithFractionTest(3, OctNumber, width, false, "-"+OctPrefixes[0], ".", ErrInvalidNumber),
+			randomNumberWithFractionTest(3, OctNumber, width, false, "-"+OctPrefixes[1], ".", ErrInvalidNumber),
 
 			randomNumberWithFractionTest(0, DecNumber, width, false, "", "", io.EOF),
 			randomNumberWithFractionTest(3, DecNumber, width, false, "", ".", ErrInvalidNumber),
 
-			randomNumberWithFractionTest(0, HexNumber, width, false, hexNumberPrefixes[0], "", io.EOF),
-			randomNumberWithFractionTest(0, HexNumber, width, false, hexNumberPrefixes[1], "", io.EOF),
-			randomNumberWithFractionTest(0, HexNumber, width, true, hexNumberPrefixes[0], "", io.EOF),
-			randomNumberWithFractionTest(0, HexNumber, width, true, hexNumberPrefixes[1], "", io.EOF),
-			randomNumberWithFractionTest(3, HexNumber, width, false, hexNumberPrefixes[0], ".", ErrInvalidNumber),
-			randomNumberWithFractionTest(3, HexNumber, width, false, hexNumberPrefixes[1], ".", ErrInvalidNumber),
-			randomNumberWithFractionTest(3, HexNumber, width, true, hexNumberPrefixes[0], ".", ErrInvalidNumber),
-			randomNumberWithFractionTest(3, HexNumber, width, true, hexNumberPrefixes[1], ".", ErrInvalidNumber),
-			randomNumberWithFractionTest(0, HexNumber, width, false, "-"+hexNumberPrefixes[0], "", io.EOF),
-			randomNumberWithFractionTest(0, HexNumber, width, false, "-"+hexNumberPrefixes[1], "", io.EOF),
-			randomNumberWithFractionTest(0, HexNumber, width, true, "-"+hexNumberPrefixes[0], "", io.EOF),
-			randomNumberWithFractionTest(0, HexNumber, width, true, "-"+hexNumberPrefixes[1], "", io.EOF),
-			randomNumberWithFractionTest(3, HexNumber, width, false, "-"+hexNumberPrefixes[0], ".", ErrInvalidNumber),
-			randomNumberWithFractionTest(3, HexNumber, width, false, "-"+hexNumberPrefixes[1], ".", ErrInvalidNumber),
-			randomNumberWithFractionTest(3, HexNumber, width, true, "-"+hexNumberPrefixes[0], ".", ErrInvalidNumber),
-			randomNumberWithFractionTest(3, HexNumber, width, true, "-"+hexNumberPrefixes[1], ".", ErrInvalidNumber),
+			randomNumberWithFractionTest(0, HexNumber, width, false, HexPrefixes[0], "", io.EOF),
+			randomNumberWithFractionTest(0, HexNumber, width, false, HexPrefixes[1], "", io.EOF),
+			randomNumberWithFractionTest(0, HexNumber, width, true, HexPrefixes[0], "", io.EOF),
+			randomNumberWithFractionTest(0, HexNumber, width, true, HexPrefixes[1], "", io.EOF),
+			randomNumberWithFractionTest(3, HexNumber, width, false, HexPrefixes[0], ".", ErrInvalidNumber),
+			randomNumberWithFractionTest(3, HexNumber, width, false, HexPrefixes[1], ".", ErrInvalidNumber),
+			randomNumberWithFractionTest(3, HexNumber, width, true, HexPrefixes[0], ".", ErrInvalidNumber),
+			randomNumberWithFractionTest(3, HexNumber, width, true, HexPrefixes[1], ".", ErrInvalidNumber),
+			randomNumberWithFractionTest(0, HexNumber, width, false, "-"+HexPrefixes[0], "", io.EOF),
+			randomNumberWithFractionTest(0, HexNumber, width, false, "-"+HexPrefixes[1], "", io.EOF),
+			randomNumberWithFractionTest(0, HexNumber, width, true, "-"+HexPrefixes[0], "", io.EOF),
+			randomNumberWithFractionTest(0, HexNumber, width, true, "-"+HexPrefixes[1], "", io.EOF),
+			randomNumberWithFractionTest(3, HexNumber, width, false, "-"+HexPrefixes[0], ".", ErrInvalidNumber),
+			randomNumberWithFractionTest(3, HexNumber, width, false, "-"+HexPrefixes[1], ".", ErrInvalidNumber),
+			randomNumberWithFractionTest(3, HexNumber, width, true, "-"+HexPrefixes[0], ".", ErrInvalidNumber),
+			randomNumberWithFractionTest(3, HexNumber, width, true, "-"+HexPrefixes[1], ".", ErrInvalidNumber),
 		}...)
 	}
 
 	// Fractions
 	for _, width := range inputWidth {
 		tests = append(tests, []testCase{
-			randomFractionTest(0, BinFraction, width, false, binNumberPrefixes[0], "", io.EOF),
-			randomFractionTest(0, BinFraction, width, false, binNumberPrefixes[1], "", io.EOF),
-			randomFractionTest(1, BinFraction, width, false, binNumberPrefixes[0], ".", ErrInvalidNumber),
-			randomFractionTest(1, BinFraction, width, false, binNumberPrefixes[1], ".", ErrInvalidNumber),
-			randomFractionTest(0, BinFraction, width, false, "-"+binNumberPrefixes[0], "", io.EOF),
-			randomFractionTest(0, BinFraction, width, false, "-"+binNumberPrefixes[1], "", io.EOF),
-			randomFractionTest(1, BinFraction, width, false, "-"+binNumberPrefixes[0], ".", ErrInvalidNumber),
-			randomFractionTest(1, BinFraction, width, false, "-"+binNumberPrefixes[1], ".", ErrInvalidNumber),
+			randomFractionTest(0, BinFraction, width, false, BinPrefixes[0], "", io.EOF),
+			randomFractionTest(0, BinFraction, width, false, BinPrefixes[1], "", io.EOF),
+			randomFractionTest(1, BinFraction, width, false, BinPrefixes[0], ".", ErrInvalidNumber),
+			randomFractionTest(1, BinFraction, width, false, BinPrefixes[1], ".", ErrInvalidNumber),
+			randomFractionTest(0, BinFraction, width, false, "-"+BinPrefixes[0], "", io.EOF),
+			randomFractionTest(0, BinFraction, width, false, "-"+BinPrefixes[1], "", io.EOF),
+			randomFractionTest(1, BinFraction, width, false, "-"+BinPrefixes[0], ".", ErrInvalidNumber),
+			randomFractionTest(1, BinFraction, width, false, "-"+BinPrefixes[1], ".", ErrInvalidNumber),
 
-			randomFractionTest(0, OctFraction, width, false, octNumberPrefixes[0], "", io.EOF),
-			randomFractionTest(0, OctFraction, width, false, octNumberPrefixes[1], "", io.EOF),
-			randomFractionTest(1, OctFraction, width, false, octNumberPrefixes[0], ".", ErrInvalidNumber),
-			randomFractionTest(1, OctFraction, width, false, octNumberPrefixes[1], ".", ErrInvalidNumber),
-			randomFractionTest(0, OctFraction, width, false, "-"+octNumberPrefixes[0], "", io.EOF),
-			randomFractionTest(0, OctFraction, width, false, "-"+octNumberPrefixes[1], "", io.EOF),
-			randomFractionTest(1, OctFraction, width, false, "-"+octNumberPrefixes[0], ".", ErrInvalidNumber),
-			randomFractionTest(1, OctFraction, width, false, "-"+octNumberPrefixes[1], ".", ErrInvalidNumber),
+			randomFractionTest(0, OctFraction, width, false, OctPrefixes[0], "", io.EOF),
+			randomFractionTest(0, OctFraction, width, false, OctPrefixes[1], "", io.EOF),
+			randomFractionTest(1, OctFraction, width, false, OctPrefixes[0], ".", ErrInvalidNumber),
+			randomFractionTest(1, OctFraction, width, false, OctPrefixes[1], ".", ErrInvalidNumber),
+			randomFractionTest(0, OctFraction, width, false, "-"+OctPrefixes[0], "", io.EOF),
+			randomFractionTest(0, OctFraction, width, false, "-"+OctPrefixes[1], "", io.EOF),
+			randomFractionTest(1, OctFraction, width, false, "-"+OctPrefixes[0], ".", ErrInvalidNumber),
+			randomFractionTest(1, OctFraction, width, false, "-"+OctPrefixes[1], ".", ErrInvalidNumber),
 
 			randomFractionTest(0, DecFraction, width, false, "", "", io.EOF),
 			randomFractionTest(1, DecFraction, width, false, "", ".", ErrInvalidNumber),
@@ -456,22 +456,22 @@ func numberTests() (tests []testCase) {
 			// crazy cases "...NNN"
 			randomFractionTest(1, DecFraction, width, false, "..", "", ErrInvalidNumber),
 
-			randomFractionTest(0, HexFraction, width, false, hexNumberPrefixes[0], "", io.EOF),
-			randomFractionTest(0, HexFraction, width, false, hexNumberPrefixes[1], "", io.EOF),
-			randomFractionTest(0, HexFraction, width, true, hexNumberPrefixes[0], "", io.EOF),
-			randomFractionTest(0, HexFraction, width, true, hexNumberPrefixes[1], "", io.EOF),
-			randomFractionTest(1, HexFraction, width, false, hexNumberPrefixes[0], ".", ErrInvalidNumber),
-			randomFractionTest(1, HexFraction, width, false, hexNumberPrefixes[1], ".", ErrInvalidNumber),
-			randomFractionTest(1, HexFraction, width, true, hexNumberPrefixes[0], ".", ErrInvalidNumber),
-			randomFractionTest(1, HexFraction, width, true, hexNumberPrefixes[1], ".", ErrInvalidNumber),
-			randomFractionTest(0, HexFraction, width, false, "-"+hexNumberPrefixes[0], "", io.EOF),
-			randomFractionTest(0, HexFraction, width, false, "-"+hexNumberPrefixes[1], "", io.EOF),
-			randomFractionTest(0, HexFraction, width, true, "-"+hexNumberPrefixes[0], "", io.EOF),
-			randomFractionTest(0, HexFraction, width, true, "-"+hexNumberPrefixes[1], "", io.EOF),
-			randomFractionTest(1, HexFraction, width, false, "-"+hexNumberPrefixes[0], ".", ErrInvalidNumber),
-			randomFractionTest(1, HexFraction, width, false, "-"+hexNumberPrefixes[1], ".", ErrInvalidNumber),
-			randomFractionTest(1, HexFraction, width, true, "-"+hexNumberPrefixes[0], ".", ErrInvalidNumber),
-			randomFractionTest(1, HexFraction, width, true, "-"+hexNumberPrefixes[1], ".", ErrInvalidNumber),
+			randomFractionTest(0, HexFraction, width, false, HexPrefixes[0], "", io.EOF),
+			randomFractionTest(0, HexFraction, width, false, HexPrefixes[1], "", io.EOF),
+			randomFractionTest(0, HexFraction, width, true, HexPrefixes[0], "", io.EOF),
+			randomFractionTest(0, HexFraction, width, true, HexPrefixes[1], "", io.EOF),
+			randomFractionTest(1, HexFraction, width, false, HexPrefixes[0], ".", ErrInvalidNumber),
+			randomFractionTest(1, HexFraction, width, false, HexPrefixes[1], ".", ErrInvalidNumber),
+			randomFractionTest(1, HexFraction, width, true, HexPrefixes[0], ".", ErrInvalidNumber),
+			randomFractionTest(1, HexFraction, width, true, HexPrefixes[1], ".", ErrInvalidNumber),
+			randomFractionTest(0, HexFraction, width, false, "-"+HexPrefixes[0], "", io.EOF),
+			randomFractionTest(0, HexFraction, width, false, "-"+HexPrefixes[1], "", io.EOF),
+			randomFractionTest(0, HexFraction, width, true, "-"+HexPrefixes[0], "", io.EOF),
+			randomFractionTest(0, HexFraction, width, true, "-"+HexPrefixes[1], "", io.EOF),
+			randomFractionTest(1, HexFraction, width, false, "-"+HexPrefixes[0], ".", ErrInvalidNumber),
+			randomFractionTest(1, HexFraction, width, false, "-"+HexPrefixes[1], ".", ErrInvalidNumber),
+			randomFractionTest(1, HexFraction, width, true, "-"+HexPrefixes[0], ".", ErrInvalidNumber),
+			randomFractionTest(1, HexFraction, width, true, "-"+HexPrefixes[1], ".", ErrInvalidNumber),
 		}...)
 	}
 

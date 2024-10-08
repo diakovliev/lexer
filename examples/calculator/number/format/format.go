@@ -6,21 +6,23 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/diakovliev/lexer/examples/calculator/parse"
+	"github.com/diakovliev/lexer/examples/calculator/number"
 )
 
 var (
 	// ErrInvalidBase is returned when the given base is not supported by this formatter.
 	ErrInvalidBase = fmt.Errorf("invalid base")
 
+	// basePrefixes maps a base to its prefix. For example, for binary it returns "0b".
 	basePrefixes = map[int]string{
-		2:  parse.BinPrefixes[0],
-		8:  parse.OctPrefixes[0],
-		10: "",
-		16: parse.HexPrefixes[0],
+		number.Bin: number.BinPrefixes[0],
+		number.Oct: number.OctPrefixes[0],
+		number.Dec: "",
+		number.Hex: number.HexPrefixes[0],
 	}
 )
 
+// sign returns the sign of the given number. It is either -1 or 1.
 func sign(f float64) float64 {
 	isNegative := math.Signbit(f)
 	if isNegative {
@@ -31,6 +33,18 @@ func sign(f float64) float64 {
 
 // FormatNumber formats the given number in the specified base and precision.
 func FormatNumber(f float64, prec uint, base int) (ret string, err error) {
+	if math.IsNaN(f) {
+		ret = "NaN"
+		return
+	}
+	if math.IsInf(f, 1) {
+		ret = "Inf"
+		return
+	}
+	if math.IsInf(f, -1) {
+		ret = "-Inf"
+		return
+	}
 	builder := strings.Builder{}
 	sign := sign(f)
 	if sign < 0 {
@@ -59,7 +73,7 @@ func FormatNumber(f float64, prec uint, base int) (ret string, err error) {
 		return
 	} else {
 		builder.WriteString(strings.ToUpper(strconv.FormatInt(int64(floor), base)))
-		builder.WriteRune(parse.RadixPoint)
+		builder.WriteRune(number.Radix)
 	}
 	for i := uint(0); i < prec; i++ {
 		tail *= float64(base)
