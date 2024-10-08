@@ -53,7 +53,7 @@ func Phi(_ *VM, _ ...Cell) (result *Cell, err error) {
 func pow(_ *VM, args ...Cell) (result *Cell, err error) {
 	result = &Cell{
 		Op:    Val,
-		Value: math.Pow(args[0].AsFloat64(), args[1].AsFloat64()),
+		Value: math.Pow(args[1].AsFloat64(), args[0].AsFloat64()),
 	}
 	return
 }
@@ -253,7 +253,7 @@ func abs(_ *VM, args ...Cell) (result *Cell, err error) {
 func min(_ *VM, args ...Cell) (result *Cell, err error) {
 	result = &Cell{
 		Op:    Val,
-		Value: math.Min(args[0].AsFloat64(), args[1].AsFloat64()),
+		Value: math.Min(args[1].AsFloat64(), args[0].AsFloat64()),
 	}
 	return
 }
@@ -261,7 +261,7 @@ func min(_ *VM, args ...Cell) (result *Cell, err error) {
 func max(_ *VM, args ...Cell) (result *Cell, err error) {
 	result = &Cell{
 		Op:    Val,
-		Value: math.Max(args[0].AsFloat64(), args[1].AsFloat64()),
+		Value: math.Max(args[1].AsFloat64(), args[0].AsFloat64()),
 	}
 	return
 }
