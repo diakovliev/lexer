@@ -1,6 +1,7 @@
 package vm
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -76,6 +77,11 @@ func (vm *VM) Reset() (err error) {
 
 // PushCode pushes code to the virtual machine stack.
 func (vm *VM) PushCode(code []Cell) *VM {
+	for _, cell := range code {
+		if cell.Op == Call {
+
+		}
+	}
 	for _, cell := range code {
 		vm.code = vm.code.Push(cell)
 	}
@@ -185,7 +191,9 @@ func (vm *VM) Call(op Cell, args ...Cell) (result *Cell, err error) {
 		return
 	}
 	// invoke function
-	result, err = Functs.Get(identifier).Do(vm, args...)
+	if result, err = Functs.Get(identifier).Do(vm, args...); err != nil && !errors.Is(err, ErrHalt) {
+		vm.Push(op)
+	}
 	return
 }
 

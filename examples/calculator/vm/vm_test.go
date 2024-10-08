@@ -16,7 +16,7 @@ func TestVm1(t *testing.T) {
 
 	tests := []testCase{
 		{
-			name:    "add 1 cells in stack",
+			name:    "add 1 cell in stack",
 			wantErr: ErrNotEnoughArguments,
 			code: []Cell{
 				{Op: Val, Value: int64(2)},
@@ -24,6 +24,7 @@ func TestVm1(t *testing.T) {
 			},
 			want: []Cell{
 				{Op: Val, Value: int64(2)},
+				{Op: Add},
 			},
 		},
 		{
@@ -93,6 +94,7 @@ func TestVm1(t *testing.T) {
 			},
 			want: []Cell{
 				{Op: Val, Value: int64(0)},
+				{Op: Call, Value: "garbage_ggg"},
 			},
 		},
 		{
@@ -141,6 +143,20 @@ func TestVm1(t *testing.T) {
 			},
 			want: []Cell{
 				{Op: Val, Value: int64(1)},
+			},
+		},
+		{
+			name:    "ls-la",
+			wantErr: ErrUnknownIdentifier,
+			code: []Cell{
+				{Op: Call, Value: "ls"},
+				{Op: Call, Value: "la"},
+				{Op: Sub},
+			},
+			want: []Cell{
+				{Op: Call, Value: "ls"},
+				{Op: Call, Value: "la"},
+				{Op: Sub},
 			},
 		},
 	}

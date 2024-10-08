@@ -109,14 +109,16 @@ func (loop *Loop) execute(cell *LoopStackCell) (err error) {
 // rewindVMState puts the waiting cells back to the vm stack
 func (loop *Loop) rewindVMState() (op OpCode) {
 	waitingCell, _ := loop.Pop()
-	op = waitingCell.Op.Op
-	for i := len(waitingCell.Args) - 1; i >= 0; i-- {
-		loop.vm.Push(waitingCell.Args[i])
+	if waitingCell != nil {
+		op = waitingCell.Op.Op
 	}
-	for ; !loop.Empty(); waitingCell, _ = loop.Pop() {
-		loop.vm.Push(waitingCell.Op)
+	for {
 		for i := len(waitingCell.Args) - 1; i >= 0; i-- {
 			loop.vm.Push(waitingCell.Args[i])
+		}
+		loop.vm.Push(waitingCell.Op)
+		if waitingCell, _ = loop.Pop(); waitingCell == nil {
+			break
 		}
 	}
 	return
@@ -156,9 +158,9 @@ func (loop *Loop) Step() (err error) {
 		op.AddArg(cell)
 		if op.HasArgs() {
 			err = loop.execute(op)
-		} else {
-			loop.Push(op)
+			return
 		}
+		loop.Push(op)
 	}
 	return
 }
