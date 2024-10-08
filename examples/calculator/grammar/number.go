@@ -4,41 +4,22 @@ import (
 	"context"
 	"math"
 
-	"github.com/diakovliev/lexer/examples/calculator/parse"
+	"github.com/diakovliev/lexer/examples/calculator/number"
 	"github.com/diakovliev/lexer/state"
 	"github.com/diakovliev/lexer/xio"
 )
 
-var (
-	allValueTokens = map[Token]bool{
-		BinNumber:   true,
-		OctNumber:   true,
-		DecNumber:   true,
-		HexNumber:   true,
-		BinFraction: true,
-		OctFraction: true,
-		DecFraction: true,
-		HexFraction: true,
-		Identifier:  true,
-	}
-
-	isPlusOrMinus = parse.IsPlusOrMinus
-
-	// Numbers misc
-	isRadixPoint = parse.IsRadixPoint
-
-	// Number bodies
-	binNumberBody = parse.IsBinDigit
-	octNumberBody = parse.IsOctDigit
-	decNumberBody = parse.IsDecDigit
-	hexNumberBody = parse.IsHexDigit
-
-	// Number prefixes
-	binNumberPrefixes = parse.BinPrefixes
-	octNumberPrefixes = parse.OctPrefixes
-	decNumberPrefixes = parse.DecPrefixes
-	hexNumberPrefixes = parse.HexPrefixes
-)
+var allValueTokens = map[Token]bool{
+	BinNumber:   true,
+	OctNumber:   true,
+	DecNumber:   true,
+	HexNumber:   true,
+	BinFraction: true,
+	OctFraction: true,
+	DecFraction: true,
+	HexFraction: true,
+	Identifier:  true,
+}
 
 func signedNumberGuard(ctx context.Context, _ xio.State) (err error) {
 	provider, ok := state.GetHistoryProvider[Token](ctx)
@@ -75,7 +56,7 @@ func numberSubState(
 		if withFraction {
 			fraction := func(b state.Builder[Token]) []state.Update[Token] {
 				return state.AsSlice[state.Update[Token]](
-					b.RuneCheck(isRadixPoint).
+					b.RuneCheck(number.IsRadix).
 						State(b, numberSubState(false, numberBody, maxFractionLen, 0, errInvalidNumber)).Optional().
 						Break(),
 				)
@@ -111,11 +92,11 @@ func numberState(
 	maxFractionLen uint,
 	token Token,
 	errInvalidNumber error,
-) (number func(b state.Builder[Token]) *state.Chain[Token]) {
+) func(b state.Builder[Token]) *state.Chain[Token] {
 	return func(b state.Builder[Token]) (state *state.Chain[Token]) {
 		state = b.Named(namePfx + token.String())
 		if signed {
-			state = state.RuneCheck(isPlusOrMinus).Optional().Tap(signedNumberGuard)
+			state = state.RuneCheck(number.IsPlusOrMinus).Optional().Tap(signedNumberGuard)
 		}
 		if len(requiredPrefixes) > 0 {
 			state = state.String(requiredPrefixes...)
@@ -157,28 +138,28 @@ func (nsb numberStateBuilder) build(b state.Builder[Token]) *state.Chain[Token] 
 
 var numberStateBuilders = []numberStateBuilder{
 	// Bin fractions
-	{"Signed", true, false, isRadixPoint, binNumberBody, binNumberPrefixes, math.MaxUint, math.MaxUint, BinFraction, ErrInvalidNumber},
-	{"Unsigned", false, false, isRadixPoint, binNumberBody, binNumberPrefixes, math.MaxUint, math.MaxUint, BinFraction, ErrInvalidNumber},
+	{"Signed", true, false, number.IsRadix, number.IsBinDigit, number.BinPrefixes, math.MaxUint, math.MaxUint, BinFraction, ErrInvalidNumber},
+	{"Unsigned", false, false, number.IsRadix, number.IsBinDigit, number.BinPrefixes, math.MaxUint, math.MaxUint, BinFraction, ErrInvalidNumber},
 	// Oct fractions
-	{"Signed", true, false, isRadixPoint, octNumberBody, octNumberPrefixes, math.MaxUint, math.MaxUint, OctFraction, ErrInvalidNumber},
-	{"Unsigned", false, false, isRadixPoint, octNumberBody, octNumberPrefixes, math.MaxUint, math.MaxUint, OctFraction, ErrInvalidNumber},
+	{"Signed", true, false, number.IsRadix, number.IsOctDigit, number.OctPrefixes, math.MaxUint, math.MaxUint, OctFraction, ErrInvalidNumber},
+	{"Unsigned", false, false, number.IsRadix, number.IsOctDigit, number.OctPrefixes, math.MaxUint, math.MaxUint, OctFraction, ErrInvalidNumber},
 	// Hex fractions
-	{"Signed", true, false, isRadixPoint, hexNumberBody, hexNumberPrefixes, math.MaxUint, math.MaxUint, HexFraction, ErrInvalidNumber},
-	{"Unsigned", false, false, isRadixPoint, hexNumberBody, hexNumberPrefixes, math.MaxUint, math.MaxUint, HexFraction, ErrInvalidNumber},
+	{"Signed", true, false, number.IsRadix, number.IsHexDigit, number.HexPrefixes, math.MaxUint, math.MaxUint, HexFraction, ErrInvalidNumber},
+	{"Unsigned", false, false, number.IsRadix, number.IsHexDigit, number.HexPrefixes, math.MaxUint, math.MaxUint, HexFraction, ErrInvalidNumber},
 	// Dec fractions
-	{"Signed", true, false, isRadixPoint, decNumberBody, decNumberPrefixes, math.MaxUint, math.MaxUint, DecFraction, ErrInvalidNumber},
-	{"Unsigned", false, false, isRadixPoint, decNumberBody, decNumberPrefixes, math.MaxUint, math.MaxUint, DecFraction, ErrInvalidNumber},
+	{"Signed", true, false, number.IsRadix, number.IsDecDigit, number.DecPrefixes, math.MaxUint, math.MaxUint, DecFraction, ErrInvalidNumber},
+	{"Unsigned", false, false, number.IsRadix, number.IsDecDigit, number.DecPrefixes, math.MaxUint, math.MaxUint, DecFraction, ErrInvalidNumber},
 
 	// Bin numbers
-	{"Signed", true, true, binNumberBody, binNumberBody, binNumberPrefixes, math.MaxUint, math.MaxUint, BinNumber, ErrInvalidNumber},
-	{"Unsigned", false, true, binNumberBody, binNumberBody, binNumberPrefixes, math.MaxUint, math.MaxUint, BinNumber, ErrInvalidNumber},
+	{"Signed", true, true, number.IsBinDigit, number.IsBinDigit, number.BinPrefixes, math.MaxUint, math.MaxUint, BinNumber, ErrInvalidNumber},
+	{"Unsigned", false, true, number.IsBinDigit, number.IsBinDigit, number.BinPrefixes, math.MaxUint, math.MaxUint, BinNumber, ErrInvalidNumber},
 	// Oct numbers
-	{"Signed", true, true, octNumberBody, octNumberBody, octNumberPrefixes, math.MaxUint, math.MaxUint, OctNumber, ErrInvalidNumber},
-	{"Unsigned", false, true, octNumberBody, octNumberBody, octNumberPrefixes, math.MaxUint, math.MaxUint, OctNumber, ErrInvalidNumber},
+	{"Signed", true, true, number.IsOctDigit, number.IsOctDigit, number.OctPrefixes, math.MaxUint, math.MaxUint, OctNumber, ErrInvalidNumber},
+	{"Unsigned", false, true, number.IsOctDigit, number.IsOctDigit, number.OctPrefixes, math.MaxUint, math.MaxUint, OctNumber, ErrInvalidNumber},
 	// Hex numbers
-	{"Signed", true, true, hexNumberBody, hexNumberBody, hexNumberPrefixes, math.MaxUint, math.MaxUint, HexNumber, ErrInvalidNumber},
-	{"Unsigned", false, true, hexNumberBody, hexNumberBody, hexNumberPrefixes, math.MaxUint, math.MaxUint, HexNumber, ErrInvalidNumber},
+	{"Signed", true, true, number.IsHexDigit, number.IsHexDigit, number.HexPrefixes, math.MaxUint, math.MaxUint, HexNumber, ErrInvalidNumber},
+	{"Unsigned", false, true, number.IsHexDigit, number.IsHexDigit, number.HexPrefixes, math.MaxUint, math.MaxUint, HexNumber, ErrInvalidNumber},
 	// Dec numbers
-	{"Signed", true, true, decNumberBody, decNumberBody, decNumberPrefixes, math.MaxUint, math.MaxUint, DecNumber, ErrInvalidNumber},
-	{"Unsigned", false, true, decNumberBody, decNumberBody, decNumberPrefixes, math.MaxUint, math.MaxUint, DecNumber, ErrInvalidNumber},
+	{"Signed", true, true, number.IsDecDigit, number.IsDecDigit, number.DecPrefixes, math.MaxUint, math.MaxUint, DecNumber, ErrInvalidNumber},
+	{"Unsigned", false, true, number.IsDecDigit, number.IsDecDigit, number.DecPrefixes, math.MaxUint, math.MaxUint, DecNumber, ErrInvalidNumber},
 }

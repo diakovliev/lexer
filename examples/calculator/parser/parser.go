@@ -7,7 +7,7 @@ import (
 	"io"
 
 	"github.com/diakovliev/lexer/examples/calculator/grammar"
-	"github.com/diakovliev/lexer/examples/calculator/parse"
+	"github.com/diakovliev/lexer/examples/calculator/number/parse"
 	"github.com/diakovliev/lexer/examples/calculator/vm"
 	"github.com/diakovliev/lexer/message"
 )

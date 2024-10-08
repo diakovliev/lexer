@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/diakovliev/lexer/examples/calculator/format"
+	"github.com/diakovliev/lexer/examples/calculator/number/format"
 	"github.com/diakovliev/lexer/examples/calculator/stack"
 )
 
